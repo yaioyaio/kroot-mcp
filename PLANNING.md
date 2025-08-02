@@ -1,6 +1,6 @@
 # DevFlow Monitor MCP - 프로젝트 계획서
 
-> 📌 **프로젝트 구조 및 코딩 표준은 [PROJECT_STRUCTURE_AND_STYLE.md](./PROJECT_STRUCTURE_AND_STYLE.md)를 참조하세요.**
+> 📌 **프로젝트 구조 및 코딩 표준은 [PROJECT_STRUCTURE_AND_STYLE.md](./docs/PROJECT_STRUCTURE_AND_STYLE.md)를 참조하세요.**
 
 ## 1. 비전
 
@@ -26,11 +26,11 @@
 
 ## 2. 시스템 아키텍처
 
-> 📌 **구체적인 기능 동작과 데이터 모델은 [FEATURES.md](./FEATURES.md)를 참조하세요.**
+> 📌 **구체적인 기능 동작과 데이터 모델은 [FEATURES.md](./docs/FEATURES.md)를 참조하세요.**
 
 ### 2.1 상위 레벨 아키텍처
 
-> 📌 **시스템 동작 플로우는 [FLOWCHARTS.md](./FLOWCHARTS.md)에서 시각적으로 확인할 수 있습니다.**
+> 📌 **시스템 동작 플로우는 [FLOWCHARTS.md](./docs/FLOWCHARTS.md)에서 시각적으로 확인할 수 있습니다.**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -47,7 +47,7 @@
 │  │   모니터링   │   │    통합     │    │  데이터 저장   │ │
 │  │              │   │             │    │                │ │
 │  │ • 파일 감시  │   │ • Git       │    │ • SQLite       │ │
-│  │ • 프로세스   │   │ • Jira      │    │ • Redis        │ │
+│  │ • 프로세스   │   │ • Jira      │    │ • 인메모리 캐시│ │
 │  │ • 테스트     │   │ • Figma     │    │ • 파일시스템   │ │
 │  │ • 배포       │   │ • AI 도구   │    │                │ │
 │  └──────────────┘   └─────────────┘    └────────────────┘ │
@@ -130,10 +130,10 @@
   - 로컬 데이터 지속성
   - 오프라인 기능
   - 트랜잭션 지원
-- **캐시/큐**: Redis 7.x (ioredis)
-  - 이벤트 큐 관리
-  - 실시간 데이터 캐싱
-  - Pub/Sub 메시징
+- **캐시/큐**: 인메모리 솔루션
+  - EventEmitter3: 이벤트 처리, 큐 관리, Pub/Sub 메시징
+  - SQLite 인메모리 모드: 빠른 데이터 캐싱
+  - Map 구조: 간단한 메모리 캐시
 
 #### 실시간 통신
 - **WebSocket**: ws 8.x
@@ -196,14 +196,14 @@
 
 #### 로컬 개발
 1. **Docker Desktop** - 컨테이너화
-2. **Redis Stack** - 로컬 Redis 인스턴스
+2. **SQLite Browser** - 데이터베이스 관리 도구
 3. **SQLite Browser** - 데이터베이스 검사
 4. **ngrok** - 웹훅 테스팅
 5. **Postman/Insomnia** - API 개발
 
 #### 모니터링 및 디버깅
 1. **Chrome DevTools** - 개발자 도구
-2. **Redis Commander** - Redis GUI
+2. **Process Monitor** - 프로세스 모니터링 도구
 3. **PM2 Monitor** - 프로세스 모니터링
 4. **Grafana** - 메트릭 시각화 (선택)
 5. **Sentry** - 오류 추적 (프로덕션)
@@ -253,10 +253,10 @@
 - **신뢰성**: 이벤트 재생 가능
 - **실시간성**: 대시보드 즉시 업데이트
 
-### 5.3 왜 SQLite + Redis인가?
-- **SQLite**: 로컬 저장소에 완벽, 서버 불필요
-- **Redis**: 실시간 기능 및 캐싱에 탁월
-- **조합**: 지속성과 속도의 최적 조합
+### 5.3 왜 SQLite + 인메모리 솔루션인가?
+- **SQLite**: 로컬 저장소에 완벽, 서버 불필요, 인메모리 모드 지원
+- **EventEmitter3**: 실시간 이벤트 처리에 최적화
+- **조합**: 지속성과 속도의 최적 조합, 추가 인프라 불필요
 
 ### 5.4 왜 MCP 프로토콜인가?
 - **Claude 통합**: Claude Desktop과 원활한 통합
@@ -287,7 +287,7 @@
 **주요 산출물**:
 - Git 통합 완료 (simple-git)
 - 외부 API 커넥터 구축 (Jira, Notion)
-- Redis 메시지 큐 구현
+- 인메모리 이벤트 큐 구현
 - EventEmitter3 기반 이벤트 시스템 구축
 - MCP 도구 기반 데이터 조회 API
 
@@ -367,6 +367,8 @@
 - 음성 명령 기능
 - AR/VR 시각화
 - 블록체인 감사 추적
+
+> 📌 **원격 중앙 모니터링 통합 전략은 [REMOTE_INTEGRATION_STRATEGY.md](./docs/REMOTE_INTEGRATION_STRATEGY.md)를 참조하세요.**
 
 ### 8.2 확장 기회
 - 다국어 지원

@@ -62,7 +62,7 @@ PRD → 기획서 → ERD → Wireframe → 화면단위 기획서 → 디자인
 
 ## 3. 기능 요구사항
 
-> 📌 **상세 기능 명세는 [FEATURES.md](./FEATURES.md)를 참조하세요.**
+> 📌 **상세 기능 명세는 [FEATURES.md](./docs/FEATURES.md)를 참조하세요.**
 
 ### 3.1 이벤트 캡처 시스템
 ```typescript
@@ -107,7 +107,7 @@ interface ProcessEvent {
 #### 방법론별 적용 단계
 
 | 단계 | DDD | TDD | BDD | EDA | 추적 항목 |
-|------|-----|-----|-----|-----------|
+|------|-----|-----|-----|-----|-----------|
 | **UseCase 도출** | ✓ Ubiquitous Language | - | ✓ User Story | - | 도메인 용어집, Given-When-Then |
 | **Event Storming** | ✓ Domain Event | - | - | ✓ Event 정의 | 이벤트 목록, Command/Query |
 | **Domain 모델링** | ✓ Aggregate/Entity/VO | - | - | ✓ Event Sourcing | 도메인 모델, 이벤트 스트림 |
@@ -178,7 +178,7 @@ interface AICollaboration {
 ## 4. 기술 요구사항
 
 ### 4.1 MCP 서버 아키텍처
-- **언어**: TypeScript (Node.js 20+)
+- **언어**: TypeScript 5.3+ (Node.js 20+)
 - **프로토콜**: JSON-RPC over stdio/WebSocket
 - **통합 방식**: Claude Desktop 및 기타 AI 도구 플러그인
 - **프레임워크**: 
@@ -195,7 +195,7 @@ interface AICollaboration {
 
 ### 4.3 데이터 저장 및 전송
 - **로컬 캐시**: SQLite (better-sqlite3) - 오프라인 작업 지원
-- **메시지 큐**: Redis (ioredis) - 이벤트 처리 및 Pub/Sub
+- **메시지 큐**: EventEmitter3 - 이벤트 처리 및 Pub/Sub
 - **실시간 처리**: EventEmitter3 - 이벤트 기반 아키텍처
 - **배치 전송**: node-cron - 주기적 데이터 동기화
 - **API 클라이언트**: axios - 외부 서비스 통합
@@ -220,22 +220,22 @@ interface AICollaboration {
 
 ## 6. 개발 로드맵
 
-### Phase 1 - 기반 구축 (2주)
+### 마일스톤 1 - 기반 구축 (2주)
 - TypeScript + MCP SDK 기본 서버 구축
 - 핵심 이벤트 모델 정의 (타입 시스템 활용)
 - 파일 시스템 모니터링 (chokidar) 구현
 - Git 이벤트 추적 (simple-git) 통합
 - SQLite 로컬 저장소 구현
 
-### Phase 2 - 프로세스 통합 (3주)
+### 마일스톤 2 - 프로세스 통합 (3주)
 - 외부 도구 API 연동 (Jira, Notion, Figma)
 - 이벤트 수집 및 처리 시스템 구현
-- Redis 메시지 큐 통합
+- 인메모리 이벤트 큐 구현
 - EventEmitter3 기반 실시간 이벤트 처리
 - AI 도구 추적 시스템 (Claude, GitHub Copilot)
 - 테스트 러너 통합 (Vitest)
 
-### Phase 3 - 대시보드 개발 (3주)
+### 마일스톤 3 - 대시보드 개발 (3주)
 - MCP 도구 기반 데이터 조회 API
 - CLI/TUI 대시보드 구현
 - 실시간 데이터 시각화
@@ -243,13 +243,13 @@ interface AICollaboration {
 - 메트릭 집계 시스템
 - 리포트 생성 및 알림 기능
 
-### Phase 4 - 프로덕션 준비 (2주)
+### 마일스톤 4 - 프로덕션 준비 (2주)
 - 성능 최적화 완료
 - 완전한 문서화
 - PM2 기반 프로덕션 배포 설정
 - 모니터링 및 로깅 시스템
 
-### Phase 5 - 확장 및 고도화 (2주)
+### 마일스톤 5 - 확장 및 고도화 (2주)
 - 사용자 정의 워크플로우 지원
 - 플러그인 시스템 구현
 - 다중 프로젝트 지원

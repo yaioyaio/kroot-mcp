@@ -59,9 +59,10 @@ DevFlow Monitor MCP 구현을 위한 최적의 기술 스택을 분석하고 추
   - 오프라인 작업 지원
   - 경량 임베디드 데이터베이스
   
-메시지 큐: Redis (ioredis)
+메시지 큐: EventEmitter3 (인메모리)
   - 실시간 이벤트 처리
   - Pub/Sub 패턴 지원
+  - 추가 인프라 불필요
 ```
 
 ### 3.3 모니터링 도구
@@ -189,7 +190,6 @@ devflow-monitor-mcp/
     "fastify": "^4.25.0",
     "@fastify/websocket": "^8.3.0",
     "better-sqlite3": "^9.3.0",
-    "ioredis": "^5.3.2",
     "chokidar": "^3.5.3",
     "simple-git": "^3.22.0",
     "axios": "^1.6.5",
@@ -222,7 +222,7 @@ devflow-monitor-mcp/
 ### Phase 2 (2주차)
 1. 외부 도구 API 통합 (Jira, Notion)
 2. 이벤트 수집 및 처리 시스템
-3. Redis 메시지 큐 구현
+3. 인메모리 이벤트 큐 구현
 4. WebSocket 실시간 통신
 
 ### Phase 3 (3주차)
@@ -236,7 +236,7 @@ devflow-monitor-mcp/
 
 ### 7.1 확장성
 - 이벤트 기반 아키텍처로 수평 확장 가능
-- Redis를 통한 분산 처리
+- EventEmitter3를 통한 이벤트 처리
 - 마이크로서비스 아키텍처로 전환 가능
 
 ### 7.2 성능 최적화

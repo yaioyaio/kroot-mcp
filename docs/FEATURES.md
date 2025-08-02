@@ -547,6 +547,45 @@ interface DailyReport {
 }
 ```
 
+### 9.4 동기화 도구 (원격 통합)
+> 📌 **상세 구현은 [REMOTE_INTEGRATION_STRATEGY.md](./REMOTE_INTEGRATION_STRATEGY.md)를 참조하세요.**
+
+```typescript
+// 동기화 상태 조회
+interface GetSyncStatusParams {
+  verbose?: boolean;
+}
+
+interface SyncStatus {
+  enabled: boolean;
+  lastSync?: Date;
+  pendingEvents: number;
+  syncErrors: number;
+  connectionStatus: 'connected' | 'disconnected' | 'error';
+}
+
+// 동기화 설정
+interface ConfigureSyncParams {
+  enabled: boolean;
+  endpoint?: string;
+  interval?: number;  // 초 단위
+  batchSize?: number;
+}
+
+// 수동 동기화
+interface TriggerSyncParams {
+  force?: boolean;
+  fullSync?: boolean;
+}
+
+interface SyncResult {
+  success: boolean;
+  syncedEvents: number;
+  errors?: SyncError[];
+  duration: number;  // ms
+}
+```
+
 ## 10. CLI/TUI 대시보드
 
 ### 10.1 대시보드 레이아웃
@@ -643,13 +682,13 @@ interface EventRecord {
   processed: boolean;
 }
 
-// Redis 캐시 구조
+// 인메모리 캐시 구조
 interface CacheStructure {
-  'current:stage': string;
-  'metrics:today': object;
-  'bottlenecks:active': Bottleneck[];
-  'events:queue': string[];  // event IDs
-  'ai:interactions:recent': AIInteraction[];
+  currentStage: string;
+  metricsToday: object;
+  bottlenecksActive: Bottleneck[];
+  eventsQueue: string[];  // event IDs
+  aiInteractionsRecent: AIInteraction[];
 }
 ```
 

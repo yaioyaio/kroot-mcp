@@ -6,14 +6,13 @@
 
 ## 핵심 기술 스택
 
-- **언어**: TypeScript (Node.js 20+)
-- **MCP SDK**: @modelcontextprotocol/sdk
+- **언어**: TypeScript 5.3+ (Node.js 20+)
+- **MCP SDK**: @modelcontextprotocol/sdk 0.6+
 - **주요 라이브러리**: 
   - chokidar (파일 감시)
   - simple-git (Git 통합)
-  - better-sqlite3 (로컬 데이터 저장)
-  - Redis (이벤트 큐 및 캐싱)
-  - EventEmitter3 (이벤트 처리)
+  - better-sqlite3 (로컬 데이터 저장 및 캐싱)
+  - EventEmitter3 (이벤트 처리, 큐 관리, Pub/Sub 메시징)
 
 ## 개발 워크플로우
 
@@ -40,9 +39,10 @@ UseCase 도출 → Event Storming → Domain 모델링 → UseCase 상세 설계
 
 ## 프로젝트 구조
 
-> 📌 **시스템 아키텍처와 데이터 플로우는 [FLOWCHARTS.md](../FLOWCHARTS.md)를 참조하세요.**
-> 📌 **상세한 프로젝트 구조 및 코딩 표준은 [PROJECT_STRUCTURE_AND_STYLE.md](../PROJECT_STRUCTURE_AND_STYLE.md)를 참조하세요.**
+> 📌 **시스템 아키텍처와 데이터 플로우는 [FLOWCHARTS.md](../docs/FLOWCHARTS.md)를 참조하세요.**
+> 📌 **상세한 프로젝트 구조 및 코딩 표준은 [PROJECT_STRUCTURE_AND_STYLE.md](../docs/PROJECT_STRUCTURE_AND_STYLE.md)를 참조하세요.**
 
+### 주요 디렉토리 개요
 ```
 devflow-monitor-mcp/
 ├── src/
@@ -73,7 +73,7 @@ npm run install-mcp  # Claude Desktop MCP로 설치
 
 ## 구현 가이드라인
 
-> 📌 **상세 기능 구현 시 [FEATURES.md](../FEATURES.md)를 반드시 참조하세요.**
+> 📌 **상세 기능 구현 시 [FEATURES.md](../docs/FEATURES.md)를 반드시 참조하세요.**
 
 ### 1. 이벤트 추적
 모든 개발 단계는 다음 구조를 따르는 이벤트를 발행해야 합니다:
@@ -155,7 +155,7 @@ git.diff()
 
 - 더 나은 동시성을 위해 SQLite WAL 모드 사용
 - 고빈도 변경사항에 대한 이벤트 배치 처리 구현
-- 자주 접근하는 데이터를 Redis에 캐싱
+- 자주 접근하는 데이터를 SQLite 인메모리 테이블에 캐싱
 - 파일 시스템 이벤트 디바운싱
 
 ## 보안 가이드라인
