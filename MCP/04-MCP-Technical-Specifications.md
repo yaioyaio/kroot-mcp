@@ -169,5 +169,5 @@ npm install @modelcontextprotocol/sdk
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-01-03  
+최종 수정일: 2025-08-02  
 작성자: yaioyaio
