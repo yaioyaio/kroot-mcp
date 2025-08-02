@@ -1,0 +1,8 @@
+dist/
+coverage/
+node_modules/
+*.min.js
+*.d.ts
+package-lock.json
+.git/
+.DS_Store
