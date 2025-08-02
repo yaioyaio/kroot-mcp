@@ -1,4 +1,4 @@
-# DevFlow Monitor MCP - Claude Code 세션 가이드
+# DevFlow Monitor MCP - Claude 세션 가이드
 
 ## 프로젝트 개요
 
@@ -39,10 +39,7 @@ UseCase 도출 → Event Storming → Domain 모델링 → UseCase 상세 설계
 
 ## 프로젝트 구조
 
-> 📌 **시스템 아키텍처와 데이터 플로우는 [FLOWCHARTS.md](../docs/FLOWCHARTS.md)를 참조하세요.**
-> 📌 **상세한 프로젝트 구조 및 코딩 표준은 [PROJECT_STRUCTURE_AND_STYLE.md](../docs/PROJECT_STRUCTURE_AND_STYLE.md)를 참조하세요.**
-
-### 주요 디렉토리 개요
+### 주요 디렉토리
 ```
 devflow-monitor-mcp/
 ├── src/
@@ -56,129 +53,78 @@ devflow-monitor-mcp/
 └── dist/
 ```
 
+## 현재 진행 상황 (2025-08-02)
+
+### 완료된 작업
+- ✅ TypeScript 5.9.2 프로젝트 초기화
+- ✅ ESLint, Prettier 개발 도구 설정
+- ✅ 프로젝트 디렉토리 구조 생성
+- ✅ 운영 가이드 문서 작성 (docs/operations/)
+- ✅ 검증 스크립트 작성 (scripts/verify.sh)
+- ✅ Git 커밋 및 브랜치 동기화 (커밋 ID: 53d4df7)
+
+### 진행 중인 마일스톤
+**마일스톤 1: MVP 기반 구축 (1-2주차)**
+- [x] 프로젝트 초기화 ✅
+- [ ] MCP 서버 기본 구현
+- [ ] 이벤트 시스템 구축
+- [ ] 파일 시스템 모니터링
+- [ ] 데이터 저장소 구현
+
+### 다음 작업
+1. **MCP SDK 설치**: `npm install @modelcontextprotocol/sdk@^0.6.0`
+2. **서버 엔트리포인트 구현**: `src/server/index.ts`
+3. **서버 설정 관리**: `src/server/config.ts`
+4. **Claude Desktop 연동 테스트**
+
 ## 주요 명령어
 
 ```bash
 # 개발
-npm run dev          # MCP 서버 개발 모드 실행
-npm run build        # TypeScript 빌드
-npm run test         # Vitest로 테스트 실행
+npm run dev          # TypeScript watch mode
+npm run build        # 프로덕션 빌드
 npm run lint         # ESLint 실행
+npm run format       # Prettier 포맷팅
 npm run typecheck    # TypeScript 타입 체크
 
-# 프로덕션
-npm run start        # MCP 서버 실행
-npm run install-mcp  # Claude Desktop MCP로 설치
+# 검증
+./scripts/verify.sh  # 프로젝트 설정 검증
 ```
 
-## 구현 가이드라인
+## 참고 문서
 
-> 📌 **상세 기능 구현 시 [FEATURES.md](../docs/FEATURES.md)를 반드시 참조하세요.**
+- [프로젝트 계획서](../PLANNING.md)
+- [작업 목록](../TASKS.md)
+- [오늘의 할 일](../docs/todolist/TODOLIST.2025-08-02.md)
+- [운영 가이드](../docs/operations/README.md)
+- [기능 명세](../docs/FEATURES.md)
+- [프로젝트 구조](../docs/PROJECT_STRUCTURE_AND_STYLE.md)
 
-### 1. 이벤트 추적
-모든 개발 단계는 다음 구조를 따르는 이벤트를 발행해야 합니다:
-```typescript
-interface ProcessEvent {
-  stage: StageType;
-  timestamp: Date;
-  actor: string;
-  action: string;
-  metadata: { ... };
-  status: 'started' | 'in_progress' | 'completed' | 'blocked';
-}
-```
+## Git 브랜치 전략
 
-### 2. 방법론 준수
-기능 구현 시 방법론 추적을 보장하세요:
-```typescript
-interface MethodologyCheck {
-  ddd: { ubiquitousLanguage: boolean; boundedContext: string[]; ... };
-  tdd: { redPhase: {...}; greenPhase: {...}; refactorPhase: {...}; };
-  bdd: { features: string[]; scenarios: {...}[]; ... };
-  eda: { events: string[]; eventHandlers: string[]; ... };
-}
-```
+- `main`: 프로덕션 릴리즈
+- `develop`: 개발 통합 브랜치 (현재 활성)
+- `feature/*`: 새 기능 개발
+- `bugfix/*`: 버그 수정
+- `hotfix/*`: 긴급 수정
 
-### 3. 파일 모니터링
-크로스 플랫폼 파일 시스템 모니터링을 위해 chokidar를 사용하세요:
-```typescript
-// 프로젝트 파일 모니터링
-chokidar.watch(projectPath, {
-  ignored: /(^|[\/\\])\../,
-  persistent: true
-});
-```
+## Claude 세션 시작 시 체크리스트
 
-### 4. Git 통합
-simple-git을 사용하여 모든 Git 활동을 추적하세요:
-```typescript
-// Git 이벤트 모니터링
-git.log()
-git.status()
-git.diff()
-```
-
-## 현재 개발 단계
-
-프로젝트는 현재 **계획 단계**에 있습니다. 다음 단계는:
-
-1. **마일스톤 1 (1-2주차)**: TypeScript 기반 기본 MCP 서버 설정
-2. **마일스톤 2 (3-5주차)**: 프로세스 통합 및 이벤트 시스템
-3. **마일스톤 3 (6-8주차)**: CLI/TUI 대시보드 개발 및 방법론 추적
-4. **마일스톤 4 (9-10주차)**: 고급 기능 및 최적화
-5. **마일스톤 5 (11-12주차)**: 확장 및 고도화
-
-## 테스트 전략
-
-- **단위 테스트**: 개별 모니터 및 이벤트 프로세서 테스트
-- **통합 테스트**: 외부 도구 통합 테스트
-- **E2E 테스트**: 완전한 워크플로우 시나리오 테스트
-- **커버리지 목표**: 최소 80% 코드 커버리지
+1. [ ] 현재 브랜치 확인: `git branch`
+2. [ ] 프로젝트 상태 확인: `./scripts/verify.sh`
+3. [ ] 최신 코드 풀: `git pull origin develop`
+4. [ ] 다음 작업 확인: TODOLIST 문서 참조
 
 ## 중요 사항
 
-1. **타입 안정성**: 항상 TypeScript strict 모드 사용
-2. **이벤트 기반**: 모든 상태 변경은 이벤트를 발행해야 함
-3. **방법론 추적**: 모든 코드 변경은 DDD/TDD/BDD/EDA 원칙에 매핑되어야 함
-4. **실시간 업데이트**: MCP 도구를 통한 데이터 조회
-5. **오류 처리**: 재시도 로직을 포함한 강력한 오류 처리 구현
-
-## 외부 통합
-
-- **프로젝트 관리**: Jira, Asana, Notion API
-- **디자인 도구**: Figma API, Sketch 플러그인
-- **개발 도구**: VS Code 확장, Git hooks
-- **AI 도구**: Claude MCP, GitHub Copilot 통합
-- **CI/CD**: GitHub Actions, Jenkins 웹훅
-
-## 성능 고려사항
-
-- 더 나은 동시성을 위해 SQLite WAL 모드 사용
-- 고빈도 변경사항에 대한 이벤트 배치 처리 구현
-- 자주 접근하는 데이터를 SQLite 인메모리 테이블에 캐싱
-- 파일 시스템 이벤트 디바운싱
-
-## 보안 가이드라인
-
-- 코드에 자격 증명을 절대 저장하지 않음
-- 민감한 데이터에는 환경 변수 사용
-- API 속도 제한 구현
-- 모든 사용자 입력 검증
-- 보안 모범 사례 준수
-
-## 기여 워크플로우
-
-1. `main`에서 feature 브랜치 생성
-2. 개발 워크플로우에 따라 기능 구현
-3. 모든 테스트 통과 및 커버리지 요구사항 충족 확인
-4. 상세한 설명과 함께 PR 생성
-5. 코드 리뷰 및 방법론 준수 확인
-6. 승인 후 병합
-
-기억하세요: 이 프로젝트는 전체 개발 프로세스에 투명성과 일관성을 가져오는 것을 목표로 합니다. 모든 구현은 이 목표에 기여해야 합니다.
+- 모든 코드는 TypeScript strict 모드로 작성
+- 커밋 메시지는 Conventional Commits 형식 준수
+- 테스트 주도 개발(TDD) 권장
+- 문서와 코드의 동기화 유지
 
 ---
 
 작성일: 2025-08-02  
 최종 수정일: 2025-08-02  
-작성자: yaioyaio
+작성자: yaioyaio  
+상태: 마일스톤 1 - 프로젝트 초기화 완료
