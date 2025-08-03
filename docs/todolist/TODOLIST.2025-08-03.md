@@ -143,13 +143,13 @@
 - [x] **[추가]** 단위 테스트 작성 ✓ (34개 테스트 모두 통과)
 - [x] **[추가]** 통합 테스트 검증 ✓ (109개 이벤트 처리 성공)
 
-#### 4. MCP 도구 API 구현
-- [ ] **[HIGH]** getProjectStatus 도구 확장
-- [ ] **[HIGH]** getMetrics 도구 확장
-- [ ] **[HIGH]** getActivityLog 도구 확장
-- [ ] **[MEDIUM]** analyzeBottlenecks 도구 확장
-- [ ] **[MEDIUM]** checkMethodology 도구 구현
-- [ ] **[LOW]** generateReport 도구 구현
+#### 4. MCP 도구 API 구현 ✅ (완료: 2025-08-03)
+- [x] **[HIGH]** getProjectStatus 도구 확장 ✓ (실시간 시스템 메트릭, 마일스톤 진행률)
+- [x] **[HIGH]** getMetrics 도구 확장 ✓ (시간 범위별 필터링, 트렌드 분석)
+- [x] **[HIGH]** getActivityLog 도구 확장 ✓ (모든 이벤트 소스 통합, 향상된 분류)
+- [x] **[MEDIUM]** analyzeBottlenecks 도구 확장 ✓ (실제 병목 감지, 시스템 상태 분석)
+- [x] **[MEDIUM]** checkMethodology 도구 구현 ✓ (DDD/TDD/BDD/EDA 준수도 검사)
+- [x] **[LOW]** generateReport 도구 구현 ✓ (일일/주간/월간 리포트 생성)
 
 #### 5. 실시간 통신
 - [ ] **[HIGH]** ws 패키지 설치 및 설정
@@ -256,9 +256,9 @@
 - 데이터 저장소 구현 ✅
 - 테스트 및 문서화 ✅
 
-**마일스톤 2: 핵심 통합 구현** (진행률: 40%)
+**마일스톤 2: 핵심 통합 구현** (진행률: 80% - 4/5 섹션 완료)
 - Git 통합 ✅ (2025-08-03)
 - 외부 API 통합 ✅ (2025-08-03) - Jira, Notion, Figma 클라이언트 구현 완료
-- 인메모리 이벤트 큐 구현 (다음 작업)
-- MCP 도구 API 구현 (계획 중)
-- 실시간 통신 (계획 중)
+- 인메모리 이벤트 큐 구현 ✅ (2025-08-03) - EventQueue 및 QueueManager 구현 완료
+- MCP 도구 API 구현 ✅ (2025-08-03) - 7개 도구 완전 구현 (4개 확장 + 2개 신규)
+- 실시간 통신 (다음 작업)

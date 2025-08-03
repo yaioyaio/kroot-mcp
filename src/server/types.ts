@@ -36,6 +36,18 @@ export interface AnalyzeBottlenecksArgs {
   analysisDepth?: 'basic' | 'detailed' | 'comprehensive';
 }
 
+export interface CheckMethodologyArgs {
+  methodology?: 'all' | 'ddd' | 'tdd' | 'bdd' | 'eda';
+  includeRecommendations?: boolean;
+}
+
+export interface GenerateReportArgs {
+  reportType?: 'daily' | 'weekly' | 'monthly' | 'custom';
+  format?: 'json' | 'markdown' | 'summary';
+  includeMetrics?: boolean;
+  includeTrends?: boolean;
+}
+
 /**
  * MCP 응답 컨텐츠 타입 - SDK와 호환되는 타입 사용
  */
@@ -58,6 +70,8 @@ export interface ProjectStatusResponse {
     version: string;
     status: string;
     lastActivity: string;
+    totalEvents?: number;
+    uptime?: number;
   };
   milestones: {
     current: string;
@@ -65,12 +79,21 @@ export interface ProjectStatusResponse {
       total: number;
       completed: number;
       current: string;
+      percentage?: number;
     };
+    completed?: string[];
   };
   environment: {
     nodeVersion: string;
     platform: string;
     cwd: string;
+    memoryUsage?: any;
+    pid?: number;
+  };
+  metrics?: {
+    events?: any;
+    activity?: any;
+    queue?: any;
   };
   details?: unknown;
 }
@@ -81,15 +104,41 @@ export interface ProjectStatusResponse {
 export interface MetricsResponse {
   timeRange: string;
   metricType: string;
+  timestamp: string;
   data: {
-    commits: number;
-    filesChanged: number;
-    linesAdded: number;
-    linesRemoved: number;
-    testsPassed: number;
-    testsFailed: number;
-    buildSuccess: number;
-    buildFailed: number;
+    events?: {
+      total: number;
+      byCategory: Record<string, number>;
+      bySeverity: Record<string, number>;
+      rate: number;
+    };
+    git?: {
+      commits: number;
+      branches: number;
+      merges: number;
+    };
+    files?: {
+      changed: number;
+      created: number;
+      modified: number;
+      deleted: number;
+    };
+    system?: {
+      uptime: number;
+      memoryUsage: number;
+      cpuUsage: any;
+    };
+    queue?: {
+      totalQueues: number;
+      totalEvents: number;
+      processing: number;
+      throughput: number;
+    };
+  };
+  analysis?: {
+    trend: any;
+    health: any;
+    recommendations: string[];
   };
   summary: string;
 }
@@ -106,10 +155,22 @@ export interface ActivityLogResponse {
     action: string;
     details: string;
     actor: string;
+    category?: string;
+    severity?: string;
+    metadata?: Record<string, any>;
   }>;
   filters: {
     limit: number;
     stage?: string;
+  };
+  summary?: {
+    totalEvents: number;
+    byCategory: Record<string, number>;
+    bySeverity: Record<string, number>;
+    timeRange?: {
+      start: string;
+      end: string;
+    };
   };
 }
 
@@ -124,7 +185,71 @@ export interface BottleneckAnalysisResponse {
     severity: string;
     description: string;
     suggestion: string;
+    metrics?: {
+      current: number;
+      threshold: number;
+      recommendation: string;
+      [key: string]: any;
+    };
   }>;
   recommendations: string[];
   nextSteps: string[];
+  systemMetrics?: {
+    eventProcessingRate: number;
+    memoryUsage: number;
+    queueBacklog: number;
+    activeMonitors: {
+      fileMonitor: string;
+      gitMonitor: string;
+    };
+  };
+  analysis?: {
+    pattern: any;
+    trends: any;
+    efficiency: any;
+  };
+}
+
+/**
+ * 방법론 검사 응답 타입
+ */
+export interface CheckMethodologyResponse {
+  methodology: string;
+  timestamp: string;
+  compliance: {
+    overall: number;
+    byMethodology: Record<string, number>;
+  };
+  findings: Array<{
+    methodology: string;
+    status: 'compliant' | 'partial' | 'non-compliant';
+    score: number;
+    description: string;
+    recommendations: string[];
+  }>;
+  summary: string;
+}
+
+/**
+ * 리포트 생성 응답 타입
+ */
+export interface GenerateReportResponse {
+  reportType: string;
+  format: string;
+  timestamp: string;
+  period: {
+    start: string;
+    end: string;
+  };
+  summary: {
+    totalActivities: number;
+    keyMetrics: Record<string, number>;
+    highlights: string[];
+  };
+  sections: Array<{
+    title: string;
+    content: string;
+    metrics?: Record<string, number>;
+  }>;
+  recommendations: string[];
 }
