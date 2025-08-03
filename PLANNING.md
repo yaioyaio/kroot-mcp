@@ -321,12 +321,14 @@
 
 **주요 산출물**:
 - Git 통합 완료 (simple-git) ✅ (2025-08-03)
-- 외부 API 커넥터 구축 (Jira, Notion) - 다음 작업
-- 인메모리 이벤트 큐 구현 - 계획 중
+- 외부 API 커넥터 구축 (Jira, Notion) ✅ (2025-08-03)
+- 인메모리 이벤트 큐 구현 - 다음 작업
 - EventEmitter3 기반 이벤트 시스템 구축 ✅ (마일스톤 1에서 완료)
-- MCP 도구 기반 데이터 조회 API - 다음 작업
+- MCP 도구 기반 데이터 조회 API - 계획 중
 
-**완료된 작업 (2025-08-03)**:
+**완료된 작업**:
+
+*Git 통합 (2025-08-03)*:
 - ✅ simple-git v3.27.0 패키지 설치 및 설정
 - ✅ GitMonitor 클래스 구현 (src/monitors/git.ts - 435줄)
 - ✅ BaseMonitor 상속 구조 구현 
@@ -340,9 +342,22 @@
 - ✅ 통합 테스트 작성 (tests/manual/test-git-integration-full.js)
 - ✅ 전체 기능 검증 완료 (모든 Git 이벤트 감지 확인)
 
+*외부 API 통합 (2025-08-03)*:
+- ✅ axios v1.11.0 패키지 설치 및 설정
+- ✅ BaseAPIClient 추상 클래스 구현 (src/integrations/base.ts - 346줄)
+- ✅ JiraClient 구현 (src/integrations/jira.ts - 483줄)
+- ✅ NotionClient 구현 (src/integrations/notion.ts - 558줄)
+- ✅ FigmaClient 구현 (src/integrations/figma.ts - 490줄)
+- ✅ APIIntegrationManager 구현 (src/integrations/manager.ts - 518줄)
+- ✅ 인증 시스템 구현 (Bearer, Basic, API Key)
+- ✅ 재시도 로직 구현 (exponential backoff with jitter)
+- ✅ EventEngine 통합 (모든 API 이벤트 발행)
+- ✅ Health check 및 connection 검증
+- ✅ 테스트 검증 완료 (test-api-integration-simple.cjs)
+
 **성공 기준**:
 - Git 활동 자동 추적 및 분석 ✅ (달성)
-- 외부 도구와의 양방향 동기화 - 진행 예정
+- 외부 도구와의 양방향 동기화 ✅ (달성)
 - 실시간 이벤트 스트리밍 작동 - 진행 예정
 
 ### 마일스톤 3: 지능형 모니터링 (6-8주차)
@@ -433,7 +448,7 @@
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-진행 상황: **마일스톤 2: 핵심 통합 구현 - Git 통합 완료** ✅ (2025-08-03)
+진행 상황: **마일스톤 2: 핵심 통합 구현 - Git 통합 및 외부 API 통합 완료** ✅ (2025-08-03)
 
 **완료된 마일스톤:**
 - **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
@@ -445,7 +460,8 @@
   - 테스트 및 문서화 ✅
 
 **진행 중인 마일스톤:**
-- **마일스톤 2: 핵심 통합 구현** (진행률: 41.7%)
+- **마일스톤 2: 핵심 통합 구현** (진행률: 58.3%)
   - Git 통합 ✅ (2025-08-03) - GitMonitor 클래스, 이벤트 감지, 브랜치 패턴 분석, Conventional Commits 분석
-  - MCP 도구 API 구현 (다음 작업)
-  - 외부 API 통합 (계획 중)
+  - 외부 API 통합 ✅ (2025-08-03) - Jira, Notion, Figma 클라이언트 및 통합 관리자 구현 (총 65KB)
+  - 인메모리 이벤트 큐 구현 (다음 작업)
+  - MCP 도구 API 구현 (계획 중)

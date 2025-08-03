@@ -70,6 +70,7 @@ devflow-monitor-mcp/
 - ✅ 성능 테스트 통과 (평균 시작: 74.60ms, 응답: 2.60ms)
 
 *2025-08-03:*
+**마일스톤 1 완료:**
 - ✅ chokidar 패키지 설치 및 설정
 - ✅ BaseMonitor 추상 클래스 구현 (src/monitors/base.ts - 144줄)
 - ✅ FileMonitor 클래스 구현 (src/monitors/file.ts - 232줄)
@@ -86,6 +87,8 @@ devflow-monitor-mcp/
 - ✅ API 문서화 28페이지 완성 (docs/API.md)
 - ✅ 설치 가이드 30페이지 완성 (docs/INSTALLATION.md)
 - ✅ 통합 테스트 검증 및 이슈 해결
+
+**마일스톤 2 작업:**
 - ✅ simple-git v3.27.0 패키지 설치 및 설정
 - ✅ GitMonitor 클래스 구현 (src/monitors/git.ts - 435줄)
 - ✅ BaseMonitor 상속 구조 구현
@@ -98,6 +101,17 @@ devflow-monitor-mcp/
 - ✅ Git 단위 테스트 작성 (tests/unit/monitors/git.test.ts)
 - ✅ Git 통합 테스트 작성 (tests/manual/test-git-integration-full.js)
 - ✅ Git 전체 기능 검증 완료 (모든 Git 이벤트 감지 확인)
+- ✅ axios v1.11.0 패키지 설치
+- ✅ BaseAPIClient 추상 클래스 구현 (src/integrations/base.ts - 346줄)
+- ✅ JiraClient 구현 (src/integrations/jira.ts - 483줄)
+- ✅ NotionClient 구현 (src/integrations/notion.ts - 558줄)
+- ✅ FigmaClient 구현 (src/integrations/figma.ts - 490줄)
+- ✅ APIIntegrationManager 구현 (src/integrations/manager.ts - 518줄)
+- ✅ 인증 시스템 구현 (Bearer, Basic, API Key)
+- ✅ 재시도 로직 구현 (exponential backoff with jitter)
+- ✅ EventEngine 통합 (모든 API 이벤트 발행)
+- ✅ Health check 및 connection 검증
+- ✅ 테스트 검증 완료 (test-api-integration-simple.cjs)
 
 ### 완료된 마일스톤
 **마일스톤 1: MVP 기반 구축 (1-2주차)** ✅ 완료 (2025-08-03)
@@ -109,7 +123,7 @@ devflow-monitor-mcp/
 - [x] 테스트 및 문서화 ✅ (2025-08-03)
 
 ### 진행 중인 마일스톤
-**마일스톤 2: 핵심 통합 구현 (3-5주차)** - 진행률: 41.7%
+**마일스톤 2: 핵심 통합 구현 (3-5주차)** - 진행률: 58.3%
 1. **Git 통합** ✅ 완료 (2025-08-03)
    - [x] simple-git 설치 ✅
    - [x] GitMonitor 클래스 구현 ✅ (435줄)
@@ -121,16 +135,26 @@ devflow-monitor-mcp/
    - [x] 단위 & 통합 테스트 ✅
    - [x] 전체 기능 검증 완료 ✅
 
-2. **외부 API 통합** (다음 작업)
-   - [ ] API 클라이언트 베이스 구축
-   - [ ] Jira API 통합
-   - [ ] Notion API 통합
-   - [ ] WebSocket 실시간 통신
+2. **외부 API 통합** ✅ 완료 (2025-08-03)
+   - [x] API 클라이언트 베이스 구축 ✅ (BaseAPIClient - 346줄)
+   - [x] Jira API 통합 ✅ (JiraClient - 483줄)
+   - [x] Notion API 통합 ✅ (NotionClient - 558줄)
+   - [x] Figma API 통합 ✅ (FigmaClient - 490줄)
+   - [x] APIIntegrationManager ✅ (통합 관리자 - 518줄)
+   - [x] 인증 시스템 ✅ (Bearer, Basic, API Key)
+   - [x] 재시도 로직 ✅ (exponential backoff with jitter)
+   - [x] EventEngine 통합 ✅
+   - [x] Health check 시스템 ✅
 
 3. **MCP 도구 API 구현** (다음 작업)
    - [ ] getProjectStatus 도구 확장
    - [ ] getMetrics 도구 확장
    - [ ] analyzeBottlenecks 도구 확장
+
+4. **인메모리 이벤트 큐** (계획 중)
+   - [ ] EventEmitter3 기반 큐 시스템
+   - [ ] 우선순위 큐 로직
+   - [ ] 배치 처리 시스템
 
 ## 주요 명령어
 
@@ -182,7 +206,7 @@ npm run typecheck    # TypeScript 타입 체크
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-상태: **마일스톤 2: 핵심 통합 구현 - Git 통합 완료** ✅ (2025-08-03)
+상태: **마일스톤 2: 핵심 통합 구현 - Git 통합 및 외부 API 통합 완료** ✅ (2025-08-03)
 
 **완료된 마일스톤:**
 - **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
@@ -194,7 +218,8 @@ npm run typecheck    # TypeScript 타입 체크
   - 테스트 및 문서화 ✅
 
 **진행 중인 마일스톤:**
-- **마일스톤 2: 핵심 통합 구현** (진행률: 41.7%)
+- **마일스톤 2: 핵심 통합 구현** (진행률: 58.3%)
   - Git 통합 ✅ (2025-08-03) - GitMonitor 클래스, 이벤트 감지, 브랜치 패턴 분석, Conventional Commits 분석
+  - 외부 API 통합 ✅ (2025-08-03) - Jira, Notion, Figma 클라이언트 및 통합 관리자 구현 (총 65KB)
   - MCP 도구 API 구현 (다음 작업)
-  - 외부 API 통합 (계획 중)
+  - 인메모리 이벤트 큐 구현 (계획 중)

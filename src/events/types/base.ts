@@ -9,6 +9,7 @@
 export enum EventSeverity {
   DEBUG = 'debug',
   INFO = 'info',
+  WARN = 'warn',
   WARNING = 'warning',
   ERROR = 'error',
   CRITICAL = 'critical',
@@ -44,8 +45,8 @@ export interface BaseEvent {
   /** 이벤트 카테고리 */
   category: EventCategory;
 
-  /** 이벤트 발생 시간 */
-  timestamp: Date;
+  /** 이벤트 발생 시간 (Unix timestamp in milliseconds) */
+  timestamp: number;
 
   /** 이벤트 심각도 */
   severity: EventSeverity;
@@ -106,7 +107,10 @@ export interface EventFilter<T extends BaseEvent = BaseEvent> {
 /**
  * 이벤트 변환기 인터페이스
  */
-export interface EventTransformer<T extends BaseEvent = BaseEvent, R extends BaseEvent = BaseEvent> {
+export interface EventTransformer<
+  T extends BaseEvent = BaseEvent,
+  R extends BaseEvent = BaseEvent,
+> {
   (event: T): R | Promise<R>;
 }
 
@@ -152,7 +156,7 @@ export interface EventBatch<T extends BaseEvent = BaseEvent> {
   events: T[];
 
   /** 배치 생성 시간 */
-  createdAt: Date;
+  createdAt: number;
 
   /** 배치 메타데이터 */
   metadata?: Record<string, unknown>;
@@ -175,7 +179,7 @@ export interface EventStatistics {
   eventsPerHour: number;
 
   /** 마지막 이벤트 시간 */
-  lastEventTime?: Date;
+  lastEventTime?: number;
 }
 
 /**

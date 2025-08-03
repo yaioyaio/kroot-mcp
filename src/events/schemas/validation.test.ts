@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  validateEvent, 
-  createFileEvent, 
-  createGitEvent, 
+import {
+  validateEvent,
+  createFileEvent,
+  createGitEvent,
   createActivityEvent,
   createStageEvent,
-  createSystemEvent 
+  createSystemEvent,
 } from './validation.js';
 import { EventCategory, EventSeverity } from '../types/index.js';
 
@@ -16,7 +16,7 @@ describe('Event Validation', () => {
         id: 'test-123',
         type: 'file:created',
         category: EventCategory.FILE,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {
@@ -46,7 +46,7 @@ describe('Event Validation', () => {
         id: 'test-123',
         type: 'system:info',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -136,7 +136,7 @@ describe('Event Validation', () => {
           hash: 'abc123',
           message: 'feat: add new feature',
           author: 'developer@example.com',
-          timestamp: new Date(),
+          timestamp: Date.now(),
         },
       });
 
@@ -167,7 +167,7 @@ describe('Event Validation', () => {
         action: 'file_edited',
         details: 'Updated user service',
         actor: 'developer-1',
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);
@@ -182,7 +182,7 @@ describe('Event Validation', () => {
         action: 'test_run',
         details: 'Running unit tests',
         actor: 'ci-system',
-        timestamp: new Date(),
+        timestamp: Date.now(),
         metadata: {
           testSuite: 'unit',
           coverage: 85.5,
@@ -200,7 +200,7 @@ describe('Event Validation', () => {
         fromStage: 'planning',
         toStage: 'development',
         confidence: 0.95,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);
@@ -213,7 +213,7 @@ describe('Event Validation', () => {
       const result = createStageEvent({
         toStage: 'planning',
         confidence: 1.0,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);
@@ -227,7 +227,7 @@ describe('Event Validation', () => {
       const result = createSystemEvent('started', {
         component: 'FileMonitor',
         message: 'File monitoring started',
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);
@@ -241,7 +241,7 @@ describe('Event Validation', () => {
         component: 'Database',
         message: 'Connection failed',
         error: new Error('Connection timeout'),
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);
@@ -259,7 +259,7 @@ describe('Event Validation', () => {
           memory: 2048,
           requestsPerSecond: 150,
         },
-        timestamp: new Date(),
+        timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);

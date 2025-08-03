@@ -17,18 +17,20 @@ import {
 /**
  * 기본 이벤트 스키마
  */
-const BaseEventSchema = z.object({
-  id: z.string().min(1),
-  type: z.string().min(1),
-  category: z.nativeEnum(EventCategory),
-  timestamp: z.date(),
-  severity: z.nativeEnum(EventSeverity),
-  source: z.string().min(1),
-  data: z.record(z.string(), z.any()),
-  metadata: z.record(z.string(), z.any()).optional(),
-  correlationId: z.string().optional(),
-  parentId: z.string().optional(),
-}).passthrough();
+const BaseEventSchema = z
+  .object({
+    id: z.string().min(1),
+    type: z.string().min(1),
+    category: z.nativeEnum(EventCategory),
+    timestamp: z.date(),
+    severity: z.nativeEnum(EventSeverity),
+    source: z.string().min(1),
+    data: z.record(z.string(), z.any()),
+    metadata: z.record(z.string(), z.any()).optional(),
+    correlationId: z.string().optional(),
+    parentId: z.string().optional(),
+  })
+  .passthrough();
 
 /**
  * 파일 이벤트 스키마
@@ -36,32 +38,38 @@ const BaseEventSchema = z.object({
 const FileEventSchema = BaseEventSchema.extend({
   type: z.nativeEnum(FileEventType),
   category: z.literal(EventCategory.FILE),
-  data: z.object({
-    action: z.string(),
-    oldFile: z.object({
-      path: z.string(),
-      relativePath: z.string(),
-      name: z.string(),
-      extension: z.string(),
-      isDirectory: z.boolean(),
-    }).optional(),
-    newFile: z.object({
-      path: z.string(),
-      relativePath: z.string(),
-      name: z.string(),
-      extension: z.string(),
-      isDirectory: z.boolean(),
-    }),
-    description: z.string().optional(),
-    context: z.object({
-      type: z.enum(['test', 'config', 'documentation', 'source', 'build', 'unknown']),
-      confidence: z.number().min(0).max(1),
-      patterns: z.array(z.string()),
-      framework: z.string().optional(),
-      language: z.string().optional(),
-      metadata: z.record(z.string(), z.any()).optional(),
-    }).optional(),
-  }).passthrough(),
+  data: z
+    .object({
+      action: z.string(),
+      oldFile: z
+        .object({
+          path: z.string(),
+          relativePath: z.string(),
+          name: z.string(),
+          extension: z.string(),
+          isDirectory: z.boolean(),
+        })
+        .optional(),
+      newFile: z.object({
+        path: z.string(),
+        relativePath: z.string(),
+        name: z.string(),
+        extension: z.string(),
+        isDirectory: z.boolean(),
+      }),
+      description: z.string().optional(),
+      context: z
+        .object({
+          type: z.enum(['test', 'config', 'documentation', 'source', 'build', 'unknown']),
+          confidence: z.number().min(0).max(1),
+          patterns: z.array(z.string()),
+          framework: z.string().optional(),
+          language: z.string().optional(),
+          metadata: z.record(z.string(), z.any()).optional(),
+        })
+        .optional(),
+    })
+    .passthrough(),
 }).passthrough();
 
 /**
@@ -94,14 +102,14 @@ export class EventDeduplicator {
     // 중복 확인
     const existing = this.recentEvents.get(hash);
     if (existing) {
-      const timeDiff = event.timestamp.getTime() - existing.timestamp;
+      const timeDiff = event.timestamp - existing.timestamp;
       return timeDiff < this.maxAge;
     }
 
     // 새 이벤트 저장
     this.recentEvents.set(hash, {
       event,
-      timestamp: event.timestamp.getTime(),
+      timestamp: event.timestamp,
     });
 
     // 크기 제한 확인
@@ -150,7 +158,7 @@ export class EventDeduplicator {
       }
     }
 
-    expiredKeys.forEach(key => this.recentEvents.delete(key));
+    expiredKeys.forEach((key) => this.recentEvents.delete(key));
   }
 
   /**
@@ -215,7 +223,7 @@ export class EventValidator {
       return { valid: errors.length === 0, errors };
     } catch (error) {
       if (error instanceof z.ZodError) {
-        errors.push(...error.issues.map(e => `${e.path.join('.')}: ${e.message}`));
+        errors.push(...error.issues.map((e) => `${e.path.join('.')}: ${e.message}`));
       } else {
         errors.push(error instanceof Error ? error.message : 'Unknown validation error');
       }

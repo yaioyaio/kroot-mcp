@@ -185,7 +185,12 @@ export interface GitConflictInfo {
   /** 충돌 상세 정보 */
   details?: Array<{
     file: string;
-    conflictType: 'both-modified' | 'deleted-by-them' | 'deleted-by-us' | 'added-by-them' | 'added-by-us';
+    conflictType:
+      | 'both-modified'
+      | 'deleted-by-them'
+      | 'deleted-by-us'
+      | 'added-by-them'
+      | 'added-by-us';
   }>;
 }
 
@@ -292,7 +297,7 @@ export class GitEventBuilder {
       id: `git-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: options?.severity || EventSeverity.INFO,
       source: 'GitMonitor',
       data,
@@ -314,7 +319,7 @@ export class GitEventBuilder {
       id: `git-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: options?.severity || EventSeverity.INFO,
       source: 'GitMonitor',
       data,
@@ -336,7 +341,7 @@ export class GitEventBuilder {
       id: `git-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: data.success ? EventSeverity.INFO : EventSeverity.ERROR,
       source: 'GitMonitor',
       data,
@@ -357,7 +362,7 @@ export class GitEventBuilder {
       id: `git-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: EventSeverity.WARNING,
       source: 'GitMonitor',
       data,
@@ -382,18 +387,15 @@ export function isGitCommitEvent(event: BaseEvent): event is GitEvent {
 }
 
 export function isGitBranchEvent(event: BaseEvent): event is GitEvent {
-  return (
-    event.category === EventCategory.GIT &&
-    event.type.startsWith('git:branch:')
-  );
+  return event.category === EventCategory.GIT && event.type.startsWith('git:branch:');
 }
 
 export function isGitSyncEvent(event: BaseEvent): event is GitEvent {
   return (
     event.category === EventCategory.GIT &&
     (event.type === GitEventType.PUSH ||
-     event.type === GitEventType.PULL ||
-     event.type === GitEventType.FETCH ||
-     event.type === GitEventType.CLONE)
+      event.type === GitEventType.PULL ||
+      event.type === GitEventType.FETCH ||
+      event.type === GitEventType.CLONE)
   );
 }

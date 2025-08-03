@@ -3,10 +3,7 @@
  */
 
 import { z } from 'zod';
-import { 
-  EventCategory, 
-  EventSeverity
-} from '../types/index.js';
+import { EventCategory, EventSeverity } from '../types/index.js';
 
 // Base event schema
 export const BaseEventSchema = z.object({
@@ -27,28 +24,34 @@ export const FileEventDataSchema = z.object({
   path: z.string().optional(),
   relativePath: z.string().optional(),
   extension: z.string().optional(),
-  oldFile: z.object({
-    path: z.string(),
-    relativePath: z.string(),
-    name: z.string(),
-    extension: z.string(),
-    size: z.number(),
-    modifiedAt: z.date(),
-    isDirectory: z.boolean(),
-  }).optional(),
-  newFile: z.object({
-    path: z.string(),
-    relativePath: z.string(),
-    name: z.string(),
-    extension: z.string(),
-    size: z.number(),
-    modifiedAt: z.date(),
-    isDirectory: z.boolean(),
-  }).optional(),
-  stats: z.object({
-    size: z.number(),
-    modified: z.date(),
-  }).optional(),
+  oldFile: z
+    .object({
+      path: z.string(),
+      relativePath: z.string(),
+      name: z.string(),
+      extension: z.string(),
+      size: z.number(),
+      modifiedAt: z.date(),
+      isDirectory: z.boolean(),
+    })
+    .optional(),
+  newFile: z
+    .object({
+      path: z.string(),
+      relativePath: z.string(),
+      name: z.string(),
+      extension: z.string(),
+      size: z.number(),
+      modifiedAt: z.date(),
+      isDirectory: z.boolean(),
+    })
+    .optional(),
+  stats: z
+    .object({
+      size: z.number(),
+      modified: z.date(),
+    })
+    .optional(),
   description: z.string().optional(),
   context: z.string().optional(),
 });
@@ -60,12 +63,14 @@ export const GitEventDataSchema = z.object({
   branch: z.string(),
   fromBranch: z.string().optional(),
   toBranch: z.string().optional(),
-  commit: z.object({
-    hash: z.string(),
-    message: z.string(),
-    author: z.string(),
-    timestamp: z.date(),
-  }).optional(),
+  commit: z
+    .object({
+      hash: z.string(),
+      message: z.string(),
+      author: z.string(),
+      timestamp: z.date(),
+    })
+    .optional(),
   files: z.array(z.string()).optional(),
 });
 
@@ -107,15 +112,12 @@ export function validateEvent(event: unknown) {
 /**
  * Create a validated file event
  */
-export function createFileEvent(
-  type: 'created' | 'changed' | 'deleted',
-  data: any
-) {
+export function createFileEvent(type: 'created' | 'changed' | 'deleted', data: any) {
   const event = {
     id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     type: `file:${type}`,
     category: EventCategory.FILE,
-    timestamp: new Date(),
+    timestamp: Date.now(),
     severity: EventSeverity.INFO,
     source: 'FileMonitor',
     data,
@@ -129,13 +131,13 @@ export function createFileEvent(
  */
 export function createGitEvent(
   type: 'committed' | 'branched' | 'merged' | 'pushed' | 'pulled',
-  data: any
+  data: any,
 ) {
   const event = {
     id: `git-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     type: `git:${type}`,
     category: EventCategory.GIT,
-    timestamp: new Date(),
+    timestamp: Date.now(),
     severity: EventSeverity.INFO,
     source: 'GitMonitor',
     data,
@@ -147,14 +149,12 @@ export function createGitEvent(
 /**
  * Create a validated activity event
  */
-export function createActivityEvent(
-  data: any
-) {
+export function createActivityEvent(data: any) {
   const event = {
     id: `activity-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     type: 'activity:tracked',
     category: EventCategory.ACTIVITY,
-    timestamp: new Date(),
+    timestamp: Date.now(),
     severity: EventSeverity.INFO,
     source: 'ActivityTracker',
     data: {
@@ -173,14 +173,12 @@ export function createActivityEvent(
 /**
  * Create a validated stage transition event
  */
-export function createStageEvent(
-  data: any
-) {
+export function createStageEvent(data: any) {
   const event = {
     id: `stage-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     type: 'stage:transitioned',
     category: EventCategory.STAGE,
-    timestamp: new Date(),
+    timestamp: Date.now(),
     severity: EventSeverity.INFO,
     source: 'StageAnalyzer',
     data,
@@ -194,11 +192,14 @@ export function createStageEvent(
  */
 export function createSystemEvent(
   type: 'started' | 'stopped' | 'error' | 'warning' | 'metrics',
-  data: any
+  data: any,
 ) {
-  const severity = type === 'error' ? EventSeverity.ERROR :
-                  type === 'warning' ? EventSeverity.WARNING :
-                  EventSeverity.INFO;
+  const severity =
+    type === 'error'
+      ? EventSeverity.ERROR
+      : type === 'warning'
+        ? EventSeverity.WARNING
+        : EventSeverity.INFO;
 
   const eventData: any = {
     component: data.component,
@@ -220,7 +221,7 @@ export function createSystemEvent(
     id: `system-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
     type: `system:${type}`,
     category: EventCategory.SYSTEM,
-    timestamp: new Date(),
+    timestamp: Date.now(),
     severity,
     source: 'System',
     data: eventData,

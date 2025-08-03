@@ -51,7 +51,7 @@ export class EventEngine extends EventEmitter {
 
   constructor() {
     super();
-    
+
     // 통계 초기화
     this.stats = {
       totalEvents: 0,
@@ -62,12 +62,12 @@ export class EventEngine extends EventEmitter {
     };
 
     // 카테고리별 통계 초기화
-    Object.values(EventCategory).forEach(category => {
+    Object.values(EventCategory).forEach((category) => {
       this.stats.eventsByCategory.set(category, 0);
     });
 
     // 심각도별 통계 초기화
-    Object.values(EventSeverity).forEach(severity => {
+    Object.values(EventSeverity).forEach((severity) => {
       this.stats.eventsBySeverity.set(severity, 0);
     });
   }
@@ -91,17 +91,17 @@ export class EventEngine extends EventEmitter {
 
     const key = pattern instanceof RegExp ? pattern.source : pattern;
     const subscribers = this.subscribers.get(key) || [];
-    
+
     // 우선순위에 따라 정렬하여 추가
     const priority = options.priority || 0;
-    const insertIndex = subscribers.findIndex(s => (s.options.priority || 0) < priority);
-    
+    const insertIndex = subscribers.findIndex((s) => (s.options.priority || 0) < priority);
+
     if (insertIndex === -1) {
       subscribers.push(subscriber as EventSubscriber);
     } else {
       subscribers.splice(insertIndex, 0, subscriber as EventSubscriber);
     }
-    
+
     this.subscribers.set(key, subscribers);
 
     // EventEmitter3 이벤트 등록
@@ -115,7 +115,7 @@ export class EventEngine extends EventEmitter {
     } else {
       // 일반 문자열 패턴
       const eventHandler = (event: T) => this.handleEvent(event, subscriber as EventSubscriber);
-      
+
       if (options.once) {
         this.once(pattern, eventHandler);
       } else {
@@ -131,7 +131,7 @@ export class EventEngine extends EventEmitter {
    */
   unsubscribe(subscriberId: string): boolean {
     for (const [key, subscribers] of this.subscribers.entries()) {
-      const index = subscribers.findIndex(s => s.id === subscriberId);
+      const index = subscribers.findIndex((s) => s.id === subscriberId);
       if (index !== -1) {
         subscribers.splice(index, 1);
         if (subscribers.length === 0) {
@@ -219,8 +219,14 @@ export class EventEngine extends EventEmitter {
   getStatistics(): EventStatistics {
     return {
       totalEvents: this.stats.totalEvents,
-      eventsByCategory: Object.fromEntries(this.stats.eventsByCategory) as Record<EventCategory, number>,
-      eventsBySeverity: Object.fromEntries(this.stats.eventsBySeverity) as Record<EventSeverity, number>,
+      eventsByCategory: Object.fromEntries(this.stats.eventsByCategory) as Record<
+        EventCategory,
+        number
+      >,
+      eventsBySeverity: Object.fromEntries(this.stats.eventsBySeverity) as Record<
+        EventSeverity,
+        number
+      >,
       eventsPerHour: this.calculateEventsPerHour(),
       lastEventTime: this.stats.lastEventTime as Date,
     };
@@ -283,14 +289,14 @@ export class EventEngine extends EventEmitter {
         id: `error-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         type: 'system:error',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.ERROR,
         source: 'EventEngine',
         data: {
           originalEvent: event,
           subscriberId: subscriber.id,
           error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined as string | undefined,
+          stack: error instanceof Error ? error.stack : (undefined as string | undefined),
         },
       };
 
@@ -299,42 +305,12 @@ export class EventEngine extends EventEmitter {
     }
   }
 
-
-  /**
-   * 단일 이벤트 처리
-   */
-  private async processEvent(event: BaseEvent): Promise<void> {
-    // 패턴 매칭된 구독자 찾기
-    const matchingSubscribers: EventSubscriber[] = [];
-
-    for (const [pattern, subscribers] of this.subscribers.entries()) {
-      // 정규식 패턴 체크
-      if (pattern.startsWith('/') && pattern.endsWith('/')) {
-        const regex = new RegExp(pattern.slice(1, -1));
-        if (regex.test(event.type)) {
-          matchingSubscribers.push(...subscribers);
-        }
-      }
-      // 일반 문자열 패턴
-      else if (pattern === event.type || pattern === '*') {
-        matchingSubscribers.push(...subscribers);
-      }
-    }
-
-    // 우선순위에 따라 정렬 후 구독자 실행
-    matchingSubscribers.sort((a, b) => (b.options.priority || 0) - (a.options.priority || 0));
-    
-    for (const subscriber of matchingSubscribers) {
-      await this.handleEvent(event, subscriber);
-    }
-  }
-
   /**
    * 통계 업데이트
    */
   private updateStatistics(event: BaseEvent): void {
     this.stats.totalEvents++;
-    this.stats.lastEventTime = new Date();
+    this.stats.lastEventTime = Date.now();
 
     // 카테고리별 통계
     const categoryCount = this.stats.eventsByCategory.get(event.category) || 0;

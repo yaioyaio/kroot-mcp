@@ -7,12 +7,12 @@ import { FSWatcher, watch } from 'chokidar';
 import { relative, extname, basename } from 'path';
 import { BaseMonitor } from './base.js';
 import { config } from '../server/config.js';
-import { 
-  eventEngine, 
-  FileEventBuilder, 
-  FileEventType, 
+import {
+  eventEngine,
+  FileEventBuilder,
+  FileEventType,
   FileChangeAction,
-  EventSeverity 
+  EventSeverity,
 } from '../events/index.js';
 
 export interface FileChangeEvent {
@@ -44,10 +44,10 @@ export class FileMonitor extends BaseMonitor {
 
   constructor(options?: FileMonitorOptions) {
     super({ name: 'FileMonitor' });
-    
+
     // Initialize from config or use defaults
     const monitoringConfig = config.monitoring.fileWatch;
-    
+
     this.paths = options?.paths || [process.cwd()];
     this.ignorePatterns = options?.ignorePatterns || monitoringConfig.ignorePatterns;
     this.extensions = options?.extensions || monitoringConfig.extensions;
@@ -92,7 +92,7 @@ export class FileMonitor extends BaseMonitor {
 
   private handleFileEvent(action: FileChangeAction, filePath: string): void {
     const extension = extname(filePath);
-    
+
     // Filter by extension if configured
     if (this.extensions.length > 0 && !this.extensions.includes(extension)) {
       this.logDebug(`Ignoring file with extension: ${extension}`);
@@ -102,7 +102,7 @@ export class FileMonitor extends BaseMonitor {
     // Debounce file changes
     const key = `${action}:${filePath}`;
     const existingTimeout = this.changeBuffer.get(key);
-    
+
     if (existingTimeout) {
       clearTimeout(existingTimeout);
     }
@@ -145,7 +145,7 @@ export class FileMonitor extends BaseMonitor {
     // Emit through both legacy system and new event engine
     this.emitEvent('file:change', event);
     await this.analyzeContext(event);
-    
+
     // Publish to event engine
     await this.publishFileEvent(event);
   }
@@ -156,8 +156,9 @@ export class FileMonitor extends BaseMonitor {
   private async publishFileEvent(event: FileChangeEvent): Promise<void> {
     // Map action to FileEventType
     let eventType: FileEventType;
-    const isDirectory = event.action === FileChangeAction.ADD_DIR || event.action === FileChangeAction.UNLINK_DIR;
-    
+    const isDirectory =
+      event.action === FileChangeAction.ADD_DIR || event.action === FileChangeAction.UNLINK_DIR;
+
     switch (event.action) {
       case FileChangeAction.ADD:
       case FileChangeAction.ADD_DIR:
@@ -173,7 +174,7 @@ export class FileMonitor extends BaseMonitor {
       default:
         eventType = FileEventType.FILE_CHANGED;
     }
-    
+
     // Create file event
     const fileEvent = FileEventBuilder.createFileEvent(
       eventType,
@@ -192,13 +193,13 @@ export class FileMonitor extends BaseMonitor {
       },
       {
         severity: EventSeverity.INFO,
-      }
+      },
     );
-    
+
     // Publish to event engine
     await eventEngine.publish(fileEvent);
   }
-  
+
   /**
    * Analyze the context of file changes
    */
@@ -215,8 +216,12 @@ export class FileMonitor extends BaseMonitor {
     }
 
     // Detect configuration changes
-    if (extension === '.json' || extension === '.yaml' || extension === '.yml' || 
-        relativePath.includes('config')) {
+    if (
+      extension === '.json' ||
+      extension === '.yaml' ||
+      extension === '.yml' ||
+      relativePath.includes('config')
+    ) {
       this.emitEvent('context:config', {
         ...event,
         context: 'configuration',
@@ -225,9 +230,11 @@ export class FileMonitor extends BaseMonitor {
     }
 
     // Detect source code changes
-    if (['.ts', '.tsx', '.js', '.jsx'].includes(extension) && 
-        !relativePath.includes('test') && 
-        !relativePath.includes('spec')) {
+    if (
+      ['.ts', '.tsx', '.js', '.jsx'].includes(extension) &&
+      !relativePath.includes('test') &&
+      !relativePath.includes('spec')
+    ) {
       this.emitEvent('context:source', {
         ...event,
         context: 'source',

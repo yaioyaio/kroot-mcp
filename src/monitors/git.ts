@@ -47,9 +47,9 @@ export class GitMonitor extends BaseMonitor {
 
   constructor(eventEngine: EventEngine, config: Partial<GitMonitorConfig> = {}) {
     super({ name: 'GitMonitor' });
-    
+
     this.eventEngine = eventEngine;
-    
+
     this.config = {
       name: 'GitMonitor',
       enabled: true,
@@ -59,38 +59,36 @@ export class GitMonitor extends BaseMonitor {
       trackCommits: true,
       trackMerges: true,
       analyzeCommitMessages: true,
-      ...config
+      ...config,
     };
 
     this.git = simpleGit(this.config.repositoryPath);
   }
 
   protected async onStart(): Promise<void> {
-
     try {
       // 리포지토리 유효성 검사
       await this.validateRepository();
-      
+
       // 초기 상태 캐시
       await this.cacheInitialState();
-      
+
       // 폴링 시작
       this.startPolling();
-      
+
       // 시작 이벤트 발행
       await this.eventEngine.publish({
         id: this.generateEventId(),
         type: 'git:monitor_started',
         category: EventCategory.GIT,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
         data: {
           repositoryPath: this.config.repositoryPath,
-          config: this.config
-        }
+          config: this.config,
+        },
       });
-      
     } catch (error) {
       this.logError('Failed to start GitMonitor:', error);
       throw error;
@@ -98,25 +96,24 @@ export class GitMonitor extends BaseMonitor {
   }
 
   protected async onStop(): Promise<void> {
-    
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
-      this.pollTimer = undefined as undefined;
+      this.pollTimer = undefined;
     }
 
     this.logInfo('GitMonitor stopped');
-    
+
     // 정지 이벤트 발행
     await this.eventEngine.publish({
       id: this.generateEventId(),
       type: 'git:monitor_stopped',
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: EventSeverity.INFO,
       source: this.name,
       data: {
-        repositoryPath: this.config.repositoryPath
-      }
+        repositoryPath: this.config.repositoryPath,
+      },
     });
   }
 
@@ -136,7 +133,6 @@ export class GitMonitor extends BaseMonitor {
       if (!fs.existsSync(gitDir)) {
         throw new Error(`Git directory not found: ${gitDir}`);
       }
-
     } catch (error) {
       throw new Error(`Invalid Git repository: ${error}`);
     }
@@ -157,7 +153,6 @@ export class GitMonitor extends BaseMonitor {
           this.lastBranchState.set(branchName, branchInfo.commit);
         }
       }
-
     } catch (error) {
       this.logWarn('Failed to cache initial Git state:', error);
     }
@@ -186,19 +181,17 @@ export class GitMonitor extends BaseMonitor {
   private async checkForNewCommits(): Promise<void> {
     try {
       const log = await this.git.log({ maxCount: 10 });
-      
+
       if (!log.latest) {
         return;
       }
 
       const latestHash = log.latest.hash;
-      
+
       // 새 커밋이 있는지 확인
       if (this.lastCommitHash && latestHash !== this.lastCommitHash) {
         // 새 커밋들 처리
-        const newCommits = log.all.filter(commit => 
-          commit.hash !== this.lastCommitHash
-        );
+        const newCommits = log.all.filter((commit) => commit.hash !== this.lastCommitHash);
 
         for (const commit of newCommits.reverse()) {
           await this.processNewCommit(commit);
@@ -206,7 +199,6 @@ export class GitMonitor extends BaseMonitor {
       }
 
       this.lastCommitHash = latestHash;
-
     } catch (error) {
       this.logError('Error checking for new commits:', error);
     }
@@ -216,12 +208,12 @@ export class GitMonitor extends BaseMonitor {
     try {
       // 커밋 통계 가져오기
       const diffStat = await this.git.diffSummary(`${commit.hash}~1`, commit.hash);
-      
+
       const commitEvent: BaseEvent = {
         id: this.generateEventId(),
         type: 'git:commit',
         category: EventCategory.GIT,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
         data: {
@@ -230,23 +222,23 @@ export class GitMonitor extends BaseMonitor {
           message: commit.message,
           author: {
             name: commit.author_name,
-            email: commit.author_email
+            email: commit.author_email,
           },
           date: commit.date,
           refs: commit.refs,
           stats: {
             insertions: diffStat.insertions || 0,
             deletions: diffStat.deletions || 0,
-            files: diffStat.files?.length || 0
+            files: diffStat.files?.length || 0,
           },
-          analysis: this.config.analyzeCommitMessages ? 
-            this.analyzeCommitMessage(commit.message) : undefined
-        }
+          analysis: this.config.analyzeCommitMessages
+            ? this.analyzeCommitMessage(commit.message)
+            : undefined,
+        },
       };
 
       await this.eventEngine.publish(commitEvent);
       this.logInfo(`New commit detected: ${commit.hash.substring(0, 7)} - ${commit.message}`);
-
     } catch (error) {
       this.logError(`Error processing commit ${commit.hash}:`, error);
     }
@@ -265,7 +257,7 @@ export class GitMonitor extends BaseMonitor {
       // 새 브랜치 또는 브랜치 변경 감지
       for (const [branchName, currentCommit] of currentBranchState) {
         const lastCommit = this.lastBranchState.get(branchName);
-        
+
         if (!lastCommit) {
           // 새 브랜치
           await this.processBranchCreated(branchName, currentCommit);
@@ -283,7 +275,6 @@ export class GitMonitor extends BaseMonitor {
       }
 
       this.lastBranchState = currentBranchState;
-
     } catch (error) {
       this.logError('Error checking for branch changes:', error);
     }
@@ -294,25 +285,29 @@ export class GitMonitor extends BaseMonitor {
       id: this.generateEventId(),
       type: 'git:branch_created',
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: EventSeverity.INFO,
       source: this.name,
       data: {
         action: 'branch_created',
         branchName,
         commit,
-        pattern: this.analyzeBranchPattern(branchName)
-      }
+        pattern: this.analyzeBranchPattern(branchName),
+      },
     };
 
     await this.eventEngine.publish(branchEvent);
     this.logInfo(`New branch created: ${branchName}`);
   }
 
-  private async processBranchUpdated(branchName: string, oldCommit: string, newCommit: string): Promise<void> {
+  private async processBranchUpdated(
+    branchName: string,
+    oldCommit: string,
+    newCommit: string,
+  ): Promise<void> {
     // 머지 여부 확인
     const isMerge = await this.checkIfMerge(oldCommit, newCommit);
-    
+
     if (isMerge && this.config.trackMerges) {
       await this.processMerge(branchName, oldCommit, newCommit);
     } else {
@@ -320,7 +315,7 @@ export class GitMonitor extends BaseMonitor {
         id: this.generateEventId(),
         type: 'git:branch_updated',
         category: EventCategory.GIT,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
         data: {
@@ -328,8 +323,8 @@ export class GitMonitor extends BaseMonitor {
           branchName,
           commit: newCommit,
           previousCommit: oldCommit,
-          pattern: this.analyzeBranchPattern(branchName)
-        }
+          pattern: this.analyzeBranchPattern(branchName),
+        },
       };
 
       await this.eventEngine.publish(branchEvent);
@@ -341,29 +336,33 @@ export class GitMonitor extends BaseMonitor {
       id: this.generateEventId(),
       type: 'git:branch_deleted',
       category: EventCategory.GIT,
-      timestamp: new Date(),
+      timestamp: Date.now(),
       severity: EventSeverity.INFO,
       source: this.name,
       data: {
         action: 'branch_deleted',
         branchName,
-        pattern: this.analyzeBranchPattern(branchName)
-      }
+        pattern: this.analyzeBranchPattern(branchName),
+      },
     };
 
     await this.eventEngine.publish(branchEvent);
     this.logInfo(`Branch deleted: ${branchName}`);
   }
 
-  private async processMerge(branchName: string, oldCommit: string, newCommit: string): Promise<void> {
+  private async processMerge(
+    branchName: string,
+    oldCommit: string,
+    newCommit: string,
+  ): Promise<void> {
     try {
       const log = await this.git.log({ from: oldCommit, to: newCommit });
-      
+
       const mergeEvent: BaseEvent = {
         id: this.generateEventId(),
         type: 'git:merge',
         category: EventCategory.GIT,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
         data: {
@@ -374,14 +373,13 @@ export class GitMonitor extends BaseMonitor {
           commitCount: log.all.length,
           analysis: {
             mergeType: this.determineMergeType([...log.all]),
-            risk: this.assessMergeRisk([...log.all])
-          }
-        }
+            risk: this.assessMergeRisk([...log.all]),
+          },
+        },
       };
 
       await this.eventEngine.publish(mergeEvent);
       this.logInfo(`Merge detected on ${branchName}: ${log.all.length} commits`);
-
     } catch (error) {
       this.logError(`Error processing merge on ${branchName}:`, error);
     }
@@ -390,12 +388,13 @@ export class GitMonitor extends BaseMonitor {
   private async checkIfMerge(oldCommit: string, newCommit: string): Promise<boolean> {
     try {
       const log = await this.git.log({ from: oldCommit, to: newCommit, maxCount: 10 });
-      
+
       // 머지 커밋 특성 확인
-      return log.all.some(commit => 
-        commit.message.toLowerCase().includes('merge') ||
-        commit.refs.includes('origin/') ||
-        log.all.length > 1
+      return log.all.some(
+        (commit) =>
+          commit.message.toLowerCase().includes('merge') ||
+          commit.refs.includes('origin/') ||
+          log.all.length > 1,
       );
     } catch (error) {
       return false;
@@ -408,11 +407,12 @@ export class GitMonitor extends BaseMonitor {
       scope: null as string | null,
       conventional: false,
       breaking: false,
-      keywords: [] as string[]
+      keywords: [] as string[],
     };
 
     // Conventional Commits 패턴 분석
-    const conventionalPattern = /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?\!?:\s*(.+)/;
+    const conventionalPattern =
+      /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?\!?:\s*(.+)/;
     const match = message.match(conventionalPattern);
 
     if (match) {
@@ -424,9 +424,7 @@ export class GitMonitor extends BaseMonitor {
 
     // 키워드 분석
     const keywords = ['add', 'remove', 'update', 'fix', 'implement', 'refactor', 'test', 'docs'];
-    analysis.keywords = keywords.filter(keyword => 
-      message.toLowerCase().includes(keyword)
-    );
+    analysis.keywords = keywords.filter((keyword) => message.toLowerCase().includes(keyword));
 
     return analysis;
   }
@@ -439,7 +437,7 @@ export class GitMonitor extends BaseMonitor {
       release: /^release\//,
       develop: /^(develop|dev)$/,
       main: /^(main|master)$/,
-      experimental: /^(experiment|exp)\//
+      experimental: /^(experiment|exp)\//,
     };
 
     for (const [type, pattern] of Object.entries(patterns)) {
@@ -456,9 +454,7 @@ export class GitMonitor extends BaseMonitor {
       return 'fast-forward';
     }
 
-    const hasMergeCommit = commits.some(commit => 
-      commit.message.toLowerCase().includes('merge')
-    );
+    const hasMergeCommit = commits.some((commit) => commit.message.toLowerCase().includes('merge'));
 
     return hasMergeCommit ? 'merge-commit' : 'squash';
   }

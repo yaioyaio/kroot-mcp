@@ -39,7 +39,7 @@ describe('BaseRepository', () => {
     // Create temporary directory for test database
     tempDir = mkdtempSync(join(tmpdir(), 'test-'));
     dbPath = join(tempDir, 'test.db');
-    
+
     // Initialize database and create test table
     db = new DatabaseManager({ path: dbPath });
     const database = db.getDatabase();
@@ -52,7 +52,7 @@ describe('BaseRepository', () => {
         updated_at INTEGER DEFAULT (unixepoch())
       )
     `);
-    
+
     repository = new TestRepository(db);
   });
 
@@ -65,7 +65,7 @@ describe('BaseRepository', () => {
     it('should create a record', async () => {
       const data = { name: 'test', value: 42 };
       const result = await repository.create(data);
-      
+
       expect(result).toMatchObject({
         id: 1,
         name: 'test',
@@ -76,8 +76,8 @@ describe('BaseRepository', () => {
 
     it('should find a record by id', async () => {
       const created = await repository.create({ name: 'test', value: 42 });
-      const found = await repository.findById(created.id!);
-      
+      const found = await repository.findById(created.id);
+
       expect(found).toMatchObject({
         id: created.id,
         name: 'test',
@@ -94,7 +94,7 @@ describe('BaseRepository', () => {
       await repository.create({ name: 'test1', value: 1 });
       await repository.create({ name: 'test2', value: 2 });
       await repository.create({ name: 'test3', value: 3 });
-      
+
       const all = await repository.findAll();
       expect(all).toHaveLength(3);
       expect(all[0].name).toBe('test1');
@@ -105,31 +105,31 @@ describe('BaseRepository', () => {
       await repository.create({ name: 'apple', value: 10 });
       await repository.create({ name: 'banana', value: 20 });
       await repository.create({ name: 'apple', value: 30 });
-      
+
       const results = await repository.testFindByCriteria({ name: 'apple' });
       expect(results).toHaveLength(2);
-      expect(results.every(r => r.name === 'apple')).toBe(true);
+      expect(results.every((r) => r.name === 'apple')).toBe(true);
     });
 
     it('should update a record', async () => {
       const created = await repository.create({ name: 'test', value: 42 });
-      const updated = await repository.update(created.id!, { value: 100 });
-      
+      const updated = await repository.update(created.id, { value: 100 });
+
       expect(updated).toMatchObject({
         id: created.id,
         name: 'test',
         value: 100,
       });
-      expect(updated.updated_at).toBeGreaterThan(created.updated_at!);
+      expect(updated.updated_at).toBeGreaterThan(created.updated_at);
     });
 
     it('should delete a record', async () => {
       const created = await repository.create({ name: 'test', value: 42 });
-      const deleted = await repository.delete(created.id!);
-      
+      const deleted = await repository.delete(created.id);
+
       expect(deleted).toBe(true);
-      
-      const found = await repository.findById(created.id!);
+
+      const found = await repository.findById(created.id);
       expect(found).toBeNull();
     });
 
@@ -150,7 +150,7 @@ describe('BaseRepository', () => {
     it('should paginate results', async () => {
       const page1 = await repository.findAll({ limit: 3, offset: 0 });
       const page2 = await repository.findAll({ limit: 3, offset: 3 });
-      
+
       expect(page1).toHaveLength(3);
       expect(page2).toHaveLength(3);
       expect(page1[0].name).toBe('test1');
@@ -163,13 +163,13 @@ describe('BaseRepository', () => {
         orderDirection: 'ASC',
         limit: 3,
       });
-      
+
       const descending = await repository.findAll({
         orderBy: 'value',
         orderDirection: 'DESC',
         limit: 3,
       });
-      
+
       expect(ascending[0].value).toBe(10);
       expect(ascending[2].value).toBe(30);
       expect(descending[0].value).toBe(100);
@@ -180,29 +180,26 @@ describe('BaseRepository', () => {
   describe('Utility methods', () => {
     it('should count records', async () => {
       expect(await repository.count()).toBe(0);
-      
+
       await repository.create({ name: 'test1', value: 1 });
       await repository.create({ name: 'test2', value: 2 });
-      
+
       expect(await repository.count()).toBe(2);
     });
 
     it('should check if record exists', async () => {
       const created = await repository.create({ name: 'test', value: 42 });
-      
-      expect(await repository.testExists(created.id!)).toBe(true);
+
+      expect(await repository.testExists(created.id)).toBe(true);
       expect(await repository.testExists(999)).toBe(false);
     });
 
     it('should execute raw queries', async () => {
       await repository.create({ name: 'test1', value: 10 });
       await repository.create({ name: 'test2', value: 20 });
-      
-      const results = await repository.testQuery(
-        'SELECT * FROM test_table WHERE value > ?',
-        [15]
-      );
-      
+
+      const results = await repository.testQuery('SELECT * FROM test_table WHERE value > ?', [15]);
+
       expect(results).toHaveLength(1);
       expect(results[0]?.name).toBe('test2');
     });
@@ -210,9 +207,9 @@ describe('BaseRepository', () => {
     it('should execute commands', async () => {
       const result = await repository.testCommand(
         'INSERT INTO test_table (name, value) VALUES (?, ?)',
-        ['test', 42]
+        ['test', 42],
       );
-      
+
       expect(result.changes).toBe(1);
       expect(result.lastInsertRowid).toBe(1);
     });
@@ -224,7 +221,7 @@ describe('BaseRepository', () => {
         await repository.create({ name: 'tx1', value: 1 });
         await repository.create({ name: 'tx2', value: 2 });
       });
-      
+
       const all = await repository.findAll();
       expect(all).toHaveLength(2);
     });
@@ -238,7 +235,7 @@ describe('BaseRepository', () => {
       } catch (error) {
         // Expected error
       }
-      
+
       const all = await repository.findAll();
       expect(all).toHaveLength(0);
     });

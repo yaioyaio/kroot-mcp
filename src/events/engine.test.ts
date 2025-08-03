@@ -16,7 +16,7 @@ describe('EventEngine', () => {
         id: 'test-1',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: { message: 'test' },
@@ -35,7 +35,7 @@ describe('EventEngine', () => {
         id: 'test-2',
         type: 'any:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -53,7 +53,7 @@ describe('EventEngine', () => {
         id: 'test-3',
         type: 'file:changed',
         category: EventCategory.FILE,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -71,7 +71,7 @@ describe('EventEngine', () => {
         id: 'test-4',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -92,7 +92,7 @@ describe('EventEngine', () => {
         id: 'test-5',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.DEBUG,
         source: 'test',
         data: {},
@@ -112,7 +112,7 @@ describe('EventEngine', () => {
         id: 'test-6',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.DEBUG,
         source: 'test',
         data: {},
@@ -138,7 +138,7 @@ describe('EventEngine', () => {
         id: 'test-7',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: { original: true },
@@ -152,7 +152,7 @@ describe('EventEngine', () => {
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { original: true, transformed: true },
-        })
+        }),
       );
     });
   });
@@ -163,7 +163,7 @@ describe('EventEngine', () => {
         id: 'test-8',
         type: 'test:event',
         category: EventCategory.FILE,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -184,15 +184,21 @@ describe('EventEngine', () => {
   describe('event priority', () => {
     it('should handle subscribers by priority', async () => {
       const order: number[] = [];
-      const handler1 = vi.fn(() => { order.push(1); });
-      const handler2 = vi.fn(() => { order.push(2); });
-      const handler3 = vi.fn(() => { order.push(3); });
+      const handler1 = vi.fn(() => {
+        order.push(1);
+      });
+      const handler2 = vi.fn(() => {
+        order.push(2);
+      });
+      const handler3 = vi.fn(() => {
+        order.push(3);
+      });
 
       const event: BaseEvent = {
         id: 'test-9',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -219,7 +225,7 @@ describe('EventEngine', () => {
         id: 'test-10',
         type: 'test:event',
         category: EventCategory.SYSTEM,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
         data: {},
@@ -238,7 +244,7 @@ describe('EventEngine', () => {
           data: expect.objectContaining({
             error: 'Handler error',
           }),
-        })
+        }),
       );
     });
   });
@@ -251,7 +257,7 @@ describe('EventEngine', () => {
           id: 'batch-1',
           type: 'test:event',
           category: EventCategory.SYSTEM,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           severity: EventSeverity.INFO,
           source: 'test',
           data: { index: 0 },
@@ -260,7 +266,7 @@ describe('EventEngine', () => {
           id: 'batch-2',
           type: 'test:event',
           category: EventCategory.SYSTEM,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           severity: EventSeverity.INFO,
           source: 'test',
           data: { index: 1 },
@@ -268,10 +274,10 @@ describe('EventEngine', () => {
       ];
 
       eventEngine.subscribe('test:event', handler);
-      await eventEngine.publishBatch({ 
+      await eventEngine.publishBatch({
         id: 'batch-test',
         events,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
 
       expect(handler).toHaveBeenCalledTimes(2);

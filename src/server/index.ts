@@ -259,7 +259,7 @@ class DevFlowMonitorServer {
         name: config.server.name,
         version: config.server.version,
         status: 'active',
-        lastActivity: new Date().toISOString(),
+        lastActivity: new Date().toString(),
       },
       milestones: {
         current: 'Milestone 1: MVP 기반 구축',
@@ -343,7 +343,7 @@ class DevFlowMonitorServer {
       .slice(-limit) // Get last N events
       .map((event, index) => {
         const fileEvent = event.data as any;
-        
+
         // Determine stage based on event context
         let eventStage = 'coding';
         if (event.type === 'context:test') {
@@ -356,7 +356,7 @@ class DevFlowMonitorServer {
 
         return {
           id: `activity-${this.activityLog.length - index}`,
-          timestamp: new Date(event.timestamp).toISOString(),
+          timestamp: new Date(event.timestamp).toString(),
           stage: eventStage,
           action: event.type,
           details: fileEvent.description || `${fileEvent.action} ${fileEvent.relativePath}`,
@@ -371,7 +371,7 @@ class DevFlowMonitorServer {
 
     // Filter by stage if specified
     if (stage) {
-      activities = activities.filter(a => a.stage === stage);
+      activities = activities.filter((a) => a.stage === stage);
     }
 
     const response: ActivityLogResponse = {
@@ -400,7 +400,7 @@ class DevFlowMonitorServer {
 
     const analysis: BottleneckAnalysisResponse = {
       analysisDepth,
-      timestamp: new Date().toISOString(),
+      timestamp: Date.now().toString(),
       bottlenecks: [
         {
           category: 'development',
@@ -441,7 +441,7 @@ class DevFlowMonitorServer {
         subscriberCount: eventEngine.getSubscriberCount(),
       },
       storage: storageStats,
-      timestamp: new Date().toISOString(),
+      timestamp: Date.now().toString(),
     };
 
     return {
@@ -467,20 +467,20 @@ class DevFlowMonitorServer {
    */
   private initializeFileMonitor(): void {
     this.fileMonitor = new FileMonitor();
-    
+
     // Listen for file events from FileMonitor (legacy)
     this.fileMonitor.on('event', (event: MonitorEvent) => {
       // Add to activity log
       this.activityLog.push(event);
-      
+
       // Keep only last 1000 events
       if (this.activityLog.length > 1000) {
         this.activityLog = this.activityLog.slice(-1000);
       }
-      
+
       this.logDebug(`File event: ${event.type}`, event.data);
     });
-    
+
     // Subscribe to EventEngine for all file events
     eventEngine.subscribe(
       '*',
@@ -488,37 +488,40 @@ class DevFlowMonitorServer {
         // Only process file events
         if (event.category === EventCategory.FILE) {
           this.logDebug(`EventEngine file event: ${event.type}`, event.data);
-          
+
           // Convert to MonitorEvent format for backward compatibility
           const monitorEvent: MonitorEvent = {
             type: event.type,
-            timestamp: event.timestamp.getTime(),
+            timestamp: event.timestamp,
             source: event.source,
             data: event.data,
             ...(event.metadata && { metadata: event.metadata }),
           };
-          
+
           // Also add EventEngine events to activity log
-          if (!this.activityLog.some(e => 
-            e.type === monitorEvent.type && 
-            Math.abs(e.timestamp - monitorEvent.timestamp) < 100
-          )) {
+          if (
+            !this.activityLog.some(
+              (e) =>
+                e.type === monitorEvent.type &&
+                Math.abs(e.timestamp - monitorEvent.timestamp) < 100,
+            )
+          ) {
             this.activityLog.push(monitorEvent);
-            
+
             if (this.activityLog.length > 1000) {
               this.activityLog = this.activityLog.slice(-1000);
             }
           }
         }
       },
-      { priority: 10 }
+      { priority: 10 },
     );
-    
+
     // Start monitoring
     this.fileMonitor.start().catch((error) => {
       this.logError('Failed to start file monitor:', error);
     });
-    
+
     this.logInfo('File monitor initialized with EventEngine integration');
   }
 
@@ -533,7 +536,7 @@ class DevFlowMonitorServer {
         trackBranches: true,
         trackCommits: true,
         trackMerges: true,
-        analyzeCommitMessages: true
+        analyzeCommitMessages: true,
       });
 
       // Subscribe to EventEngine for all git events
@@ -544,9 +547,9 @@ class DevFlowMonitorServer {
           if (event.category === EventCategory.GIT) {
             this.activityLog.push({
               type: event.type,
-              timestamp: event.timestamp instanceof Date ? event.timestamp.getTime() : event.timestamp,
+              timestamp: event.timestamp,
               data: event.data,
-              source: event.source
+              source: event.source,
             });
 
             // Keep only last 1000 events
@@ -557,13 +560,12 @@ class DevFlowMonitorServer {
             this.logDebug(`Git event: ${event.type}`, event.data);
           }
         },
-        { priority: 1 }
+        { priority: 1 },
       );
 
       // Start git monitoring
       await this.gitMonitor.start();
       this.logInfo('Git monitor initialized and started');
-
     } catch (error) {
       this.logError('Failed to initialize Git monitor:', error);
       // Git 모니터링은 선택적이므로 에러가 발생해도 서버는 계속 실행
@@ -614,11 +616,11 @@ class DevFlowMonitorServer {
       await this.fileMonitor.stop();
       this.logInfo('File monitor stopped');
     }
-    
+
     // Close storage manager
     storageManager.close();
     this.logInfo('Storage manager closed');
-    
+
     this.logInfo('MCP Server stopped');
   }
 }

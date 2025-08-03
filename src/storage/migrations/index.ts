@@ -21,14 +21,14 @@ export const migrations: Migration[] = [
     up: (_db: DatabaseManager) => {
       // Initial schema is handled by schema.sql
       console.log('Migration 1: Initial schema applied');
-    }
+    },
   },
   {
     version: 2,
     name: 'add_indexes_for_performance',
     up: (db: DatabaseManager) => {
       const dbInstance = db.getDatabase();
-      
+
       // Add composite indexes for better query performance
       dbInstance.exec(`
         -- Composite index for event queries
@@ -44,16 +44,16 @@ export const migrations: Migration[] = [
         -- Index for file monitor cache updates
         CREATE INDEX IF NOT EXISTS idx_file_monitor_cache_hash ON file_monitor_cache(file_hash);
       `);
-      
+
       console.log('Migration 2: Performance indexes added');
-    }
+    },
   },
   {
     version: 3,
     name: 'add_event_correlation',
     up: (db: DatabaseManager) => {
       const dbInstance = db.getDatabase();
-      
+
       // Add correlation fields to events table
       dbInstance.exec(`
         -- Add correlation fields if they don't exist
@@ -64,10 +64,10 @@ export const migrations: Migration[] = [
         CREATE INDEX IF NOT EXISTS idx_events_correlation_id ON events(correlation_id);
         CREATE INDEX IF NOT EXISTS idx_events_parent_event_id ON events(parent_event_id);
       `);
-      
+
       console.log('Migration 3: Event correlation fields added');
-    }
-  }
+    },
+  },
 ];
 
 /**
@@ -75,41 +75,41 @@ export const migrations: Migration[] = [
  */
 export async function runMigrations(db: DatabaseManager): Promise<void> {
   const dbInstance = db.getDatabase();
-  
+
   // Get current version
   let currentVersion = 0;
   try {
-    const result = dbInstance.prepare(
-      'SELECT MAX(version) as version FROM migrations'
-    ).get() as { version: number | null };
+    const result = dbInstance.prepare('SELECT MAX(version) as version FROM migrations').get() as {
+      version: number | null;
+    };
     currentVersion = result.version || 0;
   } catch (error) {
     // Migrations table doesn't exist yet
     console.log('Migrations table not found, will be created');
   }
-  
+
   // Run pending migrations in a transaction
-  const pendingMigrations = migrations.filter(m => m.version > currentVersion);
-  
+  const pendingMigrations = migrations.filter((m) => m.version > currentVersion);
+
   if (pendingMigrations.length === 0) {
     console.log('Database is up to date');
     return;
   }
-  
+
   console.log(`Running ${pendingMigrations.length} pending migrations...`);
-  
+
   for (const migration of pendingMigrations) {
     console.log(`Running migration ${migration.version}: ${migration.name}`);
-    
+
     const transaction = dbInstance.transaction(() => {
       migration.up(db);
-      
+
       // Record migration
-      dbInstance.prepare(
-        'INSERT INTO migrations (version, name) VALUES (?, ?)'
-      ).run(migration.version, migration.name);
+      dbInstance
+        .prepare('INSERT INTO migrations (version, name) VALUES (?, ?)')
+        .run(migration.version, migration.name);
     });
-    
+
     try {
       transaction();
       console.log(`Migration ${migration.version} completed successfully`);
@@ -118,7 +118,7 @@ export async function runMigrations(db: DatabaseManager): Promise<void> {
       throw error;
     }
   }
-  
+
   console.log('All migrations completed successfully');
 }
 
@@ -127,42 +127,40 @@ export async function runMigrations(db: DatabaseManager): Promise<void> {
  */
 export async function rollbackTo(db: DatabaseManager, targetVersion: number): Promise<void> {
   const dbInstance = db.getDatabase();
-  
+
   // Get current version
-  const result = dbInstance.prepare(
-    'SELECT MAX(version) as version FROM migrations'
-  ).get() as { version: number | null };
+  const result = dbInstance.prepare('SELECT MAX(version) as version FROM migrations').get() as {
+    version: number | null;
+  };
   const currentVersion = result.version || 0;
-  
+
   if (targetVersion >= currentVersion) {
     console.log('Target version is not lower than current version');
     return;
   }
-  
+
   // Get migrations to rollback
   const migrationsToRollback = migrations
-    .filter(m => m.version > targetVersion && m.version <= currentVersion)
+    .filter((m) => m.version > targetVersion && m.version <= currentVersion)
     .reverse(); // Rollback in reverse order
-  
+
   console.log(`Rolling back ${migrationsToRollback.length} migrations...`);
-  
+
   for (const migration of migrationsToRollback) {
     if (!migration.down) {
       console.warn(`Migration ${migration.version} does not have a down method, skipping`);
       continue;
     }
-    
+
     console.log(`Rolling back migration ${migration.version}: ${migration.name}`);
-    
+
     const transaction = dbInstance.transaction(() => {
       migration.down!(db);
-      
+
       // Remove migration record
-      dbInstance.prepare(
-        'DELETE FROM migrations WHERE version = ?'
-      ).run(migration.version);
+      dbInstance.prepare('DELETE FROM migrations WHERE version = ?').run(migration.version);
     });
-    
+
     try {
       transaction();
       console.log(`Migration ${migration.version} rolled back successfully`);
@@ -171,6 +169,6 @@ export async function rollbackTo(db: DatabaseManager, targetVersion: number): Pr
       throw error;
     }
   }
-  
+
   console.log('Rollback completed successfully');
 }
