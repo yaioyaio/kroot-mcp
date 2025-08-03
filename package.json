@@ -39,6 +39,8 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.1"
+    "@modelcontextprotocol/sdk": "^0.6.1",
+    "@types/chokidar": "^1.7.5",
+    "chokidar": "^4.0.3"
   }
 }

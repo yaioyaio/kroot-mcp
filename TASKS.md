@@ -34,20 +34,25 @@
   - [x] Claude Desktop 연동 테스트 ✓ (정상 작동 확인)
 - [x] 추가 완료 사항
   - [x] TypeScript 타입 정의 (`src/server/types.ts`) ✓ (131줄)
-  - [x] 테스트 스크립트 작성 (`test-mcp-server.js`) ✓
-  - [x] 성능 벤치마크 작성 (`performance-test.js`) ✓
+  - [x] 테스트 스크립트 작성 (`tests/manual/test-mcp-server.js`) ✓
+  - [x] 성능 벤치마크 작성 (`tests/manual/performance-test.js`) ✓
   - [x] Claude Desktop 설정 가이드 (`README_CLAUDE_DESKTOP.md`) ✓
 
-### 파일 시스템 모니터링
-- [ ] 파일 모니터 구현
-  - [ ] chokidar 패키지 설치 및 설정
-  - [ ] `BaseMonitor` 추상 클래스 구현
-  - [ ] `FileMonitor` 클래스 구현
-  - [ ] 파일 변경 이벤트 감지 로직 구현
-- [ ] 파일 필터링 시스템
-  - [ ] ignore 패턴 구현 (node_modules, build 등)
-  - [ ] 중요 파일 확장자 필터 구현
-  - [ ] 파일 변경 컨텍스트 분석 로직 추가
+### 파일 시스템 모니터링 ✅ (완료: 2025-08-03)
+- [x] 파일 모니터 구현
+  - [x] chokidar 패키지 설치 및 설정 ✓
+  - [x] `BaseMonitor` 추상 클래스 구현 ✓ (src/monitors/base.ts - 144줄)
+  - [x] `FileMonitor` 클래스 구현 ✓ (src/monitors/file.ts - 232줄)
+  - [x] 파일 변경 이벤트 감지 로직 구현 ✓
+- [x] 파일 필터링 시스템
+  - [x] ignore 패턴 구현 (node_modules, build 등) ✓
+  - [x] 중요 파일 확장자 필터 구현 ✓
+  - [x] 파일 변경 컨텍스트 분석 로직 추가 ✓
+- [x] 추가 완료 사항
+  - [x] MCP 서버와 통합 (getActivityLog에서 실제 이벤트 사용) ✓
+  - [x] 테스트 스크립트 작성 (tests/manual/test-file-monitor.js) ✓
+  - [x] 모니터 내보내기 설정 (src/monitors/index.ts) ✓
+  - [x] 테스트 파일 재구성 (tests/manual/ 디렉토리로 이동) ✓
 
 ### 이벤트 시스템 구축
 - [ ] 이벤트 아키텍처 구현
@@ -382,12 +387,12 @@
 ## 진행 상황 추적
 
 ### 전체 진행률
-- 마일스톤 1: 25% (6/24 태스크)
+- 마일스톤 1: 50% (12/24 태스크)
 - 마일스톤 2: 0% (0/24 태스크)
 - 마일스톤 3: 0% (0/36 태스크)
 - 마일스톤 4: 0% (0/24 태스크)
 - 마일스톤 5: 0% (0/30 태스크)
-- **전체**: 4.3% (6/138 태스크)
+- **전체**: 8.7% (12/138 태스크)
 
 ### 우선순위 태스크
 1. TypeScript 프로젝트 초기화
@@ -401,4 +406,4 @@
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-진행 상황: 마일스톤 1 > 프로젝트 초기화 완료 ✅, MCP 서버 구현 완료 ✅ (2025-08-02)
+진행 상황: 마일스톤 1 > 프로젝트 초기화 완료 ✅, MCP 서버 구현 완료 ✅ (2025-08-02), 파일 시스템 모니터링 완료 ✅ (2025-08-03)

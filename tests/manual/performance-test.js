@@ -14,7 +14,8 @@ const __dirname = dirname(__filename);
 async function performanceTest() {
   console.log('🚀 MCP 서버 성능 테스트 시작');
   
-  const serverPath = join(__dirname, 'dist/server/index.js');
+  const projectRoot = join(__dirname, '..', '..');
+  const serverPath = join(projectRoot, 'dist/server/index.js');
   const testCount = 10;
   const results = [];
 
@@ -25,7 +26,7 @@ async function performanceTest() {
     
     const serverProcess = spawn('node', [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: __dirname
+      cwd: projectRoot
     });
 
     let serverReady = false;

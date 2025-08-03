@@ -27,6 +27,8 @@ import {
   type ActivityLogResponse,
   type BottleneckAnalysisResponse,
 } from './types.js';
+import { FileMonitor } from '../monitors/file.js';
+import type { MonitorEvent } from '../monitors/base.js';
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -34,6 +36,8 @@ import {
 class DevFlowMonitorServer {
   private server: Server;
   private tools: Map<string, McpTool> = new Map();
+  private fileMonitor?: FileMonitor;
+  private activityLog: Array<MonitorEvent> = [];
 
   constructor() {
     // 설정 검증
@@ -57,6 +61,11 @@ class DevFlowMonitorServer {
 
     this.setupTools();
     this.setupHandlers();
+
+    // Initialize file monitor if enabled
+    if (config.monitoring.fileWatch.enabled) {
+      this.initializeFileMonitor();
+    }
   }
 
   /**
@@ -309,19 +318,45 @@ class DevFlowMonitorServer {
   } {
     const { limit = 20, stage } = args;
 
-    // 현재는 샘플 데이터 반환 (추후 실제 로그 시스템 구현)
-    const activities = Array.from({ length: Math.min(limit, 10) }, (_, i) => ({
-      id: `activity-${i + 1}`,
-      timestamp: new Date(Date.now() - i * 60000).toISOString(),
-      stage: stage || (['planning', 'coding', 'testing', 'review'][i % 4] as string),
-      action: 'File modified',
-      details: `Modified src/server/${['index.ts', 'config.ts', 'handlers.ts'][i % 3]}`,
-      actor: 'developer',
-    }));
+    // Get real activity log from monitor events
+    let activities = this.activityLog
+      .slice(-limit) // Get last N events
+      .map((event, index) => {
+        const fileEvent = event.data as any;
+        
+        // Determine stage based on event context
+        let eventStage = 'coding';
+        if (event.type === 'context:test') {
+          eventStage = 'testing';
+        } else if (event.type === 'context:documentation') {
+          eventStage = 'design';
+        } else if (event.type === 'context:config') {
+          eventStage = 'deployment';
+        }
+
+        return {
+          id: `activity-${this.activityLog.length - index}`,
+          timestamp: new Date(event.timestamp).toISOString(),
+          stage: eventStage,
+          action: event.type,
+          details: fileEvent.description || `${fileEvent.action} ${fileEvent.relativePath}`,
+          actor: 'file-monitor',
+          metadata: {
+            path: fileEvent.relativePath,
+            extension: fileEvent.extension,
+          },
+        };
+      })
+      .reverse(); // Show newest first
+
+    // Filter by stage if specified
+    if (stage) {
+      activities = activities.filter(a => a.stage === stage);
+    }
 
     const response: ActivityLogResponse = {
       totalCount: activities.length,
-      activities,
+      activities: activities.slice(0, limit),
       filters: { limit, ...(stage && { stage }) },
     };
 
@@ -372,6 +407,33 @@ class DevFlowMonitorServer {
   }
 
   /**
+   * 파일 모니터 초기화
+   */
+  private initializeFileMonitor(): void {
+    this.fileMonitor = new FileMonitor();
+    
+    // Listen for file events
+    this.fileMonitor.on('event', (event: MonitorEvent) => {
+      // Add to activity log
+      this.activityLog.push(event);
+      
+      // Keep only last 1000 events
+      if (this.activityLog.length > 1000) {
+        this.activityLog = this.activityLog.slice(-1000);
+      }
+      
+      this.logDebug(`File event: ${event.type}`, event.data);
+    });
+    
+    // Start monitoring
+    this.fileMonitor.start().catch((error) => {
+      this.logError('Failed to start file monitor:', error);
+    });
+    
+    this.logInfo('File monitor initialized');
+  }
+
+  /**
    * 로깅 유틸리티
    */
   private logDebug(message: string, ...args: unknown[]): void {
@@ -404,6 +466,19 @@ class DevFlowMonitorServer {
 
     await this.server.connect(transport);
     this.logInfo('MCP Server connected and ready');
+  }
+
+  /**
+   * 서버 종료
+   */
+  public async stop(): Promise<void> {
+    // Stop file monitor
+    if (this.fileMonitor) {
+      await this.fileMonitor.stop();
+      this.logInfo('File monitor stopped');
+    }
+    
+    this.logInfo('MCP Server stopped');
   }
 }
 

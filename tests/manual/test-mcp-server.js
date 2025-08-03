@@ -15,12 +15,13 @@ const __dirname = dirname(__filename);
 async function testMCPServer() {
   console.log('🚀 DevFlow Monitor MCP 서버 테스트 시작');
   
-  const serverPath = join(__dirname, 'dist/server/index.js');
+  const projectRoot = join(__dirname, '..', '..');
+  const serverPath = join(projectRoot, 'dist/server/index.js');
   console.log(`📍 서버 경로: ${serverPath}`);
   
   const serverProcess = spawn('node', [serverPath], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    cwd: __dirname,
+    cwd: projectRoot,
     env: {
       ...process.env,
       NODE_ENV: 'development',

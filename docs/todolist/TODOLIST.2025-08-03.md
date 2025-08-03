@@ -1,4 +1,4 @@
-# DevFlow Monitor MCP - TODO List (2025-08-02)
+# DevFlow Monitor MCP - TODO List (2025-08-03)
 
 ## 개요
 이 문서는 DevFlow Monitor MCP 프로젝트의 개발 우선순위에 따른 구체적인 작업 목록입니다. TASKS.md, PLANNING.md, PRD.md, CLAUDE.md를 기반으로 작성되었습니다.
@@ -43,8 +43,8 @@
   - analyzeBottlenecks
 - [x] **[HIGH]** Claude Desktop 연동 테스트 ✓ (정상 작동 확인)
 - [x] **[추가]** TypeScript 타입 정의 (`src/server/types.ts`) ✓ (131줄)
-- [x] **[추가]** 테스트 스크립트 작성 (`test-mcp-server.js`) ✓
-- [x] **[추가]** 성능 테스트 작성 (`performance-test.js`) ✓
+- [x] **[추가]** 테스트 스크립트 작성 (`tests/manual/test-mcp-server.js`) ✓
+- [x] **[추가]** 성능 테스트 작성 (`tests/manual/performance-test.js`) ✓
 - [x] **[추가]** Claude Desktop 설정 가이드 (`README_CLAUDE_DESKTOP.md`) ✓
 
 #### 3. 이벤트 시스템 구축
@@ -59,17 +59,20 @@
 - [ ] **[HIGH]** EventEngine 클래스 구현
 - [ ] **[MEDIUM]** 이벤트 검증 로직 구현
 
-#### 4. 파일 시스템 모니터링
-- [ ] **[HIGH]** chokidar 설치
+#### 4. 파일 시스템 모니터링 ✅ (완료: 2025-08-03)
+- [x] **[HIGH]** chokidar 설치 ✓
   ```bash
   npm install chokidar @types/chokidar
   ```
-- [ ] **[HIGH]** BaseMonitor 추상 클래스 구현
-- [ ] **[HIGH]** FileMonitor 클래스 구현
-- [ ] **[HIGH]** 파일 필터링 패턴 구현
-  - [ ] ignore 패턴 (node_modules, build 등)
-  - [ ] 중요 확장자 필터 (.ts, .tsx, .js, .jsx 등)
-- [ ] **[MEDIUM]** 파일 변경 컨텍스트 분석 로직
+- [x] **[HIGH]** BaseMonitor 추상 클래스 구현 ✓ (src/monitors/base.ts - 144줄)
+- [x] **[HIGH]** FileMonitor 클래스 구현 ✓ (src/monitors/file.ts - 232줄)
+- [x] **[HIGH]** 파일 필터링 패턴 구현 ✓
+  - [x] ignore 패턴 (node_modules, build 등) ✓
+  - [x] 중요 확장자 필터 (.ts, .tsx, .js, .jsx 등) ✓
+- [x] **[MEDIUM]** 파일 변경 컨텍스트 분석 로직 ✓
+- [x] **[추가]** MCP 서버와 통합 ✓ (getActivityLog에서 실제 이벤트 사용)
+- [x] **[추가]** 테스트 스크립트 작성 ✓ (tests/manual/test-file-monitor.js)
+- [x] **[추가]** 테스트 파일 재구성 ✓ (tests/manual/ 디렉토리로 이동)
 
 #### 5. 데이터 저장소 구현
 - [ ] **[HIGH]** better-sqlite3 설치
@@ -157,35 +160,28 @@
 - [ ] **[LOW]** 중앙 서버 API 개발
 - [ ] **[LOW]** WebSocket 실시간 통신
 
-## 오늘의 구체적인 작업 (2025-08-02)
+## 오늘의 구체적인 작업 (2025-08-03)
 
-### 🎯 목표: 프로젝트 기초 설정 완료
+### 🎯 목표: 마일스톤 1 주요 기능 완료
 
-1. **[09:00-10:00]** 개발 환경 설정
-   - [ ] Node.js 20+ 설치 확인
-   - [ ] VS Code 확장 프로그램 설치
-   - [ ] Git 설정
+1. **파일 시스템 모니터링 완료** ✅
+   - [x] chokidar 설치 및 설정
+   - [x] BaseMonitor 추상 클래스 구현
+   - [x] FileMonitor 클래스 구현
+   - [x] 파일 필터링 시스템 구현
+   - [x] MCP 서버 통합 및 테스트
 
-2. **[10:00-12:00]** 프로젝트 초기화
-   - [ ] package.json 생성
-   - [ ] TypeScript 설정
-   - [ ] 프로젝트 구조 생성
-   - [ ] 개발 도구 설정 (ESLint, Prettier)
-
-3. **[13:00-15:00]** MCP 서버 기본 구현 ✅
-   - [x] MCP SDK 설치
-   - [x] 서버 엔트리포인트 작성
-   - [x] 기본 설정 파일 작성
-
-4. **[15:00-17:00]** 이벤트 시스템 기초
+2. **다음 작업: 이벤트 시스템 구축**
    - [ ] EventEmitter3 설치
-   - [ ] 기본 이벤트 타입 정의
-   - [ ] EventEngine 뼈대 구현
+   - [ ] 이벤트 타입 정의 (base, file, git)
+   - [ ] EventEngine 클래스 구현
+   - [ ] 이벤트 검증 로직 구현
 
-5. **[17:00-18:00]** 테스트 및 검증 ✅
-   - [x] MCP 서버 실행 테스트
-   - [x] Claude Desktop 연동 확인
-   - [x] 기본 도구 응답 테스트
+3. **다음 작업: 데이터 저장소 구현**
+   - [ ] better-sqlite3 설치
+   - [ ] 데이터베이스 스키마 설계
+   - [ ] Repository 패턴 구현
+   - [ ] 마이그레이션 시스템 구현
 
 ## 주의사항
 
@@ -210,4 +206,4 @@
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-진행 상황: 마일스톤 1 - 프로젝트 초기화 완료 ✅, MCP 서버 기본 구현 완료 ✅
+진행 상황: 마일스톤 1 - 프로젝트 초기화 완료 ✅, MCP 서버 기본 구현 완료 ✅, 파일 시스템 모니터링 완료 ✅

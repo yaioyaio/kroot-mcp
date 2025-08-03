@@ -56,6 +56,7 @@ devflow-monitor-mcp/
 ## 현재 진행 상황 (2025-08-03)
 
 ### 완료된 작업
+*2025-08-02:*
 - ✅ TypeScript 5.9.2 프로젝트 초기화
 - ✅ ESLint, Prettier 개발 도구 설정
 - ✅ 프로젝트 디렉토리 구조 생성
@@ -68,12 +69,22 @@ devflow-monitor-mcp/
 - ✅ Claude Desktop 연동 테스트 성공
 - ✅ 성능 테스트 통과 (평균 시작: 74.60ms, 응답: 2.60ms)
 
+*2025-08-03:*
+- ✅ chokidar 패키지 설치 및 설정
+- ✅ BaseMonitor 추상 클래스 구현 (src/monitors/base.ts - 144줄)
+- ✅ FileMonitor 클래스 구현 (src/monitors/file.ts - 232줄)
+- ✅ 파일 필터링 시스템 구현 (ignore 패턴, 확장자 필터)
+- ✅ 파일 변경 컨텍스트 분석 (test, config, source, docs, build)
+- ✅ MCP 서버와 FileMonitor 통합 (getActivityLog에서 실제 이벤트 사용)
+- ✅ 파일 모니터 테스트 스크립트 작성 (tests/manual/test-file-monitor.js)
+- ✅ 테스트 파일 재구성 (4개 테스트 파일 tests/manual/로 이동)
+
 ### 진행 중인 마일스톤
 **마일스톤 1: MVP 기반 구축 (1-2주차)**
-- [x] 프로젝트 초기화 ✅
-- [x] MCP 서버 기본 구현 ✅
+- [x] 프로젝트 초기화 ✅ (2025-08-02)
+- [x] MCP 서버 기본 구현 ✅ (2025-08-02)
+- [x] 파일 시스템 모니터링 ✅ (2025-08-03)
 - [ ] 이벤트 시스템 구축
-- [ ] 파일 시스템 모니터링
 - [ ] 데이터 저장소 구현
 
 ### 다음 작업
@@ -83,11 +94,11 @@ devflow-monitor-mcp/
    - EventEngine 클래스 구현
    - 이벤트 검증 로직 구현
 
-2. **파일 시스템 모니터링**
-   - chokidar 설치
-   - BaseMonitor 추상 클래스 구현
-   - FileMonitor 클래스 구현
-   - 파일 필터링 패턴 구현
+2. **데이터 저장소 구현**
+   - better-sqlite3 설치
+   - 데이터베이스 스키마 설계
+   - Repository 패턴 구현
+   - 마이그레이션 시스템 구현
 
 ## 주요 명령어
 
@@ -139,4 +150,4 @@ npm run typecheck    # TypeScript 타입 체크
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-상태: 마일스톤 1 - 프로젝트 초기화 완료 ✅, MCP 서버 구현 완료 ✅
+상태: 마일스톤 1 - 프로젝트 초기화 완료 ✅, MCP 서버 구현 완료 ✅, 파일 시스템 모니터링 완료 ✅
