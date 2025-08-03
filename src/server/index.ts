@@ -35,6 +35,8 @@ import { FileMonitor, GitMonitor } from '../monitors/index.js';
 import type { MonitorEvent } from '../monitors/base.js';
 import { eventEngine, EventCategory, BaseEvent } from '../events/index.js';
 import { getStorageManager } from '../storage/index.js';
+import { wsServer } from './websocket.js';
+import { streamManager } from './stream-manager.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -50,6 +52,7 @@ class DevFlowMonitorServer {
   private gitMonitor?: GitMonitor;
   private activityLog: Array<MonitorEvent> = [];
   private eventEngine = eventEngine;
+  // private wsServerStarted = false;
 
   constructor() {
     // 설정 검증
@@ -228,6 +231,74 @@ class DevFlowMonitorServer {
       },
     });
 
+    // WebSocket 서버 제어 도구
+    this.registerTool({
+      name: 'startWebSocketServer',
+      description: 'WebSocket 서버를 시작합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          port: {
+            type: 'number',
+            description: '서버 포트 번호',
+            default: 8081,
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'stopWebSocketServer',
+      description: 'WebSocket 서버를 중지합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'getWebSocketStats',
+      description: 'WebSocket 서버 통계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'getStreamStats',
+      description: '이벤트 스트림 통계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'broadcastSystemNotification',
+      description: '모든 WebSocket 클라이언트에게 시스템 알림을 브로드캐스트합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            description: '알림 메시지',
+          },
+          severity: {
+            type: 'string',
+            description: '알림 심각도',
+            enum: ['info', 'warning', 'error'],
+            default: 'info',
+          },
+          data: {
+            type: 'object',
+            description: '추가 데이터',
+          },
+        },
+        required: ['message'],
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -306,6 +377,21 @@ class DevFlowMonitorServer {
       
       case 'generateReport':
         return this.generateReport(args as GenerateReportArgs);
+
+      case 'startWebSocketServer':
+        return await this.startWebSocketServer(args as { port?: number });
+
+      case 'stopWebSocketServer':
+        return await this.stopWebSocketServer();
+
+      case 'getWebSocketStats':
+        return this.getWebSocketStats();
+
+      case 'getStreamStats':
+        return this.getStreamStats();
+
+      case 'broadcastSystemNotification':
+        return this.broadcastSystemNotification(args as { message: string; severity: 'info' | 'warning' | 'error'; data?: any });
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -1952,6 +2038,231 @@ class DevFlowMonitorServer {
   private logError(message: string, ...args: unknown[]): void {
     // eslint-disable-next-line no-console
     console.error(`[ERROR] ${message}`, ...args);
+  }
+
+  /**
+   * WebSocket 서버 시작
+   */
+  private async startWebSocketServer(args: { port?: number }): Promise<{
+    content: Array<{ type: 'text'; text: string }>;
+  }> {
+    try {
+      const port = args.port || 8081;
+      await wsServer.start(port);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              message: `WebSocket server started on port ${port}`,
+              port,
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'error',
+              message: `Failed to start WebSocket server: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * WebSocket 서버 중지
+   */
+  private async stopWebSocketServer(): Promise<{
+    content: Array<{ type: 'text'; text: string }>;
+  }> {
+    try {
+      await wsServer.stop();
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              message: 'WebSocket server stopped successfully',
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'error',
+              message: `Failed to stop WebSocket server: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * WebSocket 서버 통계 조회
+   */
+  private getWebSocketStats(): {
+    content: Array<{ type: 'text'; text: string }>;
+  } {
+    try {
+      const stats = wsServer.getStats();
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              stats: {
+                connectedClients: stats.connectedClients,
+                clients: stats.clients.map(client => ({
+                  id: client.id,
+                  filters: client.filters,
+                  lastPing: new Date(client.lastPing).toISOString(),
+                  isAlive: client.isAlive,
+                })),
+                uptime: Math.round(stats.uptime),
+              },
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'error',
+              message: `Failed to get WebSocket stats: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * 스트림 매니저 통계 조회
+   */
+  private getStreamStats(): {
+    content: Array<{ type: 'text'; text: string }>;
+  } {
+    try {
+      const stats = streamManager.getStats();
+      const subscribers = streamManager.getSubscribers();
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              stats: {
+                totalSubscribers: stats.totalSubscribers,
+                totalEvents: stats.totalEvents,
+                eventsPerSecond: stats.eventsPerSecond,
+                bufferedEvents: stats.bufferedEvents,
+                droppedEvents: stats.droppedEvents,
+                uptime: stats.uptime,
+                subscribers: subscribers.map(sub => ({
+                  id: sub.id,
+                  filter: sub.filter,
+                  eventCount: sub.eventCount,
+                  lastEventTime: sub.lastEventTime > 0 ? new Date(sub.lastEventTime).toISOString() : null,
+                })),
+              },
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'error',
+              message: `Failed to get stream stats: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    }
+  }
+
+  /**
+   * 시스템 알림 브로드캐스트
+   */
+  private broadcastSystemNotification(args: {
+    message: string;
+    severity: 'info' | 'warning' | 'error';
+    data?: any;
+  }): {
+    content: Array<{ type: 'text'; text: string }>;
+  } {
+    try {
+      const { message, severity, data } = args;
+      
+      wsServer.broadcastSystemNotification({
+        message,
+        severity,
+        data,
+      });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'success',
+              message: 'System notification broadcasted successfully',
+              notification: {
+                message,
+                severity,
+                data,
+              },
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              status: 'error',
+              message: `Failed to broadcast system notification: ${error instanceof Error ? error.message : String(error)}`,
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    }
   }
 
   /**

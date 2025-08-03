@@ -54,11 +54,13 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/chokidar": "^1.7.5",
     "@types/eventemitter3": "^1.2.0",
+    "@types/ws": "^8.18.1",
     "axios": "^1.11.0",
     "better-sqlite3": "^12.2.0",
     "chokidar": "^4.0.3",
     "eventemitter3": "^5.0.1",
     "simple-git": "^3.28.0",
+    "ws": "^8.18.3",
     "zod": "^4.0.14"
   }
 }
