@@ -86,6 +86,18 @@ devflow-monitor-mcp/
 - ✅ API 문서화 28페이지 완성 (docs/API.md)
 - ✅ 설치 가이드 30페이지 완성 (docs/INSTALLATION.md)
 - ✅ 통합 테스트 검증 및 이슈 해결
+- ✅ simple-git v3.27.0 패키지 설치 및 설정
+- ✅ GitMonitor 클래스 구현 (src/monitors/git.ts - 435줄)
+- ✅ BaseMonitor 상속 구조 구현
+- ✅ Git 이벤트 감지 로직 구현 (커밋, 브랜치, 머지)
+- ✅ 브랜치 패턴 분석 로직 (feature/, bugfix/, hotfix/ 등 7개 패턴)
+- ✅ 커밋 메시지 분석 (Conventional Commits 지원)
+- ✅ Git 통계 분석 (삽입/삭제/파일 수)
+- ✅ 머지 타입 및 위험도 평가
+- ✅ MCP 서버 통합 (GitMonitor 도구 등록)
+- ✅ Git 단위 테스트 작성 (tests/unit/monitors/git.test.ts)
+- ✅ Git 통합 테스트 작성 (tests/manual/test-git-integration-full.js)
+- ✅ Git 전체 기능 검증 완료 (모든 Git 이벤트 감지 확인)
 
 ### 완료된 마일스톤
 **마일스톤 1: MVP 기반 구축 (1-2주차)** ✅ 완료 (2025-08-03)
@@ -96,19 +108,29 @@ devflow-monitor-mcp/
 - [x] 데이터 저장소 구현 ✅ (2025-08-03)
 - [x] 테스트 및 문서화 ✅ (2025-08-03)
 
-### 다음 마일스톤
-**마일스톤 2: 핵심 통합 구현 (3-5주차)**
-1. **Git 통합**
-   - simple-git 설치
-   - GitMonitor 클래스 구현
-   - Git 이벤트 감지 (commit, branch, merge)
-   - 브랜치 패턴 분석
+### 진행 중인 마일스톤
+**마일스톤 2: 핵심 통합 구현 (3-5주차)** - 진행률: 41.7%
+1. **Git 통합** ✅ 완료 (2025-08-03)
+   - [x] simple-git 설치 ✅
+   - [x] GitMonitor 클래스 구현 ✅ (435줄)
+   - [x] Git 이벤트 감지 (commit, branch, merge) ✅
+   - [x] 브랜치 패턴 분석 ✅ (7개 패턴)
+   - [x] Conventional Commits 분석 ✅
+   - [x] 머지 위험도 평가 ✅
+   - [x] MCP 서버 통합 ✅
+   - [x] 단위 & 통합 테스트 ✅
+   - [x] 전체 기능 검증 완료 ✅
 
-2. **외부 API 통합**
-   - API 클라이언트 베이스 구축
-   - Jira API 통합
-   - Notion API 통합
-   - WebSocket 실시간 통신
+2. **외부 API 통합** (다음 작업)
+   - [ ] API 클라이언트 베이스 구축
+   - [ ] Jira API 통합
+   - [ ] Notion API 통합
+   - [ ] WebSocket 실시간 통신
+
+3. **MCP 도구 API 구현** (다음 작업)
+   - [ ] getProjectStatus 도구 확장
+   - [ ] getMetrics 도구 확장
+   - [ ] analyzeBottlenecks 도구 확장
 
 ## 주요 명령어
 
@@ -160,10 +182,19 @@ npm run typecheck    # TypeScript 타입 체크
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-상태: **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
-- 프로젝트 초기화 및 설정 ✅
-- MCP 서버 기본 구현 ✅
-- 파일 시스템 모니터링 ✅
-- 이벤트 시스템 구축 ✅
-- 데이터 저장소 구현 ✅
-- 테스트 및 문서화 ✅
+상태: **마일스톤 2: 핵심 통합 구현 - Git 통합 완료** ✅ (2025-08-03)
+
+**완료된 마일스톤:**
+- **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
+  - 프로젝트 초기화 및 설정 ✅
+  - MCP 서버 기본 구현 ✅
+  - 파일 시스템 모니터링 ✅
+  - 이벤트 시스템 구축 ✅
+  - 데이터 저장소 구현 ✅
+  - 테스트 및 문서화 ✅
+
+**진행 중인 마일스톤:**
+- **마일스톤 2: 핵심 통합 구현** (진행률: 41.7%)
+  - Git 통합 ✅ (2025-08-03) - GitMonitor 클래스, 이벤트 감지, 브랜치 패턴 분석, Conventional Commits 분석
+  - MCP 도구 API 구현 (다음 작업)
+  - 외부 API 통합 (계획 중)

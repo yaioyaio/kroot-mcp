@@ -100,15 +100,22 @@
 
 ### 🟡 다음 단계 (Week 3-5) - 마일스톤 2: 핵심 통합 구현
 
-#### 7. Git 통합
-- [ ] **[HIGH]** simple-git 설치
+#### 7. Git 통합 ✅ (완료: 2025-08-03)
+- [x] **[HIGH]** simple-git 설치 ✓ (v3.27.0)
   ```bash
   npm install simple-git @types/simple-git
   ```
-- [ ] **[HIGH]** GitMonitor 클래스 구현
-- [ ] **[HIGH]** Git 이벤트 감지 (commit, branch, merge)
-- [ ] **[MEDIUM]** 브랜치 패턴 분석
-- [ ] **[MEDIUM]** 커밋 메시지 분석 (Conventional Commits)
+- [x] **[HIGH]** GitMonitor 클래스 구현 ✓ (src/monitors/git.ts - 435줄)
+- [x] **[HIGH]** Git 이벤트 감지 (commit, branch, merge) ✓
+  - [x] 커밋 감지 및 통계 분석 ✓
+  - [x] 브랜치 생성/삭제/업데이트 감지 ✓  
+  - [x] 머지 감지 및 위험도 평가 ✓
+- [x] **[MEDIUM]** 브랜치 패턴 분석 ✓ (feature/, bugfix/, hotfix/ 등 7개 패턴)
+- [x] **[MEDIUM]** 커밋 메시지 분석 (Conventional Commits) ✓
+- [x] **[추가]** MCP 서버 통합 ✓ (GitMonitor 도구 등록)
+- [x] **[추가]** 단위 테스트 작성 ✓ (tests/unit/monitors/git.test.ts)
+- [x] **[추가]** 통합 테스트 작성 ✓ (tests/manual/test-git-integration-full.js)
+- [x] **[추가]** 전체 기능 검증 완료 ✓ (모든 Git 이벤트 감지 확인)
 
 #### 7. MCP 도구 API 구현
 - [ ] **[HIGH]** getProjectStatus 도구
@@ -180,10 +187,15 @@
    - [x] 테스트 및 문서화 완료
    - [x] 통합 검증 및 이슈 해결 완료
 
-3. **다음 작업: 마일스톤 2 준비**
-   - [ ] Git 통합 계획 수립
-   - [ ] 외부 API 연동 설계
-   - [ ] MCP 도구 API 확장
+3. **마일스톤 2 Git 통합 완료** ✅
+   - [x] Git 통합 구현 완료
+   - [x] GitMonitor 클래스 구현 및 검증
+   - [x] 모든 Git 이벤트 감지 기능 테스트 완료
+   - [x] 통합 테스트 및 문서화 완료
+
+4. **다음 작업: 마일스톤 2 나머지 섹션**
+   - [ ] MCP 도구 API 확장 (getProjectStatus, getMetrics 등)
+   - [ ] 외부 API 연동 설계 (Jira, Notion, Figma)
    - [ ] 실시간 통신 구현
 
 ## 주의사항
@@ -209,10 +221,17 @@
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-진행 상황: **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
+진행 상황: **마일스톤 2: 핵심 통합 구현 - Git 통합 완료** ✅ (2025-08-03)
+
+**마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
 - 프로젝트 초기화 및 설정 ✅
 - MCP 서버 기본 구현 ✅  
 - 파일 시스템 모니터링 ✅
 - 이벤트 시스템 구축 ✅
 - 데이터 저장소 구현 ✅
 - 테스트 및 문서화 ✅
+
+**마일스톤 2: 핵심 통합 구현** (진행 중)
+- Git 통합 ✅ (2025-08-03)
+- MCP 도구 API 구현 (다음 작업)
+- 외부 API 통합 (계획 중)

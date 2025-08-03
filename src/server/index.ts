@@ -27,7 +27,7 @@ import {
   type ActivityLogResponse,
   type BottleneckAnalysisResponse,
 } from './types.js';
-import { FileMonitor } from '../monitors/file.js';
+import { FileMonitor, GitMonitor } from '../monitors/index.js';
 import type { MonitorEvent } from '../monitors/base.js';
 import { eventEngine, EventCategory, BaseEvent } from '../events/index.js';
 import { getStorageManager } from '../storage/index.js';
@@ -43,6 +43,7 @@ class DevFlowMonitorServer {
   private server: Server;
   private tools: Map<string, McpTool> = new Map();
   private fileMonitor?: FileMonitor;
+  private gitMonitor?: GitMonitor;
   private activityLog: Array<MonitorEvent> = [];
 
   constructor() {
@@ -68,9 +69,9 @@ class DevFlowMonitorServer {
     this.setupTools();
     this.setupHandlers();
 
-    // Initialize file monitor if enabled
+    // Initialize monitors if enabled
     if (config.monitoring.fileWatch.enabled) {
-      this.initializeFileMonitor();
+      this.initializeMonitors();
     }
   }
 
@@ -454,6 +455,14 @@ class DevFlowMonitorServer {
   }
 
   /**
+   * 모니터 초기화
+   */
+  private initializeMonitors(): void {
+    this.initializeFileMonitor();
+    this.initializeGitMonitor();
+  }
+
+  /**
    * 파일 모니터 초기화
    */
   private initializeFileMonitor(): void {
@@ -511,6 +520,54 @@ class DevFlowMonitorServer {
     });
     
     this.logInfo('File monitor initialized with EventEngine integration');
+  }
+
+  /**
+   * Git 모니터 초기화
+   */
+  private async initializeGitMonitor(): Promise<void> {
+    try {
+      this.gitMonitor = new GitMonitor(eventEngine, {
+        repositoryPath: process.cwd(),
+        pollInterval: 5000, // 5초마다 체크
+        trackBranches: true,
+        trackCommits: true,
+        trackMerges: true,
+        analyzeCommitMessages: true
+      });
+
+      // Subscribe to EventEngine for all git events
+      eventEngine.subscribe(
+        '*',
+        (event: BaseEvent) => {
+          // Process git events
+          if (event.category === EventCategory.GIT) {
+            this.activityLog.push({
+              type: event.type,
+              timestamp: event.timestamp instanceof Date ? event.timestamp.getTime() : event.timestamp,
+              data: event.data,
+              source: event.source
+            });
+
+            // Keep only last 1000 events
+            if (this.activityLog.length > 1000) {
+              this.activityLog = this.activityLog.slice(-1000);
+            }
+
+            this.logDebug(`Git event: ${event.type}`, event.data);
+          }
+        },
+        { priority: 1 }
+      );
+
+      // Start git monitoring
+      await this.gitMonitor.start();
+      this.logInfo('Git monitor initialized and started');
+
+    } catch (error) {
+      this.logError('Failed to initialize Git monitor:', error);
+      // Git 모니터링은 선택적이므로 에러가 발생해도 서버는 계속 실행
+    }
   }
 
   /**
