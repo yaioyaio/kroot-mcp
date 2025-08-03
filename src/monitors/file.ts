@@ -1,15 +1,22 @@
 /**
  * File system monitor implementation
- * Monitors file changes and emits events
+ * Monitors file changes and emits events through the central event system
  */
 
 import { FSWatcher, watch } from 'chokidar';
-import { relative, extname } from 'path';
+import { relative, extname, basename } from 'path';
 import { BaseMonitor } from './base.js';
 import { config } from '../server/config.js';
+import { 
+  eventEngine, 
+  FileEventBuilder, 
+  FileEventType, 
+  FileChangeAction,
+  EventSeverity 
+} from '../events/index.js';
 
 export interface FileChangeEvent {
-  action: 'add' | 'change' | 'unlink' | 'addDir' | 'unlinkDir';
+  action: FileChangeAction;
   path: string;
   relativePath: string;
   extension: string;
@@ -60,11 +67,11 @@ export class FileMonitor extends BaseMonitor {
 
     // File events
     this.watcher
-      .on('add', (path) => this.handleFileEvent('add', path))
-      .on('change', (path) => this.handleFileEvent('change', path))
-      .on('unlink', (path) => this.handleFileEvent('unlink', path))
-      .on('addDir', (path) => this.handleFileEvent('addDir', path))
-      .on('unlinkDir', (path) => this.handleFileEvent('unlinkDir', path))
+      .on('add', (path) => this.handleFileEvent(FileChangeAction.ADD, path))
+      .on('change', (path) => this.handleFileEvent(FileChangeAction.CHANGE, path))
+      .on('unlink', (path) => this.handleFileEvent(FileChangeAction.UNLINK, path))
+      .on('addDir', (path) => this.handleFileEvent(FileChangeAction.ADD_DIR, path))
+      .on('unlinkDir', (path) => this.handleFileEvent(FileChangeAction.UNLINK_DIR, path))
       .on('error', (error) => this.logError('Watcher error:', error))
       .on('ready', () => this.logInfo('File monitoring ready'));
   }
@@ -83,7 +90,7 @@ export class FileMonitor extends BaseMonitor {
     }
   }
 
-  private handleFileEvent(action: FileChangeEvent['action'], filePath: string): void {
+  private handleFileEvent(action: FileChangeAction, filePath: string): void {
     const extension = extname(filePath);
     
     // Filter by extension if configured
@@ -108,7 +115,7 @@ export class FileMonitor extends BaseMonitor {
     this.changeBuffer.set(key, timeout);
   }
 
-  private async processFileEvent(action: FileChangeEvent['action'], filePath: string): Promise<void> {
+  private async processFileEvent(action: FileChangeAction, filePath: string): Promise<void> {
     const relativePath = relative(process.cwd(), filePath);
     const extension = extname(filePath);
 
@@ -121,7 +128,7 @@ export class FileMonitor extends BaseMonitor {
     };
 
     // Add file stats for certain events
-    if (action === 'add' || action === 'change') {
+    if (action === FileChangeAction.ADD || action === FileChangeAction.CHANGE) {
       try {
         // Use dynamic import for fs module in ESM
         const { statSync } = await import('fs');
@@ -135,14 +142,67 @@ export class FileMonitor extends BaseMonitor {
       }
     }
 
+    // Emit through both legacy system and new event engine
     this.emitEvent('file:change', event);
-    this.analyzeContext(event);
+    await this.analyzeContext(event);
+    
+    // Publish to event engine
+    await this.publishFileEvent(event);
   }
 
   /**
+   * Publish file event to the event engine
+   */
+  private async publishFileEvent(event: FileChangeEvent): Promise<void> {
+    // Map action to FileEventType
+    let eventType: FileEventType;
+    const isDirectory = event.action === FileChangeAction.ADD_DIR || event.action === FileChangeAction.UNLINK_DIR;
+    
+    switch (event.action) {
+      case FileChangeAction.ADD:
+      case FileChangeAction.ADD_DIR:
+        eventType = isDirectory ? FileEventType.DIR_CREATED : FileEventType.FILE_CREATED;
+        break;
+      case FileChangeAction.CHANGE:
+        eventType = FileEventType.FILE_CHANGED;
+        break;
+      case FileChangeAction.UNLINK:
+      case FileChangeAction.UNLINK_DIR:
+        eventType = isDirectory ? FileEventType.DIR_DELETED : FileEventType.FILE_DELETED;
+        break;
+      default:
+        eventType = FileEventType.FILE_CHANGED;
+    }
+    
+    // Create file event
+    const fileEvent = FileEventBuilder.createFileEvent(
+      eventType,
+      {
+        action: event.action,
+        newFile: {
+          path: event.path,
+          relativePath: event.relativePath,
+          name: basename(event.path),
+          extension: event.extension,
+          ...(event.stats?.size !== undefined && { size: event.stats.size }),
+          ...(event.stats?.modified !== undefined && { modifiedAt: event.stats.modified }),
+          isDirectory,
+        },
+        description: `File ${event.action}: ${event.relativePath}`,
+      },
+      {
+        severity: EventSeverity.INFO,
+      }
+    );
+    
+    // Publish to event engine
+    await eventEngine.publish(fileEvent);
+  }
+  
+  /**
    * Analyze the context of file changes
    */
-  private analyzeContext(event: FileChangeEvent): void {
+  private async analyzeContext(event: FileChangeEvent): Promise<void> {
     const { relativePath, extension, action } = event;
 
     // Detect test file changes
@@ -192,6 +252,18 @@ export class FileMonitor extends BaseMonitor {
         description: `Build output ${action}: ${relativePath}`,
       });
     }
+  }
+
+  /**
+   * Get monitor configuration
+   */
+  getConfig() {
+    return {
+      name: 'FileMonitor',
+      enabled: true,
+      paths: this.paths,
+      ignore: this.ignorePatterns,
+    };
   }
 
   /**

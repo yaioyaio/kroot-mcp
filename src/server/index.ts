@@ -29,6 +29,12 @@ import {
 } from './types.js';
 import { FileMonitor } from '../monitors/file.js';
 import type { MonitorEvent } from '../monitors/base.js';
+import { eventEngine, EventCategory, BaseEvent } from '../events/index.js';
+import { getStorageManager } from '../storage/index.js';
+
+// Initialize Storage Manager
+const storageManager = getStorageManager();
+storageManager.connectEventEngine(eventEngine);
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -151,6 +157,16 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 이벤트 시스템 통계 도구
+    this.registerTool({
+      name: 'getEventStatistics',
+      description: 'EventEngine의 통계 정보를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -180,7 +196,7 @@ class DevFlowMonitorServer {
     });
 
     // 도구 실행 요청 핸들러
-    this.server.setRequestHandler(CallToolRequestSchema, (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       this.logDebug(`Executing tool: ${name}`, args);
@@ -190,7 +206,7 @@ class DevFlowMonitorServer {
       }
 
       try {
-        return this.executeTool(name, args || {});
+        return await this.executeTool(name, args || {});
       } catch (error) {
         this.logError(`Error executing tool ${name}:`, error);
         throw new McpError(
@@ -204,10 +220,10 @@ class DevFlowMonitorServer {
   /**
    * 도구 실행 로직
    */
-  private executeTool(
+  private async executeTool(
     name: string,
     args: unknown,
-  ): { content: Array<{ type: 'text'; text: string }> } {
+  ): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
     switch (name) {
       case 'getProjectStatus':
         return this.getProjectStatus(args as GetProjectStatusArgs);
@@ -220,6 +236,9 @@ class DevFlowMonitorServer {
 
       case 'analyzeBottlenecks':
         return this.analyzeBottlenecks(args as AnalyzeBottlenecksArgs);
+
+      case 'getEventStatistics':
+        return await this.getEventStatistics();
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -407,12 +426,40 @@ class DevFlowMonitorServer {
   }
 
   /**
+   * 이벤트 시스템 통계 조회
+   */
+  private async getEventStatistics(): Promise<{
+    content: Array<{ type: 'text'; text: string }>;
+  }> {
+    const eventStats = eventEngine.getStatistics();
+    const storageStats = await storageManager.getStatistics();
+    const response = {
+      eventEngine: {
+        statistics: eventStats,
+        queueSize: eventEngine.getQueueSize(),
+        subscriberCount: eventEngine.getSubscriberCount(),
+      },
+      storage: storageStats,
+      timestamp: new Date().toISOString(),
+    };
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2),
+        },
+      ],
+    };
+  }
+
+  /**
    * 파일 모니터 초기화
    */
   private initializeFileMonitor(): void {
     this.fileMonitor = new FileMonitor();
     
-    // Listen for file events
+    // Listen for file events from FileMonitor (legacy)
     this.fileMonitor.on('event', (event: MonitorEvent) => {
       // Add to activity log
       this.activityLog.push(event);
@@ -425,12 +472,45 @@ class DevFlowMonitorServer {
       this.logDebug(`File event: ${event.type}`, event.data);
     });
     
+    // Subscribe to EventEngine for all file events
+    eventEngine.subscribe(
+      '*',
+      (event: BaseEvent) => {
+        // Only process file events
+        if (event.category === EventCategory.FILE) {
+          this.logDebug(`EventEngine file event: ${event.type}`, event.data);
+          
+          // Convert to MonitorEvent format for backward compatibility
+          const monitorEvent: MonitorEvent = {
+            type: event.type,
+            timestamp: event.timestamp.getTime(),
+            source: event.source,
+            data: event.data,
+            ...(event.metadata && { metadata: event.metadata }),
+          };
+          
+          // Also add EventEngine events to activity log
+          if (!this.activityLog.some(e => 
+            e.type === monitorEvent.type && 
+            Math.abs(e.timestamp - monitorEvent.timestamp) < 100
+          )) {
+            this.activityLog.push(monitorEvent);
+            
+            if (this.activityLog.length > 1000) {
+              this.activityLog = this.activityLog.slice(-1000);
+            }
+          }
+        }
+      },
+      { priority: 10 }
+    );
+    
     // Start monitoring
     this.fileMonitor.start().catch((error) => {
       this.logError('Failed to start file monitor:', error);
     });
     
-    this.logInfo('File monitor initialized');
+    this.logInfo('File monitor initialized with EventEngine integration');
   }
 
   /**
@@ -477,6 +557,10 @@ class DevFlowMonitorServer {
       await this.fileMonitor.stop();
       this.logInfo('File monitor stopped');
     }
+    
+    // Close storage manager
+    storageManager.close();
+    this.logInfo('Storage manager closed');
     
     this.logInfo('MCP Server stopped');
   }

@@ -78,27 +78,37 @@ devflow-monitor-mcp/
 - ✅ MCP 서버와 FileMonitor 통합 (getActivityLog에서 실제 이벤트 사용)
 - ✅ 파일 모니터 테스트 스크립트 작성 (tests/manual/test-file-monitor.js)
 - ✅ 테스트 파일 재구성 (4개 테스트 파일 tests/manual/로 이동)
+- ✅ EventEmitter3 기반 이벤트 시스템 구축 (436줄)
+- ✅ 이벤트 타입 정의 및 검증 (Zod 스키마 기반)
+- ✅ SQLite 데이터베이스 6개 테이블 설계 및 구현
+- ✅ Repository 패턴 데이터 접근 계층 구현
+- ✅ Vitest 테스트 프레임워크 설정 및 테스트 작성
+- ✅ API 문서화 28페이지 완성 (docs/API.md)
+- ✅ 설치 가이드 30페이지 완성 (docs/INSTALLATION.md)
+- ✅ 통합 테스트 검증 및 이슈 해결
 
-### 진행 중인 마일스톤
-**마일스톤 1: MVP 기반 구축 (1-2주차)**
+### 완료된 마일스톤
+**마일스톤 1: MVP 기반 구축 (1-2주차)** ✅ 완료 (2025-08-03)
 - [x] 프로젝트 초기화 ✅ (2025-08-02)
 - [x] MCP 서버 기본 구현 ✅ (2025-08-02)
 - [x] 파일 시스템 모니터링 ✅ (2025-08-03)
-- [ ] 이벤트 시스템 구축
-- [ ] 데이터 저장소 구현
+- [x] 이벤트 시스템 구축 ✅ (2025-08-03)
+- [x] 데이터 저장소 구현 ✅ (2025-08-03)
+- [x] 테스트 및 문서화 ✅ (2025-08-03)
 
-### 다음 작업
-1. **이벤트 시스템 구축**
-   - EventEmitter3 설치 및 설정
-   - 이벤트 타입 정의 (`src/events/types/`)
-   - EventEngine 클래스 구현
-   - 이벤트 검증 로직 구현
+### 다음 마일스톤
+**마일스톤 2: 핵심 통합 구현 (3-5주차)**
+1. **Git 통합**
+   - simple-git 설치
+   - GitMonitor 클래스 구현
+   - Git 이벤트 감지 (commit, branch, merge)
+   - 브랜치 패턴 분석
 
-2. **데이터 저장소 구현**
-   - better-sqlite3 설치
-   - 데이터베이스 스키마 설계
-   - Repository 패턴 구현
-   - 마이그레이션 시스템 구현
+2. **외부 API 통합**
+   - API 클라이언트 베이스 구축
+   - Jira API 통합
+   - Notion API 통합
+   - WebSocket 실시간 통신
 
 ## 주요 명령어
 
@@ -118,7 +128,7 @@ npm run typecheck    # TypeScript 타입 체크
 
 - [프로젝트 계획서](../PLANNING.md)
 - [작업 목록](../TASKS.md)
-- [오늘의 할 일](../docs/todolist/TODOLIST.2025-08-02.md)
+- [오늘의 할 일](../docs/todolist/TODOLIST.2025-08-03.md)
 - [운영 가이드](../docs/operations/README.md)
 - [기능 명세](../docs/FEATURES.md)
 - [프로젝트 구조](../docs/PROJECT_STRUCTURE_AND_STYLE.md)
@@ -150,4 +160,10 @@ npm run typecheck    # TypeScript 타입 체크
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
 작성자: yaioyaio  
-상태: 마일스톤 1 - 프로젝트 초기화 완료 ✅, MCP 서버 구현 완료 ✅, 파일 시스템 모니터링 완료 ✅
+상태: **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
+- 프로젝트 초기화 및 설정 ✅
+- MCP 서버 기본 구현 ✅
+- 파일 시스템 모니터링 ✅
+- 이벤트 시스템 구축 ✅
+- 데이터 저장소 구현 ✅
+- 테스트 및 문서화 ✅
