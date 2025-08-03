@@ -139,7 +139,7 @@ devflow-monitor-mcp/
 - ✅ 이벤트 브로드캐스팅 구현 (실시간 이벤트 스트리밍)
 - ✅ 클라이언트별 필터링 (카테고리, 심각도, 소스별 필터링)
 - ✅ 연결 상태 모니터링 (통계 조회, 자동 정리)
-- ✅ MCP WebSocket 도구 통합 (5개 도구: start/stop/stats/notification)
+- ✅ MCP WebSocket 도구 통합 (5개 도구: startWebSocketServer/stopWebSocketServer/getWebSocketStats/getStreamStats/broadcastSystemNotification)
 - ✅ 사용자 테스트 가이드 작성 (USER_TESTING_GUIDE.md, QUICK_TEST_CHECKLIST.md)
 - ✅ 실시간 통신 검증 스크립트 (3개 테스트 파일)
 
@@ -206,7 +206,7 @@ devflow-monitor-mcp/
    - [x] 클라이언트별 필터링 ✅ (카테고리, 심각도, 소스별 필터링)
    - [x] 연결 상태 모니터링 ✅ (통계 조회, 자동 정리)
    - [x] 스트림 매니저 구현 ✅ (src/server/stream-manager.ts - 404줄)
-   - [x] MCP WebSocket 도구 통합 ✅ (5개 도구: start/stop/stats/notification)
+   - [x] MCP WebSocket 도구 통합 ✅ (5개 도구: startWebSocketServer/stopWebSocketServer/getWebSocketStats/getStreamStats/broadcastSystemNotification)
    - [x] 사용자 테스트 가이드 작성 ✅ (USER_TESTING_GUIDE.md, QUICK_TEST_CHECKLIST.md)
    - [x] 실시간 통신 검증 스크립트 ✅ (3개 테스트 파일)
 
@@ -266,22 +266,4 @@ npm run typecheck    # TypeScript 타입 체크
 
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
-작성자: yaioyaio  
-상태: **마일스톤 2: 핵심 통합 구현 - Git 통합 및 외부 API 통합 완료** ✅ (2025-08-03)
-
-**완료된 마일스톤:**
-- **마일스톤 1: MVP 기반 구축 완료** ✅ (2025-08-03)
-  - 프로젝트 초기화 및 설정 ✅
-  - MCP 서버 기본 구현 ✅
-  - 파일 시스템 모니터링 ✅
-  - 이벤트 시스템 구축 ✅
-  - 데이터 저장소 구현 ✅
-  - 테스트 및 문서화 ✅
-
-**진행 중인 마일스톤:**
-- **마일스톤 2: 핵심 통합 구현** (진행률: 80% - 4/5 섹션 완료)
-  - Git 통합 ✅ (2025-08-03) - GitMonitor 클래스, 이벤트 감지, 브랜치 패턴 분석, Conventional Commits 분석
-  - 외부 API 통합 ✅ (2025-08-03) - Jira, Notion, Figma 클라이언트 및 통합 관리자 구현 (총 65KB)
-  - 인메모리 이벤트 큐 구현 ✅ (2025-08-03) - EventQueue, QueueManager 구현, 우선순위 큐, 배치 처리
-  - MCP 도구 API 구현 ✅ (2025-08-03) - 7개 도구 완전 구현 (4개 확장 + 2개 신규)
-  - 실시간 통신 (다음 작업)
+작성자: yaioyaio

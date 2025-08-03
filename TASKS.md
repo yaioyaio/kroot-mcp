@@ -165,7 +165,7 @@
   - [x] `checkMethodology` 도구 구현 ✓ (DDD/TDD/BDD/EDA 준수도 검사)
   - [x] `generateReport` 도구 구현 ✓ (일일/주간/월간 리포트 생성)
 - [x] 추가 완료 사항
-  - [x] 총 7개 MCP 도구 완전 구현 ✓ (기존 5개 + 신규 2개)
+  - [x] 총 12개 MCP 도구 완전 구현 ✓ (기존 7개 + WebSocket 5개)
   - [x] 실제 데이터 기반 분석 ✓ (EventEngine, QueueManager 통합)
   - [x] TypeScript 엄격 모드 준수 ✓ (모든 타입 안전성 보장)
   - [x] 종합적인 분석 로직 ✓ (방법론 점수, 병목 감지, 효율성 메트릭)
@@ -181,7 +181,7 @@
   - [x] 클라이언트별 필터링 ✓ (카테고리, 심각도, 소스별)
   - [x] 연결 상태 모니터링 ✓ (통계 조회, 자동 정리)
 - [x] 추가 완료 사항
-  - [x] MCP WebSocket 도구 통합 ✓ (5개 도구: start/stop/stats/notification)
+  - [x] MCP WebSocket 도구 통합 ✓ (5개 도구: startWebSocketServer/stopWebSocketServer/getWebSocketStats/getStreamStats/broadcastSystemNotification)
   - [x] 시스템 알림 브로드캐스트 ✓ (severity별 분류)
   - [x] 이벤트 버퍼링 및 재생 ✓ (15분 윈도우, 레이트 리미팅)
   - [x] 사용자 테스트 가이드 ✓ (USER_TESTING_GUIDE.md, QUICK_TEST_CHECKLIST.md)
@@ -446,23 +446,4 @@
 
 작성일: 2025-08-02  
 최종 수정일: 2025-08-03  
-작성자: yaioyaio  
-진행 상황: **마일스톤 2: 핵심 통합 구현 완료** ✅ (2025-08-03)
-
-**완료된 마일스톤:**
-- 마일스톤 1: MVP 기반 구축 완료 ✅ (2025-08-03)
-  - 프로젝트 초기화 ✅, MCP 서버 구현 ✅, 파일 시스템 모니터링 ✅
-  - 이벤트 시스템 구축 ✅, 데이터 저장소 구현 ✅, 테스트 및 문서화 ✅
-
-- 마일스톤 2: 핵심 통합 구현 완료 ✅ (2025-08-03)
-  - Git 통합 ✅ - GitMonitor 클래스 구현, Git 이벤트 감지, 브랜치 패턴 분석
-  - 외부 API 통합 ✅ - Jira, Notion, Figma API 클라이언트 구현
-  - 인메모리 이벤트 큐 구현 ✅ - EventQueue 및 QueueManager 시스템
-  - MCP 도구 API 구현 ✅ - 12개 도구 완전 구현 (7개 기존 + 5개 WebSocket)
-  - 실시간 통신 ✅ - WebSocket 서버 및 스트림 매니저 구현
-
-**다음 마일스톤:**
-- 마일스톤 3: 지능형 모니터링 (다음 단계)
-  - 개발 단계 인식 시스템
-  - 방법론 모니터링 (DDD, TDD, BDD, EDA)
-  - CLI/TUI 대시보드
+작성자: yaioyaio
