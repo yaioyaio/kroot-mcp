@@ -128,10 +128,20 @@ devflow-monitor-mcp/
 - ✅ analyzeBottlenecks 도구 확장 (실제 병목 감지, 시스템 상태 분석)
 - ✅ checkMethodology 도구 구현 (DDD/TDD/BDD/EDA 준수도 검사)
 - ✅ generateReport 도구 구현 (일일/주간/월간 리포트 생성)
-- ✅ 총 7개 MCP 도구 완전 구현 (기존 5개 확장 + 신규 2개)
+- ✅ 총 12개 MCP 도구 완전 구현 (기존 7개 + WebSocket 5개)
 - ✅ 실제 데이터 기반 분석 (EventEngine, QueueManager 통합)
 - ✅ TypeScript 엄격 모드 준수 (모든 타입 안전성 보장)
 - ✅ 종합적인 분석 로직 (방법론 점수, 병목 감지, 효율성 메트릭)
+- ✅ ws 패키지 설치 및 설정 (v8.18.3 + @types/ws)
+- ✅ WebSocket 서버 구현 (src/server/websocket.ts - 413줄)
+- ✅ 스트림 매니저 구현 (src/server/stream-manager.ts - 404줄)
+- ✅ 클라이언트 연결 관리 (연결 상태 추적, 하트비트 메커니즘)
+- ✅ 이벤트 브로드캐스팅 구현 (실시간 이벤트 스트리밍)
+- ✅ 클라이언트별 필터링 (카테고리, 심각도, 소스별 필터링)
+- ✅ 연결 상태 모니터링 (통계 조회, 자동 정리)
+- ✅ MCP WebSocket 도구 통합 (5개 도구: start/stop/stats/notification)
+- ✅ 사용자 테스트 가이드 작성 (USER_TESTING_GUIDE.md, QUICK_TEST_CHECKLIST.md)
+- ✅ 실시간 통신 검증 스크립트 (3개 테스트 파일)
 
 ### 완료된 마일스톤
 **마일스톤 1: MVP 기반 구축 (1-2주차)** ✅ 완료 (2025-08-03)
@@ -142,8 +152,7 @@ devflow-monitor-mcp/
 - [x] 데이터 저장소 구현 ✅ (2025-08-03)
 - [x] 테스트 및 문서화 ✅ (2025-08-03)
 
-### 진행 중인 마일스톤
-**마일스톤 2: 핵심 통합 구현 (3-5주차)** - 진행률: 80% (4/5 섹션 완료)
+**마일스톤 2: 핵심 통합 구현 (3-5주차)** ✅ 완료 (2025-08-03) - 진행률: 100% (5/5 섹션 완료)
 
 1. **Git 통합** ✅ 완료 (2025-08-03)
    - [x] simple-git 설치 ✅
@@ -189,13 +198,24 @@ devflow-monitor-mcp/
    - [x] checkMethodology 도구 구현 ✅ (DDD/TDD/BDD/EDA 준수도 검사)
    - [x] generateReport 도구 구현 ✅ (일일/주간/월간 리포트 생성)
 
-5. **실시간 통신** (계획 중)
-   - [ ] ws 패키지 설치 및 설정
-   - [ ] WebSocket 서버 구현
-   - [ ] 클라이언트 연결 관리
-   - [ ] 이벤트 브로드캐스팅 구현
-   - [ ] 클라이언트별 필터링
-   - [ ] 연결 상태 모니터링
+5. **실시간 통신** ✅ 완료 (2025-08-03)
+   - [x] ws 패키지 설치 및 설정 ✅ (v8.18.3 + @types/ws)
+   - [x] WebSocket 서버 구현 ✅ (src/server/websocket.ts - 413줄)
+   - [x] 클라이언트 연결 관리 ✅ (연결 상태 추적, 하트비트 메커니즘)
+   - [x] 이벤트 브로드캐스팅 구현 ✅ (실시간 이벤트 스트리밍)
+   - [x] 클라이언트별 필터링 ✅ (카테고리, 심각도, 소스별 필터링)
+   - [x] 연결 상태 모니터링 ✅ (통계 조회, 자동 정리)
+   - [x] 스트림 매니저 구현 ✅ (src/server/stream-manager.ts - 404줄)
+   - [x] MCP WebSocket 도구 통합 ✅ (5개 도구: start/stop/stats/notification)
+   - [x] 사용자 테스트 가이드 작성 ✅ (USER_TESTING_GUIDE.md, QUICK_TEST_CHECKLIST.md)
+   - [x] 실시간 통신 검증 스크립트 ✅ (3개 테스트 파일)
+
+### 다음 마일스톤
+**마일스톤 3: 지능형 모니터링 (6-8주차)** (다음 단계)
+- 개발 단계 인식 시스템
+- 방법론 모니터링 (DDD, TDD, BDD, EDA)  
+- CLI/TUI 대시보드
+- 메트릭 및 분석 강화
 
 ## 주요 명령어
 
