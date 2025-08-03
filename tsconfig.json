@@ -5,13 +5,13 @@
     "outDir": "./dist",
     
     // Environment Settings
-    "module": "node16",
+    "module": "ESNext",
     "target": "es2022",
     "lib": ["es2022"],
     "types": ["node"],
     
     // Module Resolution
-    "moduleResolution": "node16",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

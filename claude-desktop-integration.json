@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "desktop-commander": {
+      "command": "/Users/yaio/.nvm/versions/node/v20.18.1/bin/npx",
+      "args": [
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "@wonderwhy-er/desktop-commander",
+        "--key",
+        "09079a76-ebb7-485b-9c7b-ffa06f55f66b"
+      ],
+      "env": {
+        "NODE_PATH": "/Users/yaio/.nvm/versions/node/v20.18.1/lib/node_modules",
+        "PATH": "/Users/yaio/.nvm/versions/node/v20.18.1/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "playwright": {
+      "command": "/Users/yaio/.nvm/versions/node/v20.18.1/bin/npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {
+        "NODE_PATH": "/Users/yaio/.nvm/versions/node/v20.18.1/lib/node_modules",
+        "PATH": "/Users/yaio/.nvm/versions/node/v20.18.1/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "devflow-monitor": {
+      "command": "node",
+      "args": [
+        "/Users/yaio/dev/workspace/cincotime_projects/kroot-mcp/dist/server/index.js"
+      ],
+      "cwd": "/Users/yaio/dev/workspace/cincotime_projects/kroot-mcp",
+      "env": {
+        "NODE_ENV": "development",
+        "MCP_DEBUG": "true",
+        "MCP_LOG_LEVEL": "debug"
+      }
+    }
+  }
+}

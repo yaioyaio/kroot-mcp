@@ -2,6 +2,7 @@
   "name": "devflow-monitor-mcp",
   "version": "0.1.0",
   "description": "AI-powered development process monitoring MCP server",
+  "type": "module",
   "main": "dist/server/index.js",
   "directories": {
     "doc": "docs"
@@ -18,7 +19,13 @@
     "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["mcp", "monitoring", "development", "ai", "typescript"],
+  "keywords": [
+    "mcp",
+    "monitoring",
+    "development",
+    "ai",
+    "typescript"
+  ],
   "author": "yaioyaio",
   "license": "MIT",
   "devDependencies": {
@@ -30,5 +37,8 @@
     "eslint-plugin-prettier": "^5.5.3",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.1"
   }
 }

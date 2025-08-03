@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "devflow-monitor": {
+      "command": "node",
+      "args": [
+        "/Users/yaio/dev/workspace/cincotime_projects/kroot-mcp/dist/server/index.js"
+      ],
+      "cwd": "/Users/yaio/dev/workspace/cincotime_projects/kroot-mcp",
+      "env": {
+        "NODE_ENV": "development",
+        "MCP_DEBUG": "true",
+        "MCP_LOG_LEVEL": "debug"
+      }
+    }
+  }
+}
