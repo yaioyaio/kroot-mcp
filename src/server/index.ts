@@ -37,10 +37,20 @@ import { eventEngine, EventCategory, BaseEvent } from '../events/index.js';
 import { getStorageManager } from '../storage/index.js';
 import { wsServer } from './websocket.js';
 import { streamManager } from './stream-manager.js';
+import { StageAnalyzer } from '../analyzers/stage-analyzer.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
 storageManager.connectEventEngine(eventEngine);
+
+// Initialize Stage Analyzer
+const stageAnalyzer = new StageAnalyzer({
+  confidenceThreshold: 0.7,
+  transitionCooldown: 60000, // 1분
+  historySize: 50,
+  eventEngine,
+  storageManager
+});
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -231,6 +241,32 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 개발 단계 분석 도구
+    this.registerTool({
+      name: 'analyzeStage',
+      description: '현재 개발 단계를 분석하고 진행 상황을 제공합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          includeSubStages: {
+            type: 'boolean',
+            description: '코딩 세부 단계 포함 여부',
+            default: true,
+          },
+          includeHistory: {
+            type: 'boolean',
+            description: '단계 전환 히스토리 포함 여부',
+            default: false,
+          },
+          historyLimit: {
+            type: 'number',
+            description: '히스토리 항목 수 제한',
+            default: 10,
+          },
+        },
+      },
+    });
+
     // WebSocket 서버 제어 도구
     this.registerTool({
       name: 'startWebSocketServer',
@@ -377,6 +413,9 @@ class DevFlowMonitorServer {
       
       case 'generateReport':
         return this.generateReport(args as GenerateReportArgs);
+
+      case 'analyzeStage':
+        return this.analyzeStage(args as { includeSubStages?: boolean; includeHistory?: boolean; historyLimit?: number });
 
       case 'startWebSocketServer':
         return await this.startWebSocketServer(args as { port?: number });
@@ -2038,6 +2077,131 @@ class DevFlowMonitorServer {
   private logError(message: string, ...args: unknown[]): void {
     // eslint-disable-next-line no-console
     console.error(`[ERROR] ${message}`, ...args);
+  }
+
+  /**
+   * 개발 단계 분석
+   */
+  private analyzeStage(args: { 
+    includeSubStages?: boolean; 
+    includeHistory?: boolean; 
+    historyLimit?: number;
+  }): {
+    content: Array<{ type: 'text'; text: string }>;
+  } {
+    const {
+      includeSubStages = true,
+      includeHistory = false,
+      historyLimit = 10,
+    } = args;
+
+    // 현재 분석 실행
+    const analysis = stageAnalyzer.analyze();
+    
+    // 결과 포맷팅
+    const result: any = {
+      currentStage: analysis.currentStage,
+      confidence: `${Math.round(analysis.confidence * 100)}%`,
+      stageDescription: this.getStageDescription(analysis.currentStage),
+    };
+
+    // 세부 단계 정보 추가
+    if (includeSubStages && analysis.activeSubStages && analysis.activeSubStages.length > 0) {
+      result.activeSubStages = analysis.activeSubStages.map(subStage => ({
+        name: subStage,
+        description: this.getSubStageDescription(subStage),
+      }));
+    }
+
+    // 단계별 진행률
+    const progressArray: Array<{ stage: string; progress: number }> = [];
+    analysis.stageProgress.forEach((progress, stage) => {
+      progressArray.push({
+        stage,
+        progress,
+      });
+    });
+    result.stageProgress = progressArray;
+
+    // 히스토리 포함
+    if (includeHistory) {
+      result.recentTransitions = stageAnalyzer.getTransitionHistory(historyLimit).map(transition => ({
+        from: transition.fromStage || 'start',
+        to: transition.toStage,
+        timestamp: new Date(transition.timestamp).toISOString(),
+        confidence: `${Math.round(transition.confidence * 100)}%`,
+        reason: transition.reason,
+      }));
+    }
+
+    // 제안사항
+    result.suggestions = analysis.suggestions;
+
+    // 단계별 소요 시간 (분 단위)
+    const timeSpent: Record<string, number> = {};
+    progressArray.forEach(({ stage }) => {
+      const ms = stageAnalyzer.getStageTimeSpent(stage as any);
+      if (ms > 0) {
+        timeSpent[stage] = Math.round(ms / 60000); // 분 단위로 변환
+      }
+    });
+    if (Object.keys(timeSpent).length > 0) {
+      result.timeSpentMinutes = timeSpent;
+    }
+
+    // JSON 포맷으로 반환
+    const text = JSON.stringify(result, null, 2);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text,
+        },
+      ],
+    };
+  }
+
+  /**
+   * 단계 설명 가져오기
+   */
+  private getStageDescription(stage: string): string {
+    const descriptions: Record<string, string> = {
+      prd: 'PRD (Product Requirements Document) 작성',
+      planning: '기획서 작성',
+      erd: 'ERD (Entity Relationship Diagram) 설계',
+      wireframe: 'Wireframe 설계',
+      screen_design: '화면단위 기획서 작성',
+      design: '디자인 작업',
+      frontend: '프론트엔드 개발',
+      backend: '백엔드 개발',
+      ai_collab: 'AI 협업',
+      coding: '코딩 작업',
+      git: 'Git 관리',
+      deployment: '배포',
+      operation: '운영'
+    };
+    return descriptions[stage] || stage;
+  }
+
+  /**
+   * 세부 단계 설명 가져오기
+   */
+  private getSubStageDescription(subStage: string): string {
+    const descriptions: Record<string, string> = {
+      use_case: 'UseCase 도출',
+      event_storming: 'Event Storming',
+      domain_modeling: 'Domain 모델링',
+      use_case_detail: 'UseCase 상세 설계',
+      ai_prompt_design: 'AI 프롬프트 설계',
+      initial_impl: '1차 뼈대 구현(AI)',
+      business_logic: '비즈니스 로직 구현',
+      refactoring: '리팩토링',
+      unit_test: '단위 테스트',
+      integration_test: '통합 테스트',
+      e2e_test: 'E2E 테스트'
+    };
+    return descriptions[subStage] || subStage;
   }
 
   /**
