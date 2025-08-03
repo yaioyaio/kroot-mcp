@@ -16,6 +16,7 @@ import {
   EventCategory,
   EventSeverity,
 } from './types/index.js';
+// queueManager는 나중에 동적으로 임포트
 
 /**
  * 이벤트 구독자 정보
@@ -48,6 +49,8 @@ export class EventEngine extends EventEmitter {
   private stats: EventStats;
   private transformers: Map<string, EventTransformer[]> = new Map();
   private globalFilters: EventFilter[] = [];
+  private useQueueManager: boolean = true;
+  private queueManager: any = null;
 
   constructor() {
     super();
@@ -70,6 +73,11 @@ export class EventEngine extends EventEmitter {
     Object.values(EventSeverity).forEach((severity) => {
       this.stats.eventsBySeverity.set(severity, 0);
     });
+
+    // QueueManager 이벤트 처리기 설정
+    if (this.useQueueManager) {
+      this.setupQueueManagerIntegration();
+    }
   }
 
   /**
@@ -148,7 +156,7 @@ export class EventEngine extends EventEmitter {
    */
   async publish<T extends BaseEvent = BaseEvent>(
     event: T,
-    _options: EventPublishOptions = {},
+    options: EventPublishOptions = {},
   ): Promise<void> {
     // 통계 업데이트
     this.updateStatistics(event);
@@ -161,12 +169,23 @@ export class EventEngine extends EventEmitter {
     // 변환기 적용
     const transformedEvent = await this.applyTransformers(event);
 
+    // QueueManager 사용 시 큐로 라우팅
+    if (this.useQueueManager && this.queueManager && (options as any).useQueue !== false) {
+      const routed = await this.queueManager.routeEvent(transformedEvent);
+      if (routed) {
+        // 큐로 라우팅된 경우 직접 처리하지 않음
+        this.emit('event:queued', transformedEvent);
+        return;
+      }
+    }
+
     // 이벤트 큐에 추가
     this.eventQueue.push(transformedEvent);
 
     // EventEmitter3로 이벤트 발행 (processEvent에서 구독자 처리는 별도)
     this.emit(transformedEvent.type, transformedEvent);
     this.emit('*', transformedEvent);
+    this.emit('event:published', transformedEvent);
   }
 
   /**
@@ -228,7 +247,7 @@ export class EventEngine extends EventEmitter {
         number
       >,
       eventsPerHour: this.calculateEventsPerHour(),
-      lastEventTime: this.stats.lastEventTime as Date,
+      ...(this.stats.lastEventTime && { lastEventTime: this.stats.lastEventTime }),
     };
   }
 
@@ -310,7 +329,7 @@ export class EventEngine extends EventEmitter {
    */
   private updateStatistics(event: BaseEvent): void {
     this.stats.totalEvents++;
-    this.stats.lastEventTime = Date.now();
+    this.stats.lastEventTime = new Date();
 
     // 카테고리별 통계
     const categoryCount = this.stats.eventsByCategory.get(event.category) || 0;
@@ -379,6 +398,169 @@ export class EventEngine extends EventEmitter {
    */
   private generateSubscriberId(): string {
     return `sub-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  }
+
+  /**
+   * QueueManager 통합 설정
+   */
+  private async setupQueueManagerIntegration(): Promise<void> {
+    try {
+      // 동적 임포트로 순환 참조 해결
+      const { queueManager } = await import('./queue-manager.js');
+      this.queueManager = queueManager;
+      
+      // 기본 처리기 등록
+      queueManager.registerProcessor('default', async (events) => {
+        for (const event of events) {
+          await this.processQueuedEvent(event);
+        }
+      });
+
+      queueManager.registerProcessor('priority', async (events) => {
+        for (const event of events) {
+          await this.processQueuedEvent(event);
+        }
+      });
+
+      queueManager.registerProcessor('batch', async (events) => {
+        // 배치 처리 최적화
+        await this.processBatchEvents(events);
+      });
+
+      // 실패한 이벤트 재처리
+      queueManager.registerProcessor('failed', async (events) => {
+        for (const event of events) {
+          try {
+            await this.processQueuedEvent(event);
+          } catch (error) {
+            console.error('Failed to reprocess event:', event.id, error);
+          }
+        }
+      });
+
+      // 큐 매니저 이벤트 리스닝
+      queueManager.on('error', (error: Error, queueName?: string) => {
+        console.error(`Queue error in ${queueName}:`, error);
+        this.emit('queue:error', { error, queueName });
+      });
+
+      queueManager.on('stats:update', (stats: any) => {
+        this.emit('queue:stats', stats);
+      });
+    } catch (error) {
+      console.error('Failed to setup queue manager integration:', error);
+      this.useQueueManager = false;
+    }
+  }
+
+  /**
+   * 이벤트와 매칭되는 구독자 찾기
+   */
+  private findMatchingSubscribers(event: BaseEvent): EventSubscriber[] {
+    const subscribers: EventSubscriber[] = [];
+    
+    // 정확한 타입 매칭
+    const exactMatch = this.subscribers.get(event.type);
+    if (exactMatch) {
+      subscribers.push(...exactMatch);
+    }
+    
+    // 정규식 패턴 매칭
+    for (const [pattern, subs] of this.subscribers.entries()) {
+      if (pattern !== event.type) {
+        try {
+          const regex = new RegExp(pattern);
+          if (regex.test(event.type)) {
+            subscribers.push(...subs);
+          }
+        } catch {
+          // 정규식이 아닌 경우 무시
+        }
+      }
+    }
+    
+    return subscribers;
+  }
+
+  /**
+   * 큐에서 가져온 이벤트 처리
+   */
+  private async processQueuedEvent(event: BaseEvent): Promise<void> {
+    // 매칭되는 구독자 찾기
+    const matchingSubscribers = this.findMatchingSubscribers(event);
+
+    // 구독자에게 이벤트 전달
+    for (const subscriber of matchingSubscribers) {
+      try {
+        // 구독자별 필터 적용
+        if (subscriber.options.filter && !(await subscriber.options.filter(event))) {
+          continue;
+        }
+
+        // 핸들러 실행
+        await subscriber.handler(event);
+      } catch (error) {
+        console.error(`Error in event handler ${subscriber.id}:`, error);
+        throw error; // 재시도를 위해 에러 전파
+      }
+    }
+  }
+
+  /**
+   * 배치 이벤트 처리
+   */
+  private async processBatchEvents(events: BaseEvent[]): Promise<void> {
+    // 타입별로 그룹화
+    const eventsByType = new Map<string, BaseEvent[]>();
+    
+    for (const event of events) {
+      const list = eventsByType.get(event.type) || [];
+      list.push(event);
+      eventsByType.set(event.type, list);
+    }
+
+    // 타입별로 배치 처리
+    for (const [type, typeEvents] of eventsByType) {
+      const subscribers = this.subscribers.get(type) || [];
+      
+      for (const subscriber of subscribers) {
+        try {
+          // 배치 핸들러가 있는 경우
+          if ((subscriber.options as any).batchHandler) {
+            await (subscriber.options as any).batchHandler(typeEvents);
+          } else {
+            // 개별 처리
+            for (const event of typeEvents) {
+              if (!subscriber.options.filter || await subscriber.options.filter(event)) {
+                await subscriber.handler(event);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error in batch handler ${subscriber.id}:`, error);
+        }
+      }
+    }
+  }
+
+  /**
+   * 큐 관리자 활성화/비활성화
+   */
+  async setUseQueueManager(enabled: boolean): Promise<void> {
+    this.useQueueManager = enabled;
+    if (enabled && !this.queueManager) {
+      await this.setupQueueManagerIntegration();
+    }
+  }
+
+  /**
+   * 큐 통계 가져오기
+   */
+  getQueueStats(): Map<string, any> | null {
+    if (this.useQueueManager && this.queueManager) {
+      return this.queueManager.getAllStats();
+    }
+    return null;
   }
 }
 

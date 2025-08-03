@@ -143,6 +143,12 @@ export interface EventPublishOptions {
 
   /** 재시도 횟수 */
   retries?: number;
+
+  /** 큐 사용 여부 (기본값: true) */
+  useQueue?: boolean;
+
+  /** 이벤트 지속성 여부 (기본값: true) */
+  persist?: boolean;
 }
 
 /**
@@ -179,7 +185,7 @@ export interface EventStatistics {
   eventsPerHour: number;
 
   /** 마지막 이벤트 시간 */
-  lastEventTime?: number;
+  lastEventTime?: Date;
 }
 
 /**
