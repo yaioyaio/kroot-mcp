@@ -61,6 +61,10 @@ import {
   cacheManager,
   scalingManager
 } from '../performance/index.js';
+import { 
+  getSecurityManager,
+  DEFAULT_SECURITY_CONFIG
+} from '../security/index.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -93,6 +97,9 @@ notificationEngine.start();
 
 // Initialize Performance Management System
 await performanceManager.initialize();
+
+// Initialize Security System
+const securityManager = getSecurityManager(DEFAULT_SECURITY_CONFIG);
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -761,6 +768,234 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 보안 관련 도구
+    this.registerTool({
+      name: 'login',
+      description: '사용자 로그인을 수행합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          username: {
+            type: 'string',
+            description: '사용자명',
+          },
+          password: {
+            type: 'string',
+            description: '비밀번호',
+          },
+          rememberMe: {
+            type: 'boolean',
+            description: '로그인 상태 유지',
+            default: false,
+          },
+        },
+        required: ['username', 'password'],
+      },
+    });
+
+    this.registerTool({
+      name: 'verifyToken',
+      description: 'JWT 토큰을 검증합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          token: {
+            type: 'string',
+            description: 'JWT 토큰',
+          },
+        },
+        required: ['token'],
+      },
+    });
+
+    this.registerTool({
+      name: 'checkPermission',
+      description: '사용자 권한을 확인합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          userId: {
+            type: 'string',
+            description: '사용자 ID',
+          },
+          resource: {
+            type: 'string',
+            description: '리소스명',
+          },
+          action: {
+            type: 'string',
+            enum: ['create', 'read', 'update', 'delete', 'execute', 'admin'],
+            description: '액션',
+          },
+        },
+        required: ['userId', 'resource', 'action'],
+      },
+    });
+
+    this.registerTool({
+      name: 'generateAPIKey',
+      description: 'API 키를 생성합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          userId: {
+            type: 'string',
+            description: '사용자 ID',
+          },
+          name: {
+            type: 'string',
+            description: 'API 키 이름',
+          },
+          permissions: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: '권한 목록',
+          },
+          expiresAt: {
+            type: 'string',
+            description: '만료일 (ISO 8601 형식)',
+          },
+        },
+        required: ['userId', 'name', 'permissions'],
+      },
+    });
+
+    this.registerTool({
+      name: 'encryptData',
+      description: '데이터를 암호화합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'string',
+            description: '암호화할 데이터',
+          },
+        },
+        required: ['data'],
+      },
+    });
+
+    this.registerTool({
+      name: 'decryptData',
+      description: '데이터를 복호화합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          encrypted: {
+            type: 'string',
+            description: '암호화된 데이터',
+          },
+          iv: {
+            type: 'string',
+            description: 'Initialization Vector',
+          },
+          tag: {
+            type: 'string',
+            description: '인증 태그 (선택적)',
+          },
+          keyId: {
+            type: 'string',
+            description: '키 ID (선택적)',
+          },
+        },
+        required: ['encrypted', 'iv'],
+      },
+    });
+
+    this.registerTool({
+      name: 'getSecurityStats',
+      description: '보안 시스템 통계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'queryAuditLogs',
+      description: '감사 로그를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          startDate: {
+            type: 'string',
+            description: '시작 날짜 (ISO 8601 형식)',
+          },
+          endDate: {
+            type: 'string',
+            description: '종료 날짜 (ISO 8601 형식)',
+          },
+          eventTypes: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: '이벤트 타입 필터',
+          },
+          userId: {
+            type: 'string',
+            description: '사용자 ID',
+          },
+          ipAddress: {
+            type: 'string',
+            description: 'IP 주소',
+          },
+          limit: {
+            type: 'number',
+            description: '결과 제한',
+            default: 100,
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getAuditSummary',
+      description: '감사 로그 요약을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          startDate: {
+            type: 'string',
+            description: '시작 날짜 (ISO 8601 형식)',
+          },
+          endDate: {
+            type: 'string',
+            description: '종료 날짜 (ISO 8601 형식)',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'assignRole',
+      description: '사용자에게 역할을 할당합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          userId: {
+            type: 'string',
+            description: '대상 사용자 ID',
+          },
+          roleId: {
+            type: 'string',
+            description: '역할 ID',
+          },
+          assignedBy: {
+            type: 'string',
+            description: '할당하는 사용자 ID',
+          },
+          reason: {
+            type: 'string',
+            description: '할당 사유',
+          },
+        },
+        required: ['userId', 'roleId', 'assignedBy'],
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -910,6 +1145,37 @@ class DevFlowMonitorServer {
 
       case 'manageCaches':
         return await this.manageCaches(args as { action?: string; cacheType?: string });
+
+      // 보안 도구들
+      case 'login':
+        return await this.login(args as { username: string; password: string; rememberMe?: boolean });
+
+      case 'verifyToken':
+        return await this.verifyToken(args as { token: string });
+
+      case 'checkPermission':
+        return await this.checkPermission(args as { userId: string; resource: string; action: string });
+
+      case 'generateAPIKey':
+        return await this.generateAPIKey(args as { userId: string; name: string; permissions: string[]; expiresAt?: string });
+
+      case 'encryptData':
+        return await this.encryptData(args as { data: string });
+
+      case 'decryptData':
+        return await this.decryptData(args as { encrypted: string; iv: string; tag?: string; keyId?: string });
+
+      case 'getSecurityStats':
+        return this.getSecurityStats();
+
+      case 'queryAuditLogs':
+        return await this.queryAuditLogs(args as any);
+
+      case 'getAuditSummary':
+        return await this.getAuditSummary(args as { startDate?: string; endDate?: string });
+
+      case 'assignRole':
+        return await this.assignRole(args as { userId: string; roleId: string; assignedBy: string; reason?: string });
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -3340,6 +3606,308 @@ class DevFlowMonitorServer {
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to get dashboard notifications: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  // =================== 보안 관련 메소드들 ===================
+
+  /**
+   * 사용자 로그인
+   */
+  private async login(args: { username: string; password: string; rememberMe?: boolean }): Promise<any> {
+    try {
+      const clientInfo = {
+        ipAddress: 'localhost', // 실제 구현에서는 요청에서 추출
+        userAgent: 'mcp-client'
+      };
+
+      const result = await securityManager.login(
+        args.username,
+        args.password,
+        clientInfo,
+        args.rememberMe
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Login failed:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * JWT 토큰 검증
+   */
+  private async verifyToken(args: { token: string }): Promise<any> {
+    try {
+      const authContext = await securityManager.verifyToken(args.token);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            valid: !!authContext,
+            context: authContext ? {
+              userId: authContext.user.id,
+              username: authContext.user.username,
+              roles: authContext.user.roles.map(role => role.name),
+              sessionId: authContext.sessionId,
+              ipAddress: authContext.ipAddress
+            } : null
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Token verification failed:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 권한 확인
+   */
+  private async checkPermission(args: { userId: string; resource: string; action: string }): Promise<any> {
+    try {
+      const result = await securityManager.checkPermission(
+        args.userId,
+        {
+          resource: args.resource,
+          action: args.action as any
+        }
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Permission check failed:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Permission check failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * API 키 생성
+   */
+  private async generateAPIKey(args: { userId: string; name: string; permissions: string[]; expiresAt?: string }): Promise<any> {
+    try {
+      const expiresAt = args.expiresAt ? new Date(args.expiresAt) : undefined;
+      const apiKey = await securityManager.generateAPIKey(
+        args.userId,
+        args.name,
+        args.permissions,
+        expiresAt
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            apiKey,
+            message: 'API key generated successfully'
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('API key generation failed:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `API key generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 데이터 암호화
+   */
+  private async encryptData(args: { data: string }): Promise<any> {
+    try {
+      const result = await securityManager.encrypt(args.data);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            encrypted: result.encrypted,
+            iv: result.iv,
+            tag: result.tag
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Data encryption failed:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Data encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 데이터 복호화
+   */
+  private async decryptData(args: { encrypted: string; iv: string; tag?: string; keyId?: string }): Promise<any> {
+    try {
+      const decryptedData = await securityManager.decrypt(
+        {
+          encrypted: args.encrypted,
+          iv: args.iv,
+          tag: args.tag
+        },
+        args.keyId
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            data: decryptedData
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Data decryption failed:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Data decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보안 통계 조회
+   */
+  private getSecurityStats(): any {
+    try {
+      const stats = securityManager.getSecurityStats();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(stats, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get security stats:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get security stats: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 감사 로그 조회
+   */
+  private async queryAuditLogs(args: {
+    startDate?: string;
+    endDate?: string;
+    eventTypes?: string[];
+    userId?: string;
+    ipAddress?: string;
+    limit?: number;
+  }): Promise<any> {
+    try {
+      const query: any = {};
+      
+      if (args.startDate) query.startDate = new Date(args.startDate);
+      if (args.endDate) query.endDate = new Date(args.endDate);
+      if (args.eventTypes) query.eventTypes = args.eventTypes;
+      if (args.userId) query.userId = args.userId;
+      if (args.ipAddress) query.ipAddress = args.ipAddress;
+      if (args.limit) query.limit = args.limit;
+
+      const logs = await securityManager.queryAuditLogs(query);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            totalResults: logs.length,
+            logs: logs
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to query audit logs:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to query audit logs: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 감사 로그 요약
+   */
+  private async getAuditSummary(args: { startDate?: string; endDate?: string }): Promise<any> {
+    try {
+      const startDate = args.startDate ? new Date(args.startDate) : undefined;
+      const endDate = args.endDate ? new Date(args.endDate) : undefined;
+
+      const summary = await securityManager.getAuditSummary(startDate, endDate);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(summary, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get audit summary:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get audit summary: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 역할 할당
+   */
+  private async assignRole(args: { userId: string; roleId: string; assignedBy: string; reason?: string }): Promise<any> {
+    try {
+      const result = await securityManager.assignRole(
+        args.userId,
+        args.roleId,
+        args.assignedBy,
+        args.reason
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: result,
+            message: result ? 'Role assigned successfully' : 'Failed to assign role'
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to assign role:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to assign role: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
