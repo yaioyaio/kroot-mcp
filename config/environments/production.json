@@ -1,0 +1,77 @@
+{
+  "server": {
+    "port": "${MCP_SERVER_PORT:-3000}",
+    "host": "${MCP_SERVER_HOST:-127.0.0.1}"
+  },
+  "database": {
+    "path": "${DATABASE_PATH:-./data/devflow.db}",
+    "walMode": true,
+    "synchronous": "FULL"
+  },
+  "monitoring": {
+    "fileSystem": {
+      "debounceDelay": 500
+    },
+    "git": {
+      "pollInterval": 10000
+    }
+  },
+  "events": {
+    "batchSize": 200,
+    "flushInterval": 10000,
+    "maxQueueSize": 50000
+  },
+  "performance": {
+    "cache": {
+      "ttl": 600,
+      "maxSize": 500
+    },
+    "scaling": {
+      "enabled": true,
+      "maxWorkers": 8
+    }
+  },
+  "security": {
+    "auth": {
+      "enabled": true,
+      "jwt": {
+        "secret": "${JWT_SECRET}",
+        "expiresIn": "8h",
+        "refreshExpiresIn": "30d"
+      },
+      "apiKey": {
+        "salt": "${API_KEY_SALT}"
+      },
+      "rateLimit": {
+        "windowMs": 900000,
+        "maxAttempts": 50
+      }
+    }
+  },
+  "logging": {
+    "level": "${LOG_LEVEL:-info}",
+    "console": {
+      "enabled": true,
+      "colorize": false
+    },
+    "file": {
+      "enabled": true,
+      "path": "${LOG_FILE_PATH:-./logs/server.log}",
+      "maxSize": "50m",
+      "maxFiles": 14
+    }
+  },
+  "notifications": {
+    "channels": {
+      "slack": {
+        "enabled": "${SLACK_ENABLED:-false}",
+        "webhookUrl": "${SLACK_WEBHOOK_URL}"
+      }
+    }
+  },
+  "debug": {
+    "enabled": false,
+    "verboseErrors": false,
+    "stackTraces": false
+  }
+}

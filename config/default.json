@@ -1,0 +1,103 @@
+{
+  "server": {
+    "port": 3000,
+    "host": "0.0.0.0",
+    "name": "DevFlow Monitor MCP"
+  },
+  "database": {
+    "path": "./data/devflow.db",
+    "walMode": true,
+    "busyTimeout": 5000,
+    "cacheSize": 10000,
+    "synchronous": "NORMAL"
+  },
+  "monitoring": {
+    "fileSystem": {
+      "enabled": true,
+      "ignorePatterns": [
+        "**/node_modules/**",
+        "**/.git/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/*.log"
+      ],
+      "watchExtensions": [
+        ".ts", ".tsx", ".js", ".jsx",
+        ".json", ".md", ".yml", ".yaml"
+      ]
+    },
+    "git": {
+      "enabled": true,
+      "pollInterval": 5000,
+      "branchPatterns": {
+        "feature": "feature/*",
+        "bugfix": "bugfix/*",
+        "hotfix": "hotfix/*",
+        "release": "release/*"
+      }
+    }
+  },
+  "events": {
+    "batchSize": 100,
+    "flushInterval": 5000,
+    "maxQueueSize": 10000,
+    "retryAttempts": 3,
+    "retryDelay": 1000
+  },
+  "performance": {
+    "cache": {
+      "enabled": true,
+      "ttl": 300,
+      "maxSize": 100,
+      "checkPeriod": 600
+    },
+    "scaling": {
+      "enabled": true,
+      "minWorkers": 1,
+      "maxWorkers": 4,
+      "scaleUpThreshold": 0.8,
+      "scaleDownThreshold": 0.2
+    }
+  },
+  "security": {
+    "auth": {
+      "enabled": false,
+      "jwt": {
+        "expiresIn": "24h",
+        "refreshExpiresIn": "7d",
+        "issuer": "devflow-monitor",
+        "audience": "devflow-users"
+      },
+      "rateLimit": {
+        "windowMs": 900000,
+        "maxAttempts": 100
+      }
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "console": {
+      "enabled": true,
+      "colorize": true
+    },
+    "file": {
+      "enabled": false,
+      "path": "./logs/server.log",
+      "maxSize": "10m",
+      "maxFiles": 7
+    }
+  },
+  "notifications": {
+    "enabled": true,
+    "channels": {
+      "dashboard": {
+        "enabled": true
+      },
+      "slack": {
+        "enabled": false,
+        "webhookUrl": ""
+      }
+    }
+  }
+}

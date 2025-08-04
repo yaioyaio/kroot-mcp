@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  devflow-monitor:
+    image: devflow-monitor:latest
+    container_name: devflow-monitor-prod
+    restart: unless-stopped
+    volumes:
+      # Persist database
+      - devflow-data:/app/data
+      # Logs
+      - devflow-logs:/app/logs
+      # Config override
+      - ./config/production.json:/app/config/production.json:ro
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/devflow.db
+      - MCP_SERVER_PORT=3000
+      - LOG_LEVEL=info
+      - LOG_FILE_PATH=/app/logs/server.log
+      # Security
+      - ENABLE_AUTH=true
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY_SALT=${API_KEY_SALT}
+      # Performance
+      - MAX_CONCURRENT_MONITORS=10
+      - EVENT_BATCH_SIZE=100
+      - CACHE_TTL=300
+    ports:
+      - "127.0.0.1:3000:3000"  # Only bind to localhost
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - devflow-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  devflow-data:
+    name: devflow-monitor-data
+  devflow-logs:
+    name: devflow-monitor-logs
+
+networks:
+  devflow-network:
+    name: devflow-monitor-network
+    driver: bridge

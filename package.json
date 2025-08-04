@@ -24,7 +24,14 @@
     "mcp:test": "node tests/manual/test-mcp-server.js",
     "monitor:test": "node tests/manual/test-file-monitor.js",
     "performance:test": "node tests/manual/performance-test.js",
-    "integration:test": "node tests/manual/test-event-integration.js"
+    "integration:test": "node tests/manual/test-event-integration.js",
+    "deploy:local": "./scripts/deploy/install-local.sh",
+    "deploy:update": "./scripts/deploy/update-local.sh",
+    "deploy:docker": "./scripts/deploy/deploy-docker.sh",
+    "docker:build": "docker build -t devflow-monitor:latest .",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "keywords": [
     "mcp",
@@ -68,6 +75,7 @@
     "cli-table3": "^0.6.5",
     "commander": "^14.0.0",
     "crypto-js": "^4.2.0",
+    "dotenv": "^17.2.1",
     "eventemitter3": "^5.0.1",
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
