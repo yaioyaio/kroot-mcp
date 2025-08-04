@@ -38,6 +38,8 @@ import { getStorageManager } from '../storage/index.js';
 import { wsServer } from './websocket.js';
 import { streamManager } from './stream-manager.js';
 import { StageAnalyzer } from '../analyzers/stage-analyzer.js';
+import { MethodologyAnalyzer } from '../analyzers/methodology-analyzer.js';
+import { DevelopmentMethodology } from '../analyzers/types/methodology.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -51,6 +53,9 @@ const stageAnalyzer = new StageAnalyzer({
   eventEngine,
   storageManager
 });
+
+// Initialize Methodology Analyzer
+const methodologyAnalyzer = new MethodologyAnalyzer();
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -1321,25 +1326,95 @@ class DevFlowMonitorServer {
   } {
     const { methodology = 'all' } = args;
     
-    // 실제 데이터 기반 방법론 검사
-    const recentActivities = this.activityLog.slice(-100); // 최근 100개 활동
+    // Get analysis from MethodologyAnalyzer
+    const analysisResult = methodologyAnalyzer.analyze();
     
-    // 방법론별 준수도 검사
-    const methodologyChecks = this.performMethodologyChecks(recentActivities, methodology);
+    // Format response based on requested methodology
+    let response: CheckMethodologyResponse;
     
-    // 전체 준수도 계산
-    const overallCompliance = this.calculateOverallCompliance(methodologyChecks);
-    
-    const response: CheckMethodologyResponse = {
-      methodology,
-      timestamp: new Date().toISOString(),
-      compliance: {
-        overall: overallCompliance,
-        byMethodology: this.getComplianceByMethodology(methodologyChecks),
-      },
-      findings: methodologyChecks as any,
-      summary: this.generateMethodologySummary(methodologyChecks, overallCompliance),
-    };
+    if (methodology === 'all') {
+      // Return all methodologies
+      const byMethodology: Record<string, any> = {};
+      let totalScore = 0;
+      let methodologyCount = 0;
+      
+      for (const [meth, score] of Object.entries(analysisResult.scores)) {
+        byMethodology[meth] = {
+          score: score.score,
+          strengths: score.strengths,
+          weaknesses: score.weaknesses,
+          recommendations: score.recommendations,
+          details: score.details
+        };
+        totalScore += score.score;
+        methodologyCount++;
+      }
+      
+      const overallScore = methodologyCount > 0 ? Math.round(totalScore / methodologyCount) : 0;
+      
+      response = {
+        methodology: 'all',
+        timestamp: new Date(analysisResult.timestamp).toISOString(),
+        compliance: {
+          overall: overallScore,
+          byMethodology
+        },
+        findings: {
+          totalDetections: analysisResult.detections.length,
+          dominantMethodology: analysisResult.dominantMethodology,
+          trends: analysisResult.trends.map(t => ({
+            methodology: t.methodology,
+            growth: `${t.growth}%`,
+            recentUsage: t.usage.slice(-6) // Last 6 hours
+          }))
+        } as any,
+        summary: this.generateMethodologySummaryFromAnalysis(analysisResult)
+      };
+    } else {
+      // Return specific methodology
+      const score = analysisResult.scores[methodology as DevelopmentMethodology];
+      if (!score) {
+        response = {
+          methodology,
+          timestamp: new Date().toISOString(),
+          compliance: {
+            overall: 0,
+            byMethodology: {}
+          },
+          findings: [] as any,
+          summary: `Methodology ${methodology} is not supported. Supported: DDD, TDD, BDD, EDA`
+        };
+      } else {
+        response = {
+          methodology,
+          timestamp: new Date(analysisResult.timestamp).toISOString(),
+          compliance: {
+            overall: score.score,
+            byMethodology: {
+              [methodology]: {
+                score: score.score,
+                strengths: score.strengths,
+                weaknesses: score.weaknesses,
+                recommendations: score.recommendations,
+                details: score.details
+              }
+            }
+          },
+          findings: {
+            totalDetections: analysisResult.detections.filter(d => d.methodology === methodology).length,
+            recentDetections: analysisResult.detections
+              .filter(d => d.methodology === methodology)
+              .slice(-5)
+              .map(d => ({
+                confidence: d.confidence,
+                evidence: d.evidence.slice(0, 2),
+                timestamp: new Date(d.timestamp).toISOString()
+              }))
+          } as any,
+          summary: this.generateSingleMethodologySummary(methodology as DevelopmentMethodology, score)
+        };
+      }
+    }
 
     return {
       content: [
@@ -1566,6 +1641,59 @@ class DevFlowMonitorServer {
     const nonCompliantCount = checks.filter(c => c.status === 'non-compliant').length;
     
     return `전체 방법론 준수도: ${overallCompliance}% (완전 준수: ${compliantCount}, 부분 준수: ${partialCount}, 미준수: ${nonCompliantCount})`;
+  }
+
+  /**
+   * 방법론 분석 결과에서 요약 생성
+   */
+  private generateMethodologySummaryFromAnalysis(analysisResult: any): string {
+    const { overallScore, dominantMethodology, scores } = analysisResult;
+    
+    let summary = `전체 방법론 준수도: ${overallScore}%`;
+    
+    if (dominantMethodology) {
+      summary += ` | 주요 방법론: ${dominantMethodology}`;
+    }
+    
+    // Add top strengths and weaknesses
+    const allStrengths: string[] = [];
+    const allWeaknesses: string[] = [];
+    
+    for (const score of Object.values(scores) as any[]) {
+      allStrengths.push(...score.strengths.slice(0, 1));
+      allWeaknesses.push(...score.weaknesses.slice(0, 1));
+    }
+    
+    if (allStrengths.length > 0) {
+      summary += ` | 강점: ${allStrengths.slice(0, 2).join(', ')}`;
+    }
+    
+    if (allWeaknesses.length > 0) {
+      summary += ` | 개선점: ${allWeaknesses.slice(0, 2).join(', ')}`;
+    }
+    
+    return summary;
+  }
+
+  /**
+   * 단일 방법론 요약 생성
+   */
+  private generateSingleMethodologySummary(methodology: DevelopmentMethodology, score: any): string {
+    let summary = `${methodology} 준수도: ${score.score}%`;
+    
+    if (score.strengths.length > 0) {
+      summary += ` | 강점: ${score.strengths[0]}`;
+    }
+    
+    if (score.weaknesses.length > 0) {
+      summary += ` | 개선점: ${score.weaknesses[0]}`;
+    }
+    
+    if (score.recommendations.length > 0) {
+      summary += ` | 권장사항: ${score.recommendations[0]}`;
+    }
+    
+    return summary;
   }
 
   /**
@@ -1945,6 +2073,7 @@ class DevFlowMonitorServer {
   private initializeMonitors(): void {
     this.initializeFileMonitor();
     this.initializeGitMonitor();
+    this.initializeMethodologyAnalyzer();
   }
 
   /**
@@ -2055,6 +2184,23 @@ class DevFlowMonitorServer {
       this.logError('Failed to initialize Git monitor:', error);
       // Git 모니터링은 선택적이므로 에러가 발생해도 서버는 계속 실행
     }
+  }
+
+  /**
+   * 방법론 분석기 초기화
+   */
+  private initializeMethodologyAnalyzer(): void {
+    // Subscribe to EventEngine for all events
+    eventEngine.subscribe(
+      '*',
+      async (event: BaseEvent) => {
+        // Analyze event for methodology patterns
+        await methodologyAnalyzer.analyzeEvent(event);
+      },
+      { priority: 2 }
+    );
+
+    this.logInfo('Methodology analyzer initialized with EventEngine integration');
   }
 
   /**

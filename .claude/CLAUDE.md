@@ -53,7 +53,7 @@ devflow-monitor-mcp/
 └── dist/
 ```
 
-## 현재 진행 상황 (2025-08-03)
+## 현재 진행 상황 (2025-08-04)
 
 ### 완료된 작업
 *2025-08-02:*
@@ -223,8 +223,20 @@ devflow-monitor-mcp/
    - [x] 단계 전환 히스토리 관리 ✅
    - [x] 실시간 단계 분석 및 제안사항 생성 ✅
 
+7. **방법론 모니터링** ✅ 완료 (2025-08-04)
+   - [x] MethodologyAnalyzer 클래스 구현 ✅ (src/analyzers/methodology-analyzer.ts - 1,185줄)
+   - [x] 4가지 방법론 자동 감지 ✅ (DDD, TDD, BDD, EDA)
+   - [x] DDD 패턴 분석 ✅ (Entity, Aggregate, Repository, BoundedContext)
+   - [x] TDD 사이클 추적 ✅ (Red-Green-Refactor, 테스트 커버리지)
+   - [x] BDD 시나리오 파싱 ✅ (Feature 파일, Given-When-Then)
+   - [x] EDA 패턴 인식 ✅ (Event, Handler, Saga, CQRS)
+   - [x] 방법론별 0-100점 점수 시스템 ✅
+   - [x] 강점/약점 분석 및 개선 권장사항 ✅
+   - [x] 시간대별 사용 트렌드 분석 ✅
+   - [x] MCP checkMethodology 도구 업데이트 ✅
+   - [x] EventEngine과 실시간 연동 ✅
+
 ### 다음 작업
-- 방법론 모니터링 (DDD, TDD, BDD, EDA)  
 - CLI/TUI 대시보드
 - 메트릭 및 분석 강화
 
@@ -276,5 +288,5 @@ npm run typecheck    # TypeScript 타입 체크
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04  
+최종 수정일: 2025-08-04 (방법론 모니터링 완료)  
 작성자: yaioyaio
