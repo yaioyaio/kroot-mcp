@@ -152,7 +152,7 @@ export class ConfigLoader {
     // Validate configuration
     this.validateConfig(this.config);
     
-    return this.config;
+    return this.config!;
   }
 
   /**
@@ -217,7 +217,7 @@ export class ConfigLoader {
         if (typeof obj[key] === 'string') {
           obj[key] = obj[key].replace(/\${([^}]+)}/g, (match: string, varName: string) => {
             const [name, defaultValue] = varName.split(':-');
-            return process.env[name] || defaultValue || match;
+            return process.env[name as string] || defaultValue || match;
           });
         } else if (typeof obj[key] === 'object' && obj[key] !== null) {
           replaceVars(obj[key]);

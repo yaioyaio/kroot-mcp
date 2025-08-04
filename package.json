@@ -31,7 +31,10 @@
     "docker:build": "docker build -t devflow-monitor:latest .",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "docs:api": "typedoc",
+    "docs:api:watch": "typedoc --watch",
+    "docs:api:clean": "rm -rf docs/api"
   },
   "keywords": [
     "mcp",
@@ -55,6 +58,8 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.3",
     "prettier": "^3.6.2",
+    "typedoc": "^0.28.9",
+    "typedoc-plugin-markdown": "^4.8.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
