@@ -33,7 +33,7 @@ import {
 } from './types.js';
 import { FileMonitor, GitMonitor } from '../monitors/index.js';
 import type { MonitorEvent } from '../monitors/base.js';
-import { eventEngine, EventCategory, BaseEvent } from '../events/index.js';
+import { eventEngine, EventCategory, EventSeverity, BaseEvent } from '../events/index.js';
 import { getStorageManager } from '../storage/index.js';
 import { wsServer } from './websocket.js';
 import { streamManager } from './stream-manager.js';
@@ -46,6 +46,13 @@ import { metricsAnalyzer } from '../analyzers/metrics-analyzer.js';
 import { DevelopmentMethodology } from '../analyzers/types/methodology.js';
 import { AITool } from '../analyzers/types/ai.js';
 // import { BottleneckType } from '../analyzers/types/metrics.js';
+import { 
+  notificationEngine,
+  slackNotifier,
+  dashboardNotifier,
+  NotificationChannel,
+  NotificationPriority,
+} from '../notifications/index.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -70,6 +77,11 @@ const aiMonitor = new AIMonitor();
 metricsCollector.start();
 bottleneckDetector.start();
 metricsAnalyzer.start();
+
+// Initialize Notification System
+notificationEngine.registerNotifier(NotificationChannel.SLACK, slackNotifier);
+notificationEngine.registerNotifier(NotificationChannel.DASHBOARD, dashboardNotifier);
+notificationEngine.start();
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -513,6 +525,121 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 알림 관련 도구들
+    this.registerTool({
+      name: 'configureNotifications',
+      description: '알림 채널 및 규칙을 설정합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          channel: {
+            type: 'string',
+            enum: ['slack', 'email', 'dashboard'],
+            description: '설정할 알림 채널',
+          },
+          config: {
+            type: 'object',
+            description: '채널별 설정 (예: Slack webhook URL)',
+          },
+          rules: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                conditions: { type: 'array' },
+                channels: { type: 'array' },
+                priority: { type: 'string' },
+              },
+            },
+            description: '알림 규칙 목록',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'sendNotification',
+      description: '즉시 알림을 전송합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            description: '알림 제목',
+          },
+          content: {
+            type: 'string',
+            description: '알림 내용',
+          },
+          severity: {
+            type: 'string',
+            enum: ['debug', 'info', 'warning', 'error', 'critical'],
+            description: '심각도',
+            default: 'info',
+          },
+          priority: {
+            type: 'string',
+            enum: ['low', 'medium', 'high', 'urgent'],
+            description: '우선순위',
+            default: 'medium',
+          },
+          channels: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['slack', 'email', 'dashboard'],
+            },
+            description: '전송할 채널 목록',
+          },
+        },
+        required: ['title', 'content'],
+      },
+    });
+
+    this.registerTool({
+      name: 'getNotificationRules',
+      description: '알림 규칙 목록을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          enabled: {
+            type: 'boolean',
+            description: '활성화된 규칙만 조회',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getNotificationStats',
+      description: '알림 통계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'getDashboardNotifications',
+      description: '대시보드 알림을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          unreadOnly: {
+            type: 'boolean',
+            description: '읽지 않은 알림만 조회',
+            default: false,
+          },
+          limit: {
+            type: 'number',
+            description: '조회할 알림 개수',
+            default: 20,
+          },
+        },
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -632,6 +759,21 @@ class DevFlowMonitorServer {
 
       case 'analyzeProductivity':
         return this.analyzeProductivity(args as { timeRange?: string; includeTrends?: boolean });
+
+      case 'configureNotifications':
+        return this.configureNotifications(args as { channel?: string; config?: any; rules?: any[] });
+
+      case 'sendNotification':
+        return this.sendNotification(args as { title: string; content: string; severity?: string; priority?: string; channels?: string[] });
+
+      case 'getNotificationRules':
+        return this.getNotificationRules(args as { enabled?: boolean });
+
+      case 'getNotificationStats':
+        return this.getNotificationStats();
+
+      case 'getDashboardNotifications':
+        return this.getDashboardNotifications(args as { unreadOnly?: boolean; limit?: number });
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -2568,6 +2710,196 @@ class DevFlowMonitorServer {
         }, null, 2),
       }],
     };
+  }
+
+  /**
+   * 알림 채널 설정
+   */
+  private configureNotifications(args: { channel?: string; config?: any; rules?: any[] }): any {
+    try {
+      const { channel, config, rules } = args;
+      
+      // 채널 설정
+      if (channel && config) {
+        notificationEngine.configureChannel({
+          channel: channel as NotificationChannel,
+          enabled: true,
+          config,
+        });
+      }
+
+      // 규칙 추가
+      if (rules && Array.isArray(rules)) {
+        for (const rule of rules) {
+          notificationEngine.addRule({
+            name: rule.name,
+            description: rule.description,
+            enabled: rule.enabled !== false,
+            conditions: rule.conditions || [],
+            channels: rule.channels || [NotificationChannel.DASHBOARD],
+            priority: rule.priority || NotificationPriority.MEDIUM,
+            throttle: rule.throttle,
+            metadata: rule.metadata,
+          });
+        }
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            message: 'Notification configuration updated',
+            channelConfigured: !!channel,
+            rulesAdded: rules?.length || 0,
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to configure notifications:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to configure notifications: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 알림 전송
+   */
+  private async sendNotification(args: { title: string; content: string; severity?: string; priority?: string; channels?: string[] }): Promise<any> {
+    try {
+      const { title, content, severity, priority, channels } = args;
+      
+      const message = await notificationEngine.sendNotification(title, content, {
+        severity: severity as EventSeverity,
+        priority: priority as NotificationPriority,
+        ...(channels && { channels: channels.map(ch => ch as NotificationChannel) }),
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            messageId: message.id,
+            queuedAt: message.createdAt,
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to send notification:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to send notification: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 알림 규칙 조회
+   */
+  private getNotificationRules(args: { enabled?: boolean }): any {
+    try {
+      const rules = notificationEngine.getAllRules();
+      let filteredRules = rules;
+      
+      if (args.enabled !== undefined) {
+        filteredRules = rules.filter(rule => rule.enabled === args.enabled);
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            totalRules: rules.length,
+            filteredRules: filteredRules.length,
+            rules: filteredRules.map(rule => ({
+              id: rule.id,
+              name: rule.name,
+              description: rule.description,
+              enabled: rule.enabled,
+              conditions: rule.conditions.length,
+              channels: rule.channels,
+              priority: rule.priority,
+              throttle: rule.throttle,
+              createdAt: rule.createdAt,
+              updatedAt: rule.updatedAt,
+            })),
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get notification rules:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get notification rules: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 알림 통계 조회
+   */
+  private getNotificationStats(): any {
+    try {
+      const stats = notificationEngine.getStats();
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            ...stats,
+            timestamp: new Date().toISOString(),
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get notification stats:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get notification stats: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 대시보드 알림 조회
+   */
+  private getDashboardNotifications(args: { unreadOnly?: boolean; limit?: number }): any {
+    try {
+      const notifications = dashboardNotifier.getNotifications({
+        ...(args.unreadOnly !== undefined && { unreadOnly: args.unreadOnly }),
+        ...(args.limit !== undefined && { limit: args.limit }),
+      });
+      
+      const unreadCount = dashboardNotifier.getUnreadCount();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            totalUnread: unreadCount,
+            notifications: notifications.map(n => ({
+              id: n.id,
+              title: n.message.title,
+              content: n.message.content,
+              severity: n.message.severity,
+              priority: n.message.priority,
+              read: n.read,
+              readAt: n.readAt,
+              createdAt: n.message.createdAt,
+            })),
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get dashboard notifications:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get dashboard notifications: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
 }
 
