@@ -2,7 +2,7 @@
 
 AI-powered development process monitoring MCP server for real-time tracking and visualization of software development workflows.
 
-**Status**: Milestone 3 in progress - Core monitoring systems complete, AI collaboration tracking implemented.
+**Status**: Milestone 3 in progress - Core monitoring systems complete, AI collaboration tracking and CLI/TUI dashboard implemented.
 
 ## Overview
 
@@ -20,12 +20,12 @@ DevFlow Monitor MCP is a Model Context Protocol server that monitors all aspects
 - 🌐 **WebSocket Streaming** - Real-time event broadcasting to connected clients
 - 🗄️ **Data Storage** - SQLite with in-memory caching and event queuing
 - 🔌 **External API Integration** - Jira, Notion, Figma connectivity
-- 🛠️ **MCP Tools Suite** - 13 comprehensive development monitoring tools
+- 📋 **CLI/TUI Dashboard** - Real-time monitoring interface with blessed TUI and CLI table views
+- 🛠️ **MCP Tools Suite** - 15 comprehensive development monitoring tools (including dashboard controls)
 
 ### 🚧 In Progress
-- 📋 CLI/TUI dashboard
 - 🚨 Advanced alerting system
-- 📈 Enhanced metrics visualization
+- 📈 Enhanced metrics engine and visualization
 
 ## Tech Stack
 
@@ -44,6 +44,12 @@ DevFlow Monitor MCP is a Model Context Protocol server that monitors all aspects
 - **Git Integration**: simple-git 3.27.0
 - **API Client**: axios 1.11.0
 - **Real-time Communication**: ws 8.18.3
+
+### Dashboard & UI
+- **TUI Framework**: blessed 0.1.81 (terminal user interface)
+- **CLI Styling**: chalk 5.5.0 (colorized output)
+- **Table Rendering**: cli-table3 0.6.5 (structured data display)
+- **CLI Framework**: commander 14.0.0 (command-line interface)
 
 ### Development Tools
 - **Testing**: Vitest 3.2.4 with coverage
@@ -98,9 +104,45 @@ npm run typecheck
 npm run format
 ```
 
+## Dashboard Usage
+
+### CLI Dashboard
+Simple table-based interface for monitoring:
+```bash
+# Start CLI dashboard
+npx tsx scripts/dashboard.ts cli
+
+# Compact mode with custom refresh interval
+npx tsx scripts/dashboard.ts cli --compact --refresh 2000
+```
+
+### TUI Dashboard
+Full-featured terminal interface with multiple panels:
+```bash
+# Start TUI dashboard (default)
+npx tsx scripts/dashboard.ts tui
+
+# Custom configuration
+npx tsx scripts/dashboard.ts start --mode tui --refresh 1000 --max-events 100
+```
+
+#### TUI Keyboard Controls
+- **r** - Refresh all data
+- **c** - Clear activity feed
+- **h** - Toggle help panel
+- **q/ESC** - Quit dashboard
+
+### Dashboard Features
+- **Real-time Event Feed** - Live activity monitoring from all sources
+- **System Status** - EventEngine statistics, uptime, queue status
+- **Development Stage** - Current stage detection with confidence levels
+- **Methodology Metrics** - DDD/TDD/BDD/EDA compliance scoring
+- **AI Usage Tracking** - Real-time AI tool usage and effectiveness
+- **Interactive Controls** - Keyboard shortcuts for navigation and control
+
 ## MCP Tools Available
 
-This server provides 13 specialized tools for development monitoring:
+This server provides 15 specialized tools for development monitoring:
 
 ### Core Monitoring
 - `getProjectStatus` - Real-time project status and metrics
@@ -119,17 +161,22 @@ This server provides 13 specialized tools for development monitoring:
 - `getWebSocketStats` / `getStreamStats` - Connection monitoring
 - `broadcastSystemNotification` - System-wide notifications
 
+### Dashboard Control
+- `startDashboard` - Launch CLI/TUI dashboard with configurable options
+- `getDashboardStatus` - Check dashboard running status and uptime
+
 ## Project Status
 
 ### Completed Milestones
 - ✅ **Milestone 1**: MVP Foundation (TypeScript setup, MCP server, file monitoring)
 - ✅ **Milestone 2**: Core Integrations (Git, APIs, event queuing, WebSocket)
-- 🚧 **Milestone 3**: Intelligent Monitoring (75% complete)
+- 🚧 **Milestone 3**: Intelligent Monitoring (80% complete)
   - ✅ Development stage recognition
   - ✅ Methodology monitoring  
   - ✅ AI collaboration tracking
-  - 🚧 CLI/TUI dashboard
-  - 🚧 Advanced analytics
+  - ✅ CLI/TUI dashboard
+  - 🚧 Advanced metrics engine
+  - 🚧 Alert system
 
 ## Documentation
 
@@ -157,12 +204,17 @@ MIT © yaioyaio
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (AI 협업 추적 완료, 마일스톤 3 진행 상황 반영)  
+최종 수정일: 2025-08-04 (CLI/TUI 대시보드 완료, 마일스톤 3 80% 달성)  
 작성자: yaioyaio
 
 ## Recent Updates
 
 **2025-08-04**: 
+- ✅ CLI/TUI dashboard system implemented
+- ✅ Real-time monitoring interface with blessed TUI and CLI table views
+- ✅ Interactive dashboard controls (r/c/h/q keyboard shortcuts)
+- ✅ 6-panel TUI layout with live event feeds
+- ✅ Dashboard MCP tools integration (startDashboard, getDashboardStatus)
 - ✅ AI collaboration tracking system implemented
 - ✅ 6 AI tools detection (Claude, Copilot, ChatGPT, Cursor, TabNine, CodeWhisperer)
 - ✅ AI usage pattern analysis and effectiveness metrics

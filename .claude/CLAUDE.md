@@ -250,9 +250,20 @@ devflow-monitor-mcp/
    - [x] EventEngine 통합 및 실시간 분석 ✅
    - [x] 테스트 스크립트 작성 ✅ (tests/manual/test-ai-monitor.js)
 
+9. **CLI/TUI 대시보드** ✅ 완료 (2025-08-04)
+   - [x] 대시보드 프레임워크 선택 ✅ (blessed for TUI, chalk+cli-table3 for CLI)
+   - [x] CLI 대시보드 구현 ✅ (src/dashboard/cli/dashboard.ts - 365줄)
+   - [x] TUI 대시보드 구현 ✅ (src/dashboard/tui/dashboard.ts - 606줄)
+   - [x] 6개 패널 TUI 레이아웃 ✅ (상태, 단계, 활동, 메트릭, 방법론, AI 사용)
+   - [x] 테이블 기반 CLI 인터페이스 ✅ (시스템 상태, 활동 기록, 메트릭)
+   - [x] 실시간 이벤트 피드 ✅ (EventEngine 연동)
+   - [x] 인터랙티브 기능 ✅ (키보드 단축키: r, c, h, q/ESC)
+   - [x] 대시보드 진입점 구현 ✅ (Commander CLI 프로그램)
+   - [x] MCP 도구 통합 ✅ (startDashboard, getDashboardStatus)
+   - [x] 실행 및 테스트 스크립트 작성 ✅
+
 ### 다음 작업
-- CLI/TUI 대시보드
-- 메트릭 및 분석 강화
+- 메트릭 및 분석 엔진 강화
 - 알림 시스템
 
 ## 주요 명령어
@@ -273,7 +284,7 @@ npm run typecheck    # TypeScript 타입 체크
 
 - [프로젝트 계획서](../PLANNING.md)
 - [작업 목록](../TASKS.md)
-- [오늘의 할 일](../docs/todolist/TODOLIST.2025-08-03.md)
+- [오늘의 할 일](../docs/todolist/TODOLIST.2025-08-04.md)
 - [운영 가이드](../docs/operations/README.md)
 - [기능 명세](../docs/FEATURES.md)
 - [프로젝트 구조](../docs/PROJECT_STRUCTURE_AND_STYLE.md)
@@ -303,5 +314,5 @@ npm run typecheck    # TypeScript 타입 체크
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (AI 협업 추적 완료)  
+최종 수정일: 2025-08-04 (CLI/TUI 대시보드 완료)  
 작성자: yaioyaio

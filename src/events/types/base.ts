@@ -30,6 +30,8 @@ export enum EventCategory {
   AI = 'ai',
   ACTIVITY = 'activity',
   STAGE = 'stage',
+  PROCESS = 'process',
+  METHOD = 'method',
 }
 
 /**

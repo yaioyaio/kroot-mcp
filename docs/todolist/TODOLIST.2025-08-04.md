@@ -24,7 +24,7 @@
   - 개발 단계 인식 시스템 ✅ (완료: 2025-08-03)
   - 방법론 모니터링 (DDD, TDD, BDD, EDA) ✅ (완료: 2025-08-04)
   - AI 협업 추적 ✅ (완료: 2025-08-04)
-  - CLI/TUI 대시보드 (계획중)
+  - CLI/TUI 대시보드 ✅ (완료: 2025-08-04)
   - 메트릭 및 분석 엔진 (계획중)
   - 알림 시스템 (계획중)
 
@@ -218,12 +218,17 @@
 - [x] **[추가]** EventEngine 통합 및 실시간 분석 ✅
 - [x] **[추가]** 테스트 스크립트 작성 ✅ (tests/manual/test-ai-monitor.js)
 
-#### 12. CLI/TUI 대시보드
-- [ ] **[HIGH]** 대시보드 프레임워크 선택 (blessed/ink)
-- [ ] **[HIGH]** 기본 레이아웃 구현
-- [ ] **[MEDIUM]** 실시간 활동 피드
-- [ ] **[MEDIUM]** 메트릭 시각화
-- [ ] **[LOW]** 인터랙티브 기능
+#### 12. CLI/TUI 대시보드 ✅ (완료: 2025-08-04)
+- [x] **[HIGH]** 대시보드 프레임워크 선택 (blessed/ink) ✓ (blessed for TUI, chalk+cli-table3 for CLI)
+- [x] **[HIGH]** 기본 레이아웃 구현 ✓ (6개 패널 TUI, 테이블 기반 CLI)
+- [x] **[MEDIUM]** 실시간 활동 피드 ✓ (EventEngine 연동)
+- [x] **[MEDIUM]** 메트릭 시각화 ✓ (시스템 상태, 통계, 카테고리별 분석)
+- [x] **[LOW]** 인터랙티브 기능 ✓ (키보드 단축키: r, c, h, q/ESC)
+- [x] **[추가]** CLI 대시보드 구현 ✓ (src/dashboard/cli/dashboard.ts - 365줄)
+- [x] **[추가]** TUI 대시보드 구현 ✓ (src/dashboard/tui/dashboard.ts - 606줄)
+- [x] **[추가]** 대시보드 진입점 구현 ✓ (src/dashboard/index.ts - Commander CLI)
+- [x] **[추가]** MCP 도구 통합 ✓ (startDashboard, getDashboardStatus)
+- [x] **[추가]** 테스트 스크립트 작성 ✓ (scripts/test-dashboard.ts)
 
 #### 13. 메트릭 및 분석 엔진
 - [ ] **[HIGH]** 메트릭 수집 엔진 구현
@@ -314,5 +319,5 @@
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (AI 협업 추적 완료)  
+최종 수정일: 2025-08-04 (CLI/TUI 대시보드 완료)  
 작성자: yaioyaio

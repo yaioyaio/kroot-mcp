@@ -368,6 +368,42 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 대시보드 도구
+    this.registerTool({
+      name: 'startDashboard',
+      description: 'DevFlow Monitor 대시보드를 시작합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          mode: {
+            type: 'string',
+            description: '대시보드 모드',
+            enum: ['tui', 'cli'],
+            default: 'tui',
+          },
+          refreshInterval: {
+            type: 'number',
+            description: '새로고침 간격 (밀리초)',
+            default: 1000,
+          },
+          maxEvents: {
+            type: 'number',
+            description: '최대 이벤트 수',
+            default: 100,
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getDashboardStatus',
+      description: '대시보드 실행 상태를 확인합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -469,6 +505,12 @@ class DevFlowMonitorServer {
 
       case 'broadcastSystemNotification':
         return this.broadcastSystemNotification(args as { message: string; severity: 'info' | 'warning' | 'error'; data?: any });
+
+      case 'startDashboard':
+        return this.startDashboard(args as { mode?: 'tui' | 'cli'; refreshInterval?: number; maxEvents?: number });
+
+      case 'getDashboardStatus':
+        return this.getDashboardStatus();
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -1927,6 +1969,109 @@ class DevFlowMonitorServer {
       e2e_test: 'E2E 테스트'
     };
     return descriptions[subStage] || subStage;
+  }
+
+  /**
+   * 대시보드 시작
+   */
+  private dashboardInstance: any = null;
+
+  private async startDashboard(args: { 
+    mode?: 'tui' | 'cli'; 
+    refreshInterval?: number; 
+    maxEvents?: number;
+  }): Promise<any> {
+    const { mode = 'tui', refreshInterval = 1000, maxEvents = 100 } = args;
+
+    try {
+      // 이미 실행 중인 대시보드가 있는지 확인
+      if (this.dashboardInstance) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              status: 'already_running',
+              message: 'Dashboard is already running',
+              mode: this.dashboardInstance.mode,
+            }, null, 2),
+          }],
+        };
+      }
+
+      // 대시보드 모듈 동적 import
+      const { launchDashboard } = await import('../dashboard/index.js');
+      
+      // 대시보드 시작 (백그라운드에서)
+      const options = { mode, refreshInterval, maxEvents };
+      
+      // 프로미스로 대시보드 시작하되 await하지 않음 (백그라운드 실행)
+      launchDashboard(options).catch((error) => {
+        this.logError('Dashboard execution error:', error);
+        this.dashboardInstance = null;
+      });
+
+      // 실행 상태 추적
+      this.dashboardInstance = {
+        mode,
+        startTime: Date.now(),
+        options,
+      };
+
+      this.logInfo(`Dashboard started in ${mode.toUpperCase()} mode`);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            status: 'started',
+            message: `Dashboard started successfully in ${mode.toUpperCase()} mode`,
+            mode,
+            options,
+            startTime: new Date().toISOString(),
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to start dashboard:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to start dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 대시보드 상태 조회
+   */
+  private getDashboardStatus(): any {
+    if (!this.dashboardInstance) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            status: 'not_running',
+            message: 'Dashboard is not currently running',
+          }, null, 2),
+        }],
+      };
+    }
+
+    const uptime = Date.now() - this.dashboardInstance.startTime;
+    const uptimeMinutes = Math.floor(uptime / 60000);
+    const uptimeSeconds = Math.floor((uptime % 60000) / 1000);
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          status: 'running',
+          mode: this.dashboardInstance.mode,
+          startTime: new Date(this.dashboardInstance.startTime).toISOString(),
+          uptime: `${uptimeMinutes}m ${uptimeSeconds}s`,
+          options: this.dashboardInstance.options,
+        }, null, 2),
+      }],
+    };
   }
 }
 
