@@ -1,0 +1,93 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "DevFlow Monitor MCP",
+  "entryPoints": [
+    "./src/events/engine.ts",
+    "./src/monitors/base.ts",
+    "./src/monitors/file.ts",
+    "./src/monitors/git.ts",
+    "./src/analyzers/ai-monitor.ts",
+    "./src/analyzers/stage-analyzer.ts",
+    "./src/analyzers/metrics-collector.ts",
+    "./src/analyzers/bottleneck-detector.ts",
+    "./src/analyzers/metrics-analyzer.ts",
+    "./src/storage/repositories/base.ts",
+    "./src/integrations/manager.ts",
+    "./src/dashboard/index.ts"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/tests/**",
+    "**/performance/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "out": "./docs/api",
+  "theme": "default",
+  "readme": "./README.md",
+  "includeVersion": true,
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeExternals": true,
+  "excludeNotDocumented": false,
+  "sort": ["source-order"],
+  "kindSortOrder": [
+    "Reference",
+    "Project",
+    "Module",
+    "Namespace",
+    "Enum",
+    "EnumMember",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Constructor",
+    "Property",
+    "Variable",
+    "Function",
+    "Accessor",
+    "Method"
+  ],
+  "categoryOrder": [
+    "Core",
+    "Monitoring",
+    "Analysis",
+    "Storage",
+    "Security",
+    "Integration",
+    "Dashboard",
+    "Configuration",
+    "*"
+  ],
+  "searchInComments": true,
+  "treatWarningsAsErrors": false,
+  "skipErrorChecking": true,
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "allowJs": true,
+    "noEmitOnError": false
+  },
+  "validation": {
+    "notExported": false,
+    "invalidLink": false,
+    "notDocumented": false
+  },
+  "plugin": [
+    "typedoc-plugin-markdown"
+  ],
+  "githubPages": false,
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "customCss": "./docs/assets/typedoc-custom.css",
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "sidebarLinks": {
+    "GitHub": "https://github.com/yaioyaio/kroot-mcp",
+    "Documentation": "./docs/README.md",
+    "User Manual": "./docs/USER_MANUAL.md",
+    "API Reference": "./docs/API.md"
+  }
+}
