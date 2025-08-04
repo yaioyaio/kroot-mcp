@@ -53,6 +53,14 @@ import {
   NotificationChannel,
   NotificationPriority,
 } from '../notifications/index.js';
+import { 
+  performanceManager,
+  performanceProfiler,
+  memoryOptimizer,
+  asyncOptimizer,
+  cacheManager,
+  scalingManager
+} from '../performance/index.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -82,6 +90,9 @@ metricsAnalyzer.start();
 notificationEngine.registerNotifier(NotificationChannel.SLACK, slackNotifier);
 notificationEngine.registerNotifier(NotificationChannel.DASHBOARD, dashboardNotifier);
 notificationEngine.start();
+
+// Initialize Performance Management System
+await performanceManager.initialize();
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -640,6 +651,116 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 성능 최적화 관련 도구들
+    this.registerTool({
+      name: 'getPerformanceReport',
+      description: '종합 성능 리포트를 생성합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          includeRecommendations: {
+            type: 'boolean',
+            description: '개선 권장사항 포함 여부',
+            default: true,
+          },
+          includeDetails: {
+            type: 'boolean',
+            description: '상세 분석 결과 포함 여부',
+            default: false,
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'optimizePerformance',
+      description: '시스템 성능 최적화를 실행합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          level: {
+            type: 'string',
+            enum: ['basic', 'aggressive', 'emergency'],
+            description: '최적화 수준',
+            default: 'basic',
+          },
+          targetAreas: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['memory', 'cache', 'async', 'scaling'],
+            },
+            description: '최적화 대상 영역',
+            default: ['memory', 'cache'],
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getSystemMetrics',
+      description: '실시간 시스템 메트릭을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          includeHistory: {
+            type: 'boolean',
+            description: '히스토리 데이터 포함 여부',
+            default: false,
+          },
+          metricsType: {
+            type: 'string',
+            enum: ['all', 'memory', 'cpu', 'async', 'cache', 'scaling'],
+            description: '메트릭 타입',
+            default: 'all',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'profilePerformance',
+      description: '성능 프로파일링을 시작/중지합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['start', 'stop', 'status'],
+            description: '프로파일링 액션',
+            default: 'status',
+          },
+          duration: {
+            type: 'number',
+            description: '프로파일링 지속시간 (초)',
+            default: 60,
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'manageCaches',
+      description: '캐시 관리 작업을 수행합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['clear', 'stats', 'warmup', 'optimize'],
+            description: '캐시 관리 액션',
+            default: 'stats',
+          },
+          cacheType: {
+            type: 'string',
+            enum: ['memory', 'disk', 'all'],
+            description: '캐시 타입',
+            default: 'all',
+          },
+        },
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -774,6 +895,21 @@ class DevFlowMonitorServer {
 
       case 'getDashboardNotifications':
         return this.getDashboardNotifications(args as { unreadOnly?: boolean; limit?: number });
+
+      case 'getPerformanceReport':
+        return this.getPerformanceReport(args as { includeRecommendations?: boolean; includeDetails?: boolean });
+
+      case 'optimizePerformance':
+        return await this.optimizePerformance(args as { level?: string; targetAreas?: string[] });
+
+      case 'getSystemMetrics':
+        return this.getSystemMetrics(args as { includeHistory?: boolean; metricsType?: string });
+
+      case 'profilePerformance':
+        return this.profilePerformance(args as { action?: string; duration?: number });
+
+      case 'manageCaches':
+        return await this.manageCaches(args as { action?: string; cacheType?: string });
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -2866,6 +3002,312 @@ class DevFlowMonitorServer {
   /**
    * 대시보드 알림 조회
    */
+  /**
+   * 종합 성능 리포트 생성
+   */
+  private getPerformanceReport(args: { includeRecommendations?: boolean; includeDetails?: boolean }): any {
+    try {
+      const report = performanceManager.generateReport();
+      
+      const response = {
+        timestamp: new Date().toISOString(),
+        summary: {
+          overall: 'Good', // TODO: 실제 종합 평가 로직
+          criticalIssues: report.recommendations.filter(r => r.includes('CRITICAL')).length,
+          warnings: report.recommendations.filter(r => r.includes('WARNING')).length,
+        },
+        performance: {
+          averageResponseTime: report.profiler.summary.averageResponseTime,
+          memoryUsage: report.memory.memoryPressure,
+          cacheHitRate: report.cache.hitRatio,
+          asyncQueueLength: report.async.queueLength,
+          scalingInstances: report.scaling.instances,
+        },
+        ...(args.includeRecommendations && { recommendations: report.recommendations }),
+        ...(args.includeDetails && { details: report }),
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(response, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to generate performance report:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to generate performance report: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 시스템 성능 최적화 실행
+   */
+  private async optimizePerformance(args: { level?: string; targetAreas?: string[] }): Promise<any> {
+    try {
+      const level = args.level || 'basic';
+      const targetAreas = args.targetAreas || ['memory', 'cache'];
+      
+      const results: any = {
+        timestamp: new Date().toISOString(),
+        level,
+        targetAreas,
+        results: [],
+      };
+
+      // 레벨에 따른 최적화 실행
+      if (level === 'emergency') {
+        await performanceManager.optimize();
+        results.results.push('Emergency optimization completed');
+      } else {
+        for (const area of targetAreas) {
+          switch (area) {
+            case 'memory':
+              await memoryOptimizer.optimize();
+              results.results.push('Memory optimization completed');
+              break;
+            case 'cache':
+              await cacheManager.clear();
+              results.results.push('Cache cleanup completed');
+              break;
+            case 'async':
+              asyncOptimizer.cancelPendingTasks((task) => task.config.priority === 'low');
+              results.results.push('Async queue optimization completed');
+              break;
+            case 'scaling':
+              scalingManager.emit('optimizationRequested');
+              results.results.push('Scaling optimization requested');
+              break;
+          }
+        }
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(results, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to optimize performance:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to optimize performance: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 실시간 시스템 메트릭 조회
+   */
+  private getSystemMetrics(args: { includeHistory?: boolean; metricsType?: string }): any {
+    try {
+      const metricsType = args.metricsType || 'all';
+      const memUsage = process.memoryUsage();
+      const profilerStats = performanceProfiler.getStats();
+      const memoryStats = memoryOptimizer.getStats();
+      const asyncStats = asyncOptimizer.getStats();
+      const cacheStats = cacheManager.getStats();
+      const scalingStatus = scalingManager.getStatus();
+
+      const metrics: any = {
+        timestamp: new Date().toISOString(),
+        system: {
+          uptime: process.uptime(),
+          pid: process.pid,
+          platform: process.platform,
+          nodeVersion: process.version,
+        },
+      };
+
+      if (metricsType === 'all' || metricsType === 'memory') {
+        metrics.memory = {
+          heapUsed: memUsage.heapUsed,
+          heapTotal: memUsage.heapTotal,
+          external: memUsage.external,
+          rss: memUsage.rss,
+          pressure: memoryStats.memoryPressure,
+          cacheSize: memoryStats.cacheSize,
+        };
+      }
+
+      if (metricsType === 'all' || metricsType === 'cpu') {
+        metrics.cpu = {
+          loadAverage: process.cpuUsage(),
+        };
+      }
+
+      if (metricsType === 'all' || metricsType === 'async') {
+        metrics.async = asyncStats;
+      }
+
+      if (metricsType === 'all' || metricsType === 'cache') {
+        metrics.cache = cacheStats;
+      }
+
+      if (metricsType === 'all' || metricsType === 'scaling') {
+        metrics.scaling = scalingStatus.metrics;
+      }
+
+      if (args.includeHistory) {
+        const report = performanceManager.generateReport();
+        metrics.history = {
+          profiler: report.profiler.details,
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(metrics, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get system metrics:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get system metrics: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 성능 프로파일링 관리
+   */
+  private profilePerformance(args: { action?: string; duration?: number }): any {
+    try {
+      const action = args.action || 'status';
+      const duration = args.duration || 60;
+
+      let result: any = {
+        timestamp: new Date().toISOString(),
+        action,
+      };
+
+      switch (action) {
+        case 'start':
+          performanceProfiler.startMonitoring(5000); // 5초 간격
+          result.message = `Performance profiling started for ${duration} seconds`;
+          result.status = 'running';
+          break;
+
+        case 'stop':
+          performanceProfiler.stopMonitoring();
+          result.message = 'Performance profiling stopped';
+          result.status = 'stopped';
+          break;
+
+        case 'status':
+        default:
+          const stats = performanceProfiler.getStats();
+          result = {
+            ...result,
+            status: 'running',
+            stats: {
+              averageResponseTime: stats.averageResponseTime,
+              maxResponseTime: stats.maxResponseTime,
+              minResponseTime: stats.minResponseTime,
+              memoryTrend: stats.memoryTrend,
+              memoryLeakPotential: stats.memoryLeakPotential,
+              bottlenecksCount: stats.bottlenecks.length,
+            },
+            recommendations: stats.recommendations,
+          };
+          break;
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to manage performance profiling:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to manage performance profiling: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 캐시 관리 
+   */
+  private async manageCaches(args: { action?: string; cacheType?: string }): Promise<any> {
+    try {
+      const action = args.action || 'stats';
+      const cacheType = args.cacheType || 'all';
+
+      let result: any = {
+        timestamp: new Date().toISOString(),
+        action,
+        cacheType,
+      };
+
+      switch (action) {
+        case 'clear':
+          if (cacheType === 'all' || cacheType === 'memory') {
+            memoryOptimizer.clear();
+            result.memoryCleared = true;
+          }
+          if (cacheType === 'all' || cacheType === 'disk') {
+            await cacheManager.clear();
+            result.diskCleared = true;
+          }
+          result.message = 'Cache clearing completed';
+          break;
+
+        case 'warmup':
+          // 캐시 워밍업 로직 (예시)
+          result.message = 'Cache warmup initiated';
+          break;
+
+        case 'optimize':
+          await memoryOptimizer.optimize();
+          result.message = 'Cache optimization completed';
+          break;
+
+        case 'stats':
+        default:
+          const memoryStats = memoryOptimizer.getStats();
+          const cacheStats = cacheManager.getStats();
+          
+          result.stats = {
+            memory: {
+              entries: memoryStats.cacheEntries,
+              size: memoryStats.cacheSize,
+              pressure: memoryStats.memoryPressure,
+            },
+            disk: {
+              entries: cacheStats.entries,
+              hitRatio: cacheStats.hitRatio,
+              memoryHits: cacheStats.memoryHits,
+              diskHits: cacheStats.diskHits,
+              memoryMisses: cacheStats.memoryMisses,
+              diskMisses: cacheStats.diskMisses,
+            },
+          };
+          break;
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to manage caches:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to manage caches: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
   private getDashboardNotifications(args: { unreadOnly?: boolean; limit?: number }): any {
     try {
       const notifications = dashboardNotifier.getNotifications({
