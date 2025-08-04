@@ -63,11 +63,22 @@ DevFlow Monitor MCP is a Model Context Protocol server that monitors all aspects
 
 ## Installation
 
+### Quick Start
+
 ```bash
 # Clone the repository
 git clone https://github.com/yaioyaio/kroot-mcp.git
 cd kroot-mcp
 
+# Run automated installation
+./scripts/deploy/install-local.sh
+```
+
+This will install DevFlow Monitor to `~/.config/mcp/devflow-monitor` and configure Claude Desktop automatically.
+
+### Manual Installation
+
+```bash
 # Install dependencies
 npm install
 
@@ -78,16 +89,28 @@ npm run build
 npm start
 ```
 
+### Docker Installation
+
+```bash
+# Using Docker Compose
+docker-compose up -d
+
+# Or using deployment script
+./scripts/deploy/deploy-docker.sh
+```
+
+For detailed installation instructions, see the [Deployment Guide](./docs/DEPLOYMENT.md).
+
 ### Claude Desktop Integration
 
-Add to your Claude Desktop configuration:
+The installation script automatically configures Claude Desktop. For manual configuration:
 
 ```json
 {
   "mcpServers": {
     "devflow-monitor": {
       "command": "node",
-      "args": ["/path/to/kroot-mcp/dist/server/index.js"]
+      "args": ["~/.config/mcp/devflow-monitor/server/index.js"]
     }
   }
 }
@@ -212,10 +235,10 @@ This server provides 37 specialized tools for development monitoring:
   - ✅ CLI/TUI dashboard
   - ✅ Advanced metrics engine
   - ✅ Notification system
-- 🚧 **Milestone 4**: Production Readiness (in progress - 67% complete)
+- ✅ **Milestone 4**: Production Readiness (100% complete)
   - ✅ Performance optimization system
   - ✅ Security enhancements
-  - 🔄 Deployment preparation (pending)
+  - ✅ Deployment preparation (Docker, CI/CD, local installation)
 
 ## Documentation
 
@@ -235,6 +258,8 @@ This server provides 37 specialized tools for development monitoring:
 - [🚀 Installation Guide](./docs/INSTALLATION.md) - Complete setup instructions
 - [📖 API Documentation](./docs/API.md) - Comprehensive API reference
 - [⚙️ Operations Guide](./docs/operations/README.md) - Deployment and monitoring
+- [🚢 Deployment Guide](./docs/DEPLOYMENT.md) - Comprehensive deployment instructions
+- [✅ Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md) - Pre and post deployment verification
 
 ## License
 
@@ -243,12 +268,18 @@ MIT © yaioyaio
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (보안 강화 완료)  
+최종 수정일: 2025-08-04 (배포 준비 완료)  
 작성자: yaioyaio
 
 ## Recent Updates
 
 **2025-08-04**: 
+- ✅ **Deployment Preparation** - Complete deployment infrastructure
+  - Docker support: Multi-stage Dockerfile, docker-compose for dev/prod
+  - Environment configuration: Flexible config system with environment overrides
+  - CI/CD Pipeline: GitHub Actions for automated testing and releases
+  - Local installation: Automated scripts for easy MCP server setup
+  - Deployment documentation: Comprehensive guides and checklists
 - ✅ **Security Enhancement System** - Complete security system implementation
   - SecurityManager: Integrated authentication and authorization system
   - JWT Authentication: Token-based authentication with refresh tokens

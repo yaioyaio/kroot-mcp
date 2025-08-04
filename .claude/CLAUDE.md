@@ -408,6 +408,36 @@ npm run typecheck    # TypeScript 타입 체크
 - `bugfix/*`: 버그 수정
 - `hotfix/*`: 긴급 수정
 
+### 14. 배포 준비 완료 (2025-08-04)
+
+**구현 내용:**
+- Docker 지원:
+  - Multi-stage Dockerfile (빌드 최적화)
+  - docker-compose.yml (개발/프로덕션)
+  - Docker 헬스체크 및 리소스 제한
+  
+- 환경별 설정:
+  - ConfigLoader 클래스 (src/config/loader.ts)
+  - 환경별 JSON 설정 파일
+  - 환경 변수 지원 (.env.example)
+  
+- CI/CD 파이프라인:
+  - GitHub Actions CI (린트, 테스트, 빌드)
+  - 자동 릴리즈 워크플로우
+  - Docker 이미지 자동 빌드 및 배포
+  
+- 배포 스크립트:
+  - install-local.sh (로컬 MCP 서버 설치)
+  - update-local.sh (업데이트 스크립트)
+  - deploy-docker.sh (Docker 배포)
+
+**배포 관련 파일:**
+- Dockerfile, docker-compose.yml, docker-compose.prod.yml
+- .github/workflows/ci.yml, .github/workflows/release.yml
+- config/default.json, config/environments/*.json
+- scripts/deploy/*.sh
+- docs/DEPLOYMENT.md, docs/DEPLOYMENT_CHECKLIST.md
+
 ## Claude 세션 시작 시 체크리스트
 
 1. [ ] 현재 브랜치 확인: `git branch`
@@ -425,5 +455,5 @@ npm run typecheck    # TypeScript 타입 체크
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (성능 최적화 완료)  
+최종 수정일: 2025-08-04 (배포 준비 완료)  
 작성자: yaioyaio

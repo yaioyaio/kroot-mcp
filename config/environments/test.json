@@ -1,0 +1,51 @@
+{
+  "server": {
+    "port": 3001
+  },
+  "database": {
+    "path": ":memory:",
+    "walMode": false
+  },
+  "monitoring": {
+    "fileSystem": {
+      "enabled": false
+    },
+    "git": {
+      "enabled": false
+    }
+  },
+  "events": {
+    "batchSize": 10,
+    "flushInterval": 100,
+    "maxQueueSize": 100
+  },
+  "performance": {
+    "cache": {
+      "enabled": false
+    },
+    "scaling": {
+      "enabled": false
+    }
+  },
+  "security": {
+    "auth": {
+      "enabled": true,
+      "jwt": {
+        "secret": "test-secret-key",
+        "expiresIn": "1h"
+      }
+    }
+  },
+  "logging": {
+    "level": "error",
+    "console": {
+      "enabled": false
+    },
+    "file": {
+      "enabled": false
+    }
+  },
+  "notifications": {
+    "enabled": false
+  }
+}
