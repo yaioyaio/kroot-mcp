@@ -120,16 +120,31 @@ export interface SecurityEvent {
 
 export type SecurityEventType = 
   | 'login_attempt'
-  | 'login_success'
+  | 'login_success'  
   | 'login_failure'
   | 'logout'
   | 'token_refresh'
+  | 'token_expired'
+  | 'token_verified'
+  | 'token_verification_failed'
   | 'permission_denied'
+  | 'permission_granted'
   | 'unauthorized_access'
   | 'suspicious_activity'
   | 'account_locked'
   | 'password_changed'
-  | 'role_changed';
+  | 'role_changed'
+  | 'role_created'
+  | 'role_updated'
+  | 'role_deleted'
+  | 'role_delete_failed'
+  | 'role_assigned'
+  | 'role_revoked'
+  | 'key_rotated'
+  | 'key_rotation_failed'
+  | 'key_rotation_scheduled'
+  | 'old_keys_cleaned'
+  | 'automatic_key_rotation_failed';
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -233,3 +248,18 @@ export const RESERVED_PERMISSIONS = {
 
 export type ReservedRole = typeof RESERVED_ROLES[keyof typeof RESERVED_ROLES];
 export type ReservedPermission = typeof RESERVED_PERMISSIONS[keyof typeof RESERVED_PERMISSIONS];
+
+// 권한 검사 인터페이스
+export interface PermissionCheck {
+  resource: string;
+  action: PermissionAction;
+  conditions?: Record<string, any>;
+}
+
+// 역할 할당 요청 인터페이스
+export interface RoleAssignmentRequest {
+  userId: string;
+  roleId: string;
+  assignedBy: string;
+  reason?: string;
+}

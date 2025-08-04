@@ -1049,12 +1049,122 @@ class DevFlowMonitorServer {
   }
 
   /**
+   * 인증 및 권한 검사
+   */
+  private async authenticateAndAuthorize(toolName: string, args: any): Promise<{ userId?: string; authContext?: any }> {
+    // 인증이 필요한 도구들 정의
+    const secureTools = new Set([
+      'generateAPIKey', 'assignRole', 'createRole', 'manageUserSessions',
+      'rotateEncryptionKeys', 'getSecurityStats', 'queryAuditLogs',
+      'getAuditSummary', 'optimizePerformance', 'manageCaches'
+    ]);
+
+    // 보안 도구는 별도 처리 (인증 자체를 담당)
+    const authTools = new Set(['login', 'verifyToken', 'checkPermission']);
+
+    if (authTools.has(toolName)) {
+      return {}; // 인증 도구는 별도 처리
+    }
+
+    if (!secureTools.has(toolName)) {
+      return {}; // 인증이 필요하지 않은 도구
+    }
+
+    // API 키 또는 JWT 토큰 확인
+    const apiKey = args.apiKey || process.env.MCP_API_KEY;
+    const token = args.token || args.authToken;
+
+    if (apiKey) {
+      // API 키 검증
+      try {
+        const apiKeyResult = await securityManager.verifyAPIKey(apiKey);
+        if (apiKeyResult && typeof apiKeyResult === 'object' && 'userId' in apiKeyResult) {
+          // 권한 검사
+          const requiredPermission = this.getRequiredPermission(toolName);
+          if (requiredPermission && apiKeyResult.permissions && !apiKeyResult.permissions.some((p: any) => p.resource === requiredPermission.resource && p.action === requiredPermission.action)) {
+            throw new Error(`Insufficient permissions for tool ${toolName}`);
+          }
+          return { userId: apiKeyResult.userId };
+        }
+      } catch (error) {
+        throw new Error(`API key authentication failed: ${(error as Error).message}`);
+      }
+    }
+
+    if (token) {
+      // JWT 토큰 검증
+      try {
+        const authContext = await securityManager.verifyToken(token);
+        if (authContext) {
+          // 권한 검사
+          const requiredPermission = this.getRequiredPermission(toolName);
+          if (requiredPermission) {
+            const hasPermission = await securityManager.checkPermission(
+              authContext.user.id,
+              requiredPermission
+            );
+            if (!hasPermission.allowed) {
+              throw new Error(`Insufficient permissions for tool ${toolName}`);
+            }
+          }
+          return { userId: authContext.user.id, authContext };
+        }
+      } catch (error) {
+        throw new Error(`Token authentication failed: ${(error as Error).message}`);
+      }
+    }
+
+    // 개발 모드에서는 인증 건너뛰기
+    if (process.env.NODE_ENV === 'development' || process.env.MCP_SKIP_AUTH === 'true') {
+      this.logInfo(`Skipping authentication for ${toolName} in development mode`);
+      return {};
+    }
+
+    throw new Error(`Authentication required for tool ${toolName}. Provide 'apiKey' or 'token' in args.`);
+  }
+
+  /**
+   * 도구별 필요 권한 정의
+   */
+  private getRequiredPermission(toolName: string): { resource: string; action: string } | null {
+    const permissions: Record<string, { resource: string; action: string }> = {
+      'generateAPIKey': { resource: 'api-keys', action: 'create' },
+      'assignRole': { resource: 'users', action: 'update' },
+      'createRole': { resource: 'roles', action: 'create' },
+      'manageUserSessions': { resource: 'sessions', action: 'admin' },
+      'rotateEncryptionKeys': { resource: 'encryption', action: 'admin' },
+      'getSecurityStats': { resource: 'security', action: 'read' },
+      'queryAuditLogs': { resource: 'audit', action: 'read' },
+      'getAuditSummary': { resource: 'audit', action: 'read' },
+      'optimizePerformance': { resource: 'system', action: 'admin' },
+      'manageCaches': { resource: 'system', action: 'admin' },
+    };
+
+    return permissions[toolName] || null;
+  }
+
+  /**
    * 도구 실행
    */
   private async executeTool(name: string, args: unknown): Promise<any> {
     const tool = this.tools.get(name);
     if (!tool) {
       throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${name}`);
+    }
+
+    // 인증 및 권한 검사
+    try {
+      const authResult = await this.authenticateAndAuthorize(name, args);
+      if (authResult.userId) {
+        this.logInfo(`Tool ${name} authenticated for user: ${authResult.userId}`);
+      }
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Authentication Error: ${(error as Error).message}`
+        }]
+      };
     }
 
     // 도구별 실행 로직
@@ -3771,7 +3881,7 @@ class DevFlowMonitorServer {
         {
           encrypted: args.encrypted,
           iv: args.iv,
-          tag: args.tag
+          ...(args.tag && { tag: args.tag })
         },
         args.keyId
       );
