@@ -2,8 +2,6 @@
  * 방법론 모니터링 관련 타입 정의
  */
 
-import { BaseEvent } from '../../events/types/base.js';
-
 /**
  * 지원하는 개발 방법론
  */

@@ -21,11 +21,11 @@ export class EventRepository extends BaseRepository<EventRecord> {
   async createFromEvent(event: BaseEvent): Promise<EventRecord> {
     // Ensure timestamp is a Date object
     const timestamp =
-      event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp || Date.now());
+      typeof event.timestamp === 'number' ? new Date(event.timestamp) : new Date(Date.now());
 
     const record: EventRecord = {
       type: event.type,
-      timestamp,
+      timestamp: timestamp.getTime(),
       data: JSON.stringify(event),
       device_id: (event.metadata?.deviceId as string) ?? null,
       user_id: (event.metadata?.userId as string) ?? null,

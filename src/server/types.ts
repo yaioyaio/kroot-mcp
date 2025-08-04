@@ -64,7 +64,7 @@ export interface McpResponse {
 /**
  * 프로젝트 상태 응답 타입
  */
-export interface ProjectStatusResponse {
+export interface ProjectStatusResponse extends McpResponse {
   project: {
     name: string;
     version: string;
@@ -101,7 +101,7 @@ export interface ProjectStatusResponse {
 /**
  * 메트릭 응답 타입
  */
-export interface MetricsResponse {
+export interface MetricsResponse extends McpResponse {
   timeRange: string;
   metricType: string;
   timestamp: string;
@@ -146,7 +146,7 @@ export interface MetricsResponse {
 /**
  * 활동 로그 응답 타입
  */
-export interface ActivityLogResponse {
+export interface ActivityLogResponse extends McpResponse {
   totalCount: number;
   activities: Array<{
     id: string;
@@ -177,7 +177,7 @@ export interface ActivityLogResponse {
 /**
  * 병목 분석 응답 타입
  */
-export interface BottleneckAnalysisResponse {
+export interface BottleneckAnalysisResponse extends McpResponse {
   analysisDepth: string;
   timestamp: string;
   bottlenecks: Array<{
@@ -213,7 +213,7 @@ export interface BottleneckAnalysisResponse {
 /**
  * 방법론 검사 응답 타입
  */
-export interface CheckMethodologyResponse {
+export interface CheckMethodologyResponse extends McpResponse {
   methodology: string;
   timestamp: string;
   compliance: {
@@ -233,7 +233,7 @@ export interface CheckMethodologyResponse {
 /**
  * 리포트 생성 응답 타입
  */
-export interface GenerateReportResponse {
+export interface GenerateReportResponse extends McpResponse {
   reportType: string;
   format: string;
   timestamp: string;

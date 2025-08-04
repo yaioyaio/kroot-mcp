@@ -408,7 +408,7 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
     // 코드 커버리지 주석 찾기
     const coverageMatch = content.match(/coverage:\s*(\d+)%/);
     if (coverageMatch) {
-      this.tddState.coverage = parseInt(coverageMatch[1]);
+      this.tddState.coverage = parseInt(coverageMatch[1] ?? '0');
     }
   }
 
@@ -572,7 +572,7 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
     const parts = filePath.split('/');
     const domainIndex = parts.findIndex(p => p === 'domain' || p === 'domains');
     if (domainIndex !== -1 && domainIndex < parts.length - 1) {
-      return parts[domainIndex + 1];
+      return parts[domainIndex + 1] ?? 'default';
     }
     return 'default';
   }

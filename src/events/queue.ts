@@ -311,7 +311,7 @@ export class EventQueue extends EventEmitter<QueueEvents> {
     if (oldestTimestamp !== null) {
       this.stats.oldestEventAge = Date.now() - oldestTimestamp;
     } else {
-      this.stats.oldestEventAge = undefined;
+      delete this.stats.oldestEventAge;
     }
 
     if (this.options.enableMetrics) {

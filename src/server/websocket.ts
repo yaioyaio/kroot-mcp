@@ -38,6 +38,7 @@ export class DevFlowWebSocketServer {
   private clients: Map<string, ClientConnection> = new Map();
   private heartbeatInterval?: NodeJS.Timeout;
   private eventSubscriptionId?: string;
+  private port: number = 0;
 
   constructor() {
     this.setupEventListeners();
@@ -61,6 +62,7 @@ export class DevFlowWebSocketServer {
         });
 
         this.wss.on('listening', () => {
+          this.port = port;
           console.log(`[WebSocket] Server listening on port ${port}`);
           this.startHeartbeat();
           resolve();
@@ -97,6 +99,7 @@ export class DevFlowWebSocketServer {
 
       if (this.wss) {
         this.wss.close(() => {
+          this.port = 0;
           console.log('[WebSocket] Server stopped');
           resolve();
         });
@@ -361,6 +364,20 @@ export class DevFlowWebSocketServer {
    */
   private generateClientId(): string {
     return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * 서버 실행 중 여부
+   */
+  isRunning(): boolean {
+    return this.wss !== null;
+  }
+
+  /**
+   * 서버 포트 조회
+   */
+  getPort(): number {
+    return this.port;
   }
 
   /**

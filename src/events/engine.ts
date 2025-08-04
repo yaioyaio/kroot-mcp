@@ -562,6 +562,29 @@ export class EventEngine extends EventEmitter {
     }
     return null;
   }
+
+  /**
+   * 큐 매니저 가져오기
+   */
+  getQueueManager() {
+    return this.queueManager;
+  }
+
+  /**
+   * 통계 가져오기
+   */
+  getStats() {
+    return {
+      totalEvents: this.stats.totalEvents,
+      lastEventTime: this.stats.lastEventTime,
+      eventsByCategory: Object.fromEntries(this.stats.eventsByCategory),
+      eventsBySeverity: Object.fromEntries(this.stats.eventsBySeverity),
+      eventsPerHour: this.stats.eventsPerHour,
+      subscriberCount: this.subscribers.size,
+      transformerCount: Array.from(this.transformers.values()).flat().length,
+      globalFilterCount: this.globalFilters.length
+    };
+  }
 }
 
 // 싱글톤 인스턴스

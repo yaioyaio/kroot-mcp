@@ -326,7 +326,7 @@ export abstract class BaseAPIClient {
   }
 
   public updateAuth(auth: APIClientConfig['auth']): void {
-    this.config = { ...this.config, auth };
+    this.config = { ...this.config, ...(auth !== undefined && { auth }) };
 
     if (auth) {
       const axiosConfig: AxiosRequestConfig = { headers: {} };

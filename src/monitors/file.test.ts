@@ -172,7 +172,7 @@ describe('FileMonitor', () => {
       );
 
       expect(fileEvents).toHaveLength(1);
-      expect(fileEvents[0][0].data.newFile.name).toBe('important.ts');
+      expect(fileEvents[0]?.[0].data.newFile.name).toBe('important.ts');
     });
   });
 

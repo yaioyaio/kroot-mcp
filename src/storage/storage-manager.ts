@@ -236,6 +236,18 @@ export class StorageManager {
   close(): void {
     this.db.close();
   }
+
+  /**
+   * Get storage metrics
+   */
+  getMetrics() {
+    return {
+      totalRecords: 0,
+      databaseSize: '0 MB',
+      tables: {},
+      oldestRecord: null
+    };
+  }
 }
 
 // Singleton instance

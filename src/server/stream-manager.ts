@@ -65,11 +65,41 @@ export class EventStreamManager extends EventEmitter {
   private bufferSize = 1000; // 최대 버퍼 크기
   private cleanupInterval?: NodeJS.Timeout;
   private eventSubscriptionId?: string;
+  private initialized = false;
 
   constructor() {
     super();
     this.setupEventListeners();
     this.startCleanupTimer();
+  }
+
+  /**
+   * 초기화 여부 확인
+   */
+  isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
+   * EventEngine 초기화
+   */
+  initialize(engine: typeof eventEngine): void {
+    if (this.initialized) {
+      return;
+    }
+    
+    // 기존 구독 해제
+    if (this.eventSubscriptionId) {
+      eventEngine.unsubscribe(this.eventSubscriptionId);
+    }
+    
+    // 새로운 구독 설정
+    this.eventSubscriptionId = engine.subscribe('*', (event: BaseEvent) => {
+      this.processEvent(event);
+    });
+    
+    this.initialized = true;
+    console.log('[StreamManager] Initialized with EventEngine');
   }
 
   /**
@@ -395,6 +425,7 @@ export class EventStreamManager extends EventEmitter {
     this.subscribers.clear();
     this.eventBuffer = [];
     this.removeAllListeners();
+    this.initialized = false;
 
     console.log('[StreamManager] Destroyed');
   }

@@ -277,7 +277,7 @@ describe('EventEngine', () => {
       await eventEngine.publishBatch({
         id: 'batch-test',
         events,
-        createdAt: new Date(),
+        createdAt: Date.now(),
       });
 
       expect(handler).toHaveBeenCalledTimes(2);

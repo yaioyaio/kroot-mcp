@@ -88,7 +88,9 @@ export class JiraClient extends BaseAPIClient {
 
     super(jiraConfig, eventEngine);
     this.domain = config.domain;
-    this.project = config.project || undefined;
+    if (config.project) {
+      this.project = config.project;
+    }
   }
 
   getName(): string {
@@ -239,13 +241,13 @@ export class JiraClient extends BaseAPIClient {
           name: issue.fields.status.name,
           category: issue.fields.status.statusCategory.name,
         },
-        assignee: issue.fields.assignee
-          ? {
-              accountId: issue.fields.assignee.accountId,
-              displayName: issue.fields.assignee.displayName,
-              emailAddress: issue.fields.assignee.emailAddress,
-            }
-          : undefined,
+        ...(issue.fields.assignee && {
+          assignee: {
+            accountId: issue.fields.assignee.accountId,
+            displayName: issue.fields.assignee.displayName,
+            emailAddress: issue.fields.assignee.emailAddress,
+          }
+        }),
         reporter: {
           accountId: issue.fields.reporter.accountId,
           displayName: issue.fields.reporter.displayName,
@@ -330,13 +332,13 @@ export class JiraClient extends BaseAPIClient {
           name: issue.fields.status.name,
           category: issue.fields.status.statusCategory.name,
         },
-        assignee: issue.fields.assignee
-          ? {
-              accountId: issue.fields.assignee.accountId,
-              displayName: issue.fields.assignee.displayName,
-              emailAddress: issue.fields.assignee.emailAddress,
-            }
-          : undefined,
+        ...(issue.fields.assignee && {
+          assignee: {
+            accountId: issue.fields.assignee.accountId,
+            displayName: issue.fields.assignee.displayName,
+            emailAddress: issue.fields.assignee.emailAddress,
+          }
+        }),
         reporter: {
           accountId: issue.fields.reporter.accountId,
           displayName: issue.fields.reporter.displayName,

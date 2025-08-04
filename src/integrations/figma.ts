@@ -477,7 +477,7 @@ export class FigmaClient extends BaseAPIClient {
         source: this.getName(),
       });
 
-      return activities.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+      return activities.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
     } catch (error) {
       this.emitEvent({
         type: 'figma:recent_activity_fetch_failed',
