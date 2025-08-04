@@ -262,8 +262,19 @@ devflow-monitor-mcp/
    - [x] MCP 도구 통합 ✅ (startDashboard, getDashboardStatus)
    - [x] 실행 및 테스트 스크립트 작성 ✅
 
+13. **메트릭 및 분석 엔진** ✅ 완료 (2025-08-04)
+   - [x] MetricsCollector 클래스 구현 ✅ (src/analyzers/metrics-collector.ts - 585줄)
+   - [x] BottleneckDetector 클래스 구현 ✅ (src/analyzers/bottleneck-detector.ts - 486줄)
+   - [x] MetricsAnalyzer 클래스 구현 ✅ (src/analyzers/metrics-analyzer.ts - 574줄)
+   - [x] 메트릭 타입 정의 ✅ (src/analyzers/types/metrics.ts - 309줄)
+   - [x] 실시간 메트릭 수집 ✅ (파일, Git, 테스트, 빌드, AI 이벤트)
+   - [x] 병목 현상 감지 ✅ (5가지 타입: 프로세스/품질/리소스/워크플로우/기술적)
+   - [x] 트렌드 분석 및 점수 계산 ✅ (생산성/품질/성능 점수)
+   - [x] 인사이트 및 권장사항 자동 생성 ✅
+   - [x] 4개 새로운 MCP 도구 추가 ✅ (getAdvancedMetrics, getBottlenecks, getMetricsSnapshot, analyzeProductivity)
+   - [x] 테스트 스크립트 작성 ✅ (scripts/test-metrics.ts)
+
 ### 다음 작업
-- 메트릭 및 분석 엔진 강화
 - 알림 시스템
 
 ## 주요 명령어
@@ -314,5 +325,5 @@ npm run typecheck    # TypeScript 타입 체크
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (CLI/TUI 대시보드 완료)  
+최종 수정일: 2025-08-04 (메트릭 및 분석 엔진 완료)  
 작성자: yaioyaio

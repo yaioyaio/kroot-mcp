@@ -40,8 +40,12 @@ import { streamManager } from './stream-manager.js';
 import { StageAnalyzer } from '../analyzers/stage-analyzer.js';
 import { MethodologyAnalyzer } from '../analyzers/methodology-analyzer.js';
 import { AIMonitor } from '../analyzers/ai-monitor.js';
+import { metricsCollector } from '../analyzers/metrics-collector.js';
+import { bottleneckDetector } from '../analyzers/bottleneck-detector.js';
+import { metricsAnalyzer } from '../analyzers/metrics-analyzer.js';
 import { DevelopmentMethodology } from '../analyzers/types/methodology.js';
 import { AITool } from '../analyzers/types/ai.js';
+// import { BottleneckType } from '../analyzers/types/metrics.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -61,6 +65,11 @@ const methodologyAnalyzer = new MethodologyAnalyzer();
 
 // Initialize AI Monitor
 const aiMonitor = new AIMonitor();
+
+// Initialize Metrics System
+metricsCollector.start();
+bottleneckDetector.start();
+metricsAnalyzer.start();
 
 /**
  * DevFlow Monitor MCP 서버 클래스
@@ -404,6 +413,106 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 메트릭 관련 도구들
+    this.registerTool({
+      name: 'getAdvancedMetrics',
+      description: '고급 메트릭 분석 결과를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          includeBottlenecks: {
+            type: 'boolean',
+            description: '병목 현상 분석 포함 여부',
+            default: true,
+          },
+          includeInsights: {
+            type: 'boolean',
+            description: '인사이트 포함 여부',
+            default: true,
+          },
+          includeRecommendations: {
+            type: 'boolean',
+            description: '권장사항 포함 여부',
+            default: true,
+          },
+          timeRange: {
+            type: 'string',
+            description: '분석 시간 범위 (1h, 24h, 7d, 30d)',
+            default: '24h',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getBottlenecks',
+      description: '현재 감지된 병목 현상을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['process', 'resource', 'technical', 'communication', 'quality', 'workflow', 'dependency', 'skill'],
+            description: '병목 현상 타입 필터',
+          },
+          severity: {
+            type: 'string',
+            enum: ['debug', 'info', 'warn', 'warning', 'error', 'critical'],
+            description: '심각도 필터',
+          },
+          minImpact: {
+            type: 'number',
+            description: '최소 영향도 (0-100)',
+            minimum: 0,
+            maximum: 100,
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getMetricsSnapshot',
+      description: '현재 메트릭 스냅샷을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          includeHistory: {
+            type: 'boolean',
+            description: '히스토리 포함 여부',
+            default: false,
+          },
+          metricTypes: {
+            type: 'array',
+            items: {
+              type: 'string',
+              enum: ['productivity', 'quality', 'performance', 'collaboration', 'methodology', 'ai_usage', 'bottleneck', 'trend'],
+            },
+            description: '포함할 메트릭 타입들',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'analyzeProductivity',
+      description: '생산성 메트릭을 상세 분석합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          timeRange: {
+            type: 'string',
+            description: '분석 시간 범위 (1h, 24h, 7d, 30d)',
+            default: '24h',
+          },
+          includeTrends: {
+            type: 'boolean',
+            description: '트렌드 분석 포함 여부',
+            default: true,
+          },
+        },
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -511,6 +620,18 @@ class DevFlowMonitorServer {
 
       case 'getDashboardStatus':
         return this.getDashboardStatus();
+
+      case 'getAdvancedMetrics':
+        return this.getAdvancedMetrics(args as { includeBottlenecks?: boolean; includeInsights?: boolean; includeRecommendations?: boolean; timeRange?: string });
+
+      case 'getBottlenecks':
+        return this.getBottlenecks(args as { type?: string; severity?: string; minImpact?: number });
+
+      case 'getMetricsSnapshot':
+        return this.getMetricsSnapshot(args as { includeHistory?: boolean; metricTypes?: string[] });
+
+      case 'analyzeProductivity':
+        return this.analyzeProductivity(args as { timeRange?: string; includeTrends?: boolean });
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -2038,6 +2159,381 @@ class DevFlowMonitorServer {
         `Failed to start dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  /**
+   * 고급 메트릭 분석 결과 조회
+   */
+  private async getAdvancedMetrics(args: { includeBottlenecks?: boolean; includeInsights?: boolean; includeRecommendations?: boolean; timeRange?: string }): Promise<any> {
+    try {
+      const {
+        includeBottlenecks = true,
+        includeInsights = true,
+        includeRecommendations = true,
+        timeRange = '24h'
+      } = args;
+
+      // 메트릭 분석 수행
+      const analysisResult = await metricsAnalyzer.performAnalysis();
+
+      const response = {
+        timestamp: new Date().toISOString(),
+        timeRange,
+        summary: analysisResult.summary,
+        productivity: {
+          score: this.calculateProductivityScore(analysisResult.productivity),
+          metrics: Object.entries(analysisResult.productivity).map(([key, metric]) => ({
+            name: key,
+            current: metric.summary.current,
+            trend: metric.summary.trend,
+            change: metric.summary.changePercentage,
+          })),
+        },
+        quality: {
+          score: this.calculateQualityScore(analysisResult.quality),
+          metrics: Object.entries(analysisResult.quality).map(([key, metric]) => ({
+            name: key,
+            current: metric.summary.current,
+            trend: metric.summary.trend,
+            change: metric.summary.changePercentage,
+          })),
+        },
+        performance: {
+          score: this.calculatePerformanceScore(analysisResult.performance),
+          metrics: Object.entries(analysisResult.performance).map(([key, metric]) => ({
+            name: key,
+            current: metric.summary.current,
+            trend: metric.summary.trend,
+            change: metric.summary.changePercentage,
+          })),
+        },
+        ...(includeBottlenecks && { bottlenecks: analysisResult.bottlenecks }),
+        ...(includeInsights && { insights: analysisResult.insights }),
+        ...(includeRecommendations && { recommendations: analysisResult.recommendations }),
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(response, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get advanced metrics:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get advanced metrics: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 병목 현상 조회
+   */
+  private getBottlenecks(args: { type?: string; severity?: string; minImpact?: number }): any {
+    try {
+      const { type, severity, minImpact } = args;
+      let bottlenecks = bottleneckDetector.getAllBottlenecks();
+
+      // 필터링
+      if (type) {
+        bottlenecks = bottlenecks.filter(b => b.type === type);
+      }
+      if (severity) {
+        bottlenecks = bottlenecks.filter(b => b.severity === severity);
+      }
+      if (minImpact !== undefined) {
+        bottlenecks = bottlenecks.filter(b => b.impact >= minImpact);
+      }
+
+      const stats = bottleneckDetector.getBottleneckStats();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            totalBottlenecks: bottlenecks.length,
+            filteredBottlenecks: bottlenecks.length,
+            statistics: stats,
+            bottlenecks: bottlenecks.map(b => ({
+              id: b.id,
+              type: b.type,
+              severity: b.severity,
+              title: b.title,
+              description: b.description,
+              location: b.location,
+              impact: b.impact,
+              confidence: b.confidence,
+              frequency: b.frequency,
+              detectedAt: b.detectedAt,
+              lastOccurred: b.lastOccurred,
+              suggestedActions: b.suggestedActions,
+            })),
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get bottlenecks:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get bottlenecks: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 메트릭 스냅샷 조회
+   */
+  private getMetricsSnapshot(args: { includeHistory?: boolean; metricTypes?: string[] }): any {
+    try {
+      const { includeHistory = false, metricTypes } = args;
+      const snapshot = metricsCollector.getMetricsSnapshot();
+      const allMetrics = metricsCollector.getAllMetrics();
+
+      let filteredMetrics = Array.from(allMetrics.values());
+      if (metricTypes && metricTypes.length > 0) {
+        filteredMetrics = filteredMetrics.filter(metric => 
+          metricTypes.includes(metric.definition.type)
+        );
+      }
+
+      const response = {
+        timestamp: snapshot.timestamp,
+        uptime: snapshot.uptime,
+        totalEvents: snapshot.totalEvents,
+        totalMetrics: snapshot.totalMetrics,
+        summary: snapshot.summary,
+        metrics: filteredMetrics.map(metric => ({
+          id: metric.definition.id,
+          name: metric.definition.name,
+          type: metric.definition.type,
+          unit: metric.definition.unit,
+          current: metric.summary.current,
+          trend: metric.summary.trend,
+          change: metric.summary.changePercentage,
+          ...(includeHistory && {
+            history: metric.values.slice(-10), // 최근 10개 값
+          }),
+        })),
+        systemStats: {
+          metricsCollector: metricsCollector.getStats(),
+          bottleneckDetector: bottleneckDetector.getStats(),
+          metricsAnalyzer: metricsAnalyzer.getStats(),
+        },
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(response, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get metrics snapshot:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get metrics snapshot: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 생산성 분석
+   */
+  private async analyzeProductivity(args: { timeRange?: string; includeTrends?: boolean }): Promise<any> {
+    try {
+      const { timeRange = '24h', includeTrends = true } = args;
+      const analysisResult = await metricsAnalyzer.performAnalysis();
+      const productivity = analysisResult.productivity;
+
+      const productivityScore = this.calculateProductivityScore(productivity);
+      
+      const analysis = {
+        timestamp: new Date().toISOString(),
+        timeRange,
+        overallScore: productivityScore,
+        metrics: {
+          codeVelocity: {
+            linesPerHour: productivity.linesOfCodePerHour.summary.current,
+            trend: productivity.linesOfCodePerHour.summary.trend,
+            change: productivity.linesOfCodePerHour.summary.changePercentage,
+          },
+          commitActivity: {
+            commitsPerDay: productivity.commitsPerDay.summary.current,
+            trend: productivity.commitsPerDay.summary.trend,
+            change: productivity.commitsPerDay.summary.changePercentage,
+          },
+          testCoverage: {
+            coverage: productivity.testCoverage.summary.current,
+            trend: productivity.testCoverage.summary.trend,
+            change: productivity.testCoverage.summary.changePercentage,
+          },
+          deliveryTime: {
+            featureDelivery: productivity.featureDeliveryTime.summary.current,
+            bugFix: productivity.bugFixTime.summary.current,
+            codeReview: productivity.codeReviewTime.summary.current,
+          },
+        },
+        insights: this.generateProductivityInsights(productivity),
+        recommendations: this.generateProductivityRecommendations(productivity),
+        ...(includeTrends && {
+          trends: this.analyzeProductivityTrends(productivity),
+        }),
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(analysis, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to analyze productivity:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to analyze productivity: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 생산성 점수 계산
+   */
+  private calculateProductivityScore(productivity: any): number {
+    const metrics = [
+      productivity.linesOfCodePerHour,
+      productivity.commitsPerDay,
+      productivity.testCoverage,
+    ];
+
+    let totalScore = 0;
+    let validMetrics = 0;
+
+    for (const metric of metrics) {
+      if (metric.values.length > 0) {
+        let score = 50; // 기본 점수
+        
+        if (metric.summary.trend === 'increasing') score += 20;
+        else if (metric.summary.trend === 'decreasing') score -= 20;
+        
+        if (Math.abs(metric.summary.changePercentage) > 20) score -= 10;
+        
+        totalScore += Math.max(0, Math.min(100, score));
+        validMetrics++;
+      }
+    }
+
+    return validMetrics > 0 ? Math.round(totalScore / validMetrics) : 50;
+  }
+
+  /**
+   * 품질 점수 계산
+   */
+  private calculateQualityScore(quality: any): number {
+    const metrics = [
+      quality.testPassRate,
+      quality.codeReviewApprovalRate,
+    ];
+
+    let totalScore = 0;
+    let validMetrics = 0;
+
+    for (const metric of metrics) {
+      if (metric.values.length > 0) {
+        let score = metric.summary.current; // 백분율 기반
+        
+        if (metric.summary.trend === 'increasing') score += 10;
+        else if (metric.summary.trend === 'decreasing') score -= 10;
+        
+        totalScore += Math.max(0, Math.min(100, score));
+        validMetrics++;
+      }
+    }
+
+    return validMetrics > 0 ? Math.round(totalScore / validMetrics) : 50;
+  }
+
+  /**
+   * 성능 점수 계산
+   */
+  private calculatePerformanceScore(performance: any): number {
+    const metrics = [
+      performance.buildTime,
+      performance.testExecutionTime,
+    ];
+
+    let totalScore = 0;
+    let validMetrics = 0;
+
+    for (const metric of metrics) {
+      if (metric.values.length > 0) {
+        let score = 50; // 기본 점수
+        
+        // 시간 메트릭은 감소가 좋음
+        if (metric.summary.trend === 'decreasing') score += 20;
+        else if (metric.summary.trend === 'increasing') score -= 20;
+        
+        totalScore += Math.max(0, Math.min(100, score));
+        validMetrics++;
+      }
+    }
+
+    return validMetrics > 0 ? Math.round(totalScore / validMetrics) : 50;
+  }
+
+  /**
+   * 생산성 인사이트 생성
+   */
+  private generateProductivityInsights(productivity: any): string[] {
+    const insights: string[] = [];
+
+    if (productivity.commitsPerDay.summary.current > 5) {
+      insights.push('🚀 High commit frequency indicates active development');
+    }
+
+    if (productivity.testCoverage.summary.current > 80) {
+      insights.push('✅ Excellent test coverage maintained');
+    }
+
+    if (productivity.linesOfCodePerHour.summary.trend === 'increasing') {
+      insights.push('📈 Code productivity is improving');
+    }
+
+    return insights;
+  }
+
+  /**
+   * 생산성 권장사항 생성
+   */
+  private generateProductivityRecommendations(productivity: any): string[] {
+    const recommendations: string[] = [];
+
+    if (productivity.testCoverage.summary.current < 70) {
+      recommendations.push('Increase test coverage to improve code quality');
+    }
+
+    if (productivity.codeReviewTime.summary.current > 24 * 60 * 60 * 1000) { // 24시간
+      recommendations.push('Consider reducing code review turnaround time');
+    }
+
+    if (productivity.bugFixTime.summary.trend === 'increasing') {
+      recommendations.push('Investigate increasing bug fix time');
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * 생산성 트렌드 분석
+   */
+  private analyzeProductivityTrends(productivity: any): any {
+    return {
+      codeVelocity: productivity.linesOfCodePerHour.summary.trend,
+      commitActivity: productivity.commitsPerDay.summary.trend,
+      testCoverage: productivity.testCoverage.summary.trend,
+      deliverySpeed: productivity.featureDeliveryTime.summary.trend,
+    };
   }
 
   /**
