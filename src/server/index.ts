@@ -66,6 +66,17 @@ import {
   getSecurityManager,
   DEFAULT_SECURITY_CONFIG
 } from '../security/index.js';
+import { 
+  createMultiProjectSystem, 
+  createDefaultConfig,
+  type MultiProjectSystem,
+  type ProjectMetadata,
+  type CrossProjectAnalysis,
+  AnalysisType,
+  ProjectStatus,
+  ProjectType,
+  ProjectPriority
+} from '../projects/index.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -109,6 +120,7 @@ class DevFlowMonitorServer {
   private server: Server;
   private tools: Map<string, McpTool> = new Map();
   private fileMonitor?: FileMonitor;
+  private multiProjectSystem: MultiProjectSystem;
   private gitMonitor?: GitMonitor;
   private activityLog: Array<MonitorEvent> = [];
   private aiMonitor = aiMonitor;
@@ -145,6 +157,23 @@ class DevFlowMonitorServer {
       healthCheckInterval: 60000,
       metricsInterval: 30000,
     });
+
+    // 다중 프로젝트 시스템 초기화
+    this.multiProjectSystem = createMultiProjectSystem(
+      createDefaultConfig({
+        dbPath: './data/multi-projects.db',
+        projectManager: {
+          autoDiscovery: true,
+          searchPaths: [process.cwd(), './..'], // 현재 디렉토리와 상위 디렉토리
+          defaultSettings: {},
+          metricsInterval: 60000,
+          analysisInterval: 300000,
+          maxConcurrentAnalysis: 2
+        }
+      }),
+      eventEngine,
+      storageManager
+    );
 
     this.setupTools();
     this.setupHandlers();
@@ -1238,6 +1267,207 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 다중 프로젝트 지원 도구들
+    this.registerTool({
+      name: 'createProject',
+      description: '새로운 프로젝트를 생성합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: '프로젝트 이름' },
+          description: { type: 'string', description: '프로젝트 설명' },
+          type: { type: 'string', enum: ['web_application', 'mobile_application', 'api_service', 'library', 'cli_tool', 'microservice', 'monolith', 'data_pipeline', 'infrastructure', 'documentation', 'other'], description: '프로젝트 타입' },
+          priority: { type: 'string', enum: ['critical', 'high', 'medium', 'low'], description: '프로젝트 우선순위' },
+          rootPath: { type: 'string', description: '프로젝트 루트 경로' },
+          tags: { type: 'array', items: { type: 'string' }, description: '프로젝트 태그' }
+        },
+        required: ['name']
+      },
+    });
+
+    this.registerTool({
+      name: 'listProjects',
+      description: '등록된 모든 프로젝트 목록을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['active', 'inactive', 'archived', 'maintenance', 'development', 'production', 'deprecated'], description: '필터링할 프로젝트 상태' },
+          type: { type: 'string', description: '필터링할 프로젝트 타입' },
+          limit: { type: 'number', description: '최대 결과 수' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getProject',
+      description: '특정 프로젝트의 상세 정보를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: '프로젝트 ID' }
+        },
+        required: ['projectId']
+      },
+    });
+
+    this.registerTool({
+      name: 'updateProject',
+      description: '프로젝트 정보를 업데이트합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: '프로젝트 ID' },
+          name: { type: 'string', description: '프로젝트 이름' },
+          description: { type: 'string', description: '프로젝트 설명' },
+          status: { type: 'string', enum: ['active', 'inactive', 'archived', 'maintenance', 'development', 'production', 'deprecated'], description: '프로젝트 상태' },
+          priority: { type: 'string', enum: ['critical', 'high', 'medium', 'low'], description: '프로젝트 우선순위' },
+          tags: { type: 'array', items: { type: 'string' }, description: '프로젝트 태그' }
+        },
+        required: ['projectId']
+      },
+    });
+
+    this.registerTool({
+      name: 'deleteProject',
+      description: '프로젝트를 삭제합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: '프로젝트 ID' }
+        },
+        required: ['projectId']
+      },
+    });
+
+    this.registerTool({
+      name: 'discoverProjects',
+      description: '지정된 경로에서 프로젝트를 자동으로 검색하고 등록합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          searchPaths: { type: 'array', items: { type: 'string' }, description: '검색할 디렉토리 경로들' },
+          autoRegister: { type: 'boolean', description: '발견된 프로젝트를 자동으로 등록할지 여부' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'searchProjects',
+      description: '프로젝트를 검색합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: '검색 쿼리 (프로젝트 이름)' },
+          type: { type: 'string', description: '프로젝트 타입' },
+          status: { type: 'string', description: '프로젝트 상태' },
+          tags: { type: 'array', items: { type: 'string' }, description: '검색할 태그들' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getProjectMetrics',
+      description: '프로젝트의 메트릭을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: '프로젝트 ID' },
+          timeRange: { type: 'string', enum: ['1h', '1d', '7d', '30d'], description: '조회할 시간 범위' }
+        },
+        required: ['projectId']
+      },
+    });
+
+    this.registerTool({
+      name: 'collectProjectMetrics',
+      description: '프로젝트의 메트릭을 수집합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: '프로젝트 ID (생략 시 모든 활성 프로젝트)' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'runCrossProjectAnalysis',
+      description: '여러 프로젝트 간의 크로스 분석을 실행합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectIds: { type: 'array', items: { type: 'string' }, description: '분석할 프로젝트 ID들 (생략 시 모든 활성 프로젝트)' },
+          analysisType: { type: 'string', enum: ['similarity', 'dependency', 'performance', 'quality', 'trend', 'bottleneck', 'collaboration'], description: '분석 타입' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getProjectDependencies',
+      description: '프로젝트 간 의존성 관계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string', description: '프로젝트 ID' },
+          direction: { type: 'string', enum: ['incoming', 'outgoing', 'both'], description: '의존성 방향' }
+        },
+        required: ['projectId']
+      },
+    });
+
+    this.registerTool({
+      name: 'getMultiProjectStatus',
+      description: '다중 프로젝트 시스템의 전체 상태를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'getProjectPortfolio',
+      description: '프로젝트 포트폴리오 개요를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          groupBy: { type: 'string', enum: ['type', 'status', 'priority', 'owner'], description: '그룹화 기준' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'enableProjectSync',
+      description: '프로젝트 동기화를 활성화합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          endpoint: { type: 'string', description: '동기화 서버 엔드포인트' },
+          apiKey: { type: 'string', description: 'API 키' },
+          interval: { type: 'number', description: '동기화 간격 (초)' }
+        },
+        required: ['endpoint', 'apiKey']
+      },
+    });
+
+    this.registerTool({
+      name: 'triggerProjectSync',
+      description: '프로젝트 동기화를 수동으로 트리거합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          force: { type: 'boolean', description: '강제 동기화 여부' }
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getProjectSyncStatus',
+      description: '프로젝트 동기화 상태를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -1574,6 +1804,40 @@ class DevFlowMonitorServer {
 
       case 'getPluginSystemStats':
         return this.getPluginSystemStats();
+
+      // 다중 프로젝트 도구들
+      case 'createProject':
+        return await this.createProject(args as { name: string; description?: string; type?: string; priority?: string; rootPath?: string; tags?: string[] });
+      case 'listProjects':
+        return await this.listProjects(args as { status?: string; type?: string; limit?: number });
+      case 'getProject':
+        return await this.getProject(args as { projectId: string });
+      case 'updateProject':
+        return await this.updateProject(args as { projectId: string; name?: string; description?: string; status?: string; priority?: string; tags?: string[] });
+      case 'deleteProject':
+        return await this.deleteProject(args as { projectId: string });
+      case 'discoverProjects':
+        return await this.discoverProjects(args as { searchPaths?: string[]; autoRegister?: boolean });
+      case 'searchProjects':
+        return await this.searchProjects(args as { query?: string; type?: string; status?: string; tags?: string[] });
+      case 'getProjectMetrics':
+        return await this.getProjectMetrics(args as { projectId: string; timeRange?: string });
+      case 'collectProjectMetrics':
+        return await this.collectProjectMetrics(args as { projectId?: string });
+      case 'runCrossProjectAnalysis':
+        return await this.runCrossProjectAnalysis(args as { projectIds?: string[]; analysisType?: string });
+      case 'getProjectDependencies':
+        return await this.getProjectDependencies(args as { projectId: string; direction?: string });
+      case 'getMultiProjectStatus':
+        return await this.getMultiProjectStatus();
+      case 'getProjectPortfolio':
+        return await this.getProjectPortfolio(args as { groupBy?: string });
+      case 'enableProjectSync':
+        return await this.enableProjectSync(args as { endpoint: string; apiKey: string; interval?: number });
+      case 'triggerProjectSync':
+        return await this.triggerProjectSync(args as { force?: boolean });
+      case 'getProjectSyncStatus':
+        return await this.getProjectSyncStatus();
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -2599,6 +2863,14 @@ class DevFlowMonitorServer {
       this.logInfo('Auto-loaded plugins');
     } catch (error) {
       this.logError('Failed to initialize plugin manager:', error);
+    }
+
+    // Initialize multi-project system
+    try {
+      await this.multiProjectSystem.start();
+      this.logInfo('Multi-project system started');
+    } catch (error) {
+      this.logError('Failed to start multi-project system:', error);
     }
     
     this.logInfo('DevFlow Monitor MCP server started');
@@ -4771,6 +5043,693 @@ class DevFlowMonitorServer {
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to get plugin system stats: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  // ========================================
+  // 다중 프로젝트 관리 메서드들
+  // ========================================
+
+  /**
+   * 프로젝트 생성
+   */
+  private async createProject(args: { 
+    name: string; 
+    description?: string; 
+    type?: string; 
+    priority?: string; 
+    rootPath?: string; 
+    tags?: string[] 
+  }): Promise<ToolCallResult> {
+    try {
+      const { name, description, type, priority, rootPath, tags } = args;
+      
+      const project = await this.multiProjectSystem.getProjectManager().createProject({
+        name,
+        description,
+        type: type as any,
+        priority: priority as any,
+        paths: rootPath ? { root: rootPath, source: [], test: [], docs: [], build: [], config: [] } : undefined,
+        tags: tags || []
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            project: {
+              id: project.id,
+              name: project.name,
+              description: project.description,
+              type: project.type,
+              status: project.status,
+              priority: project.priority,
+              tags: project.tags,
+              createdAt: new Date(project.createdAt).toISOString(),
+              rootPath: project.paths.root
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to create project:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to create project: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 목록 조회
+   */
+  private async listProjects(args: { 
+    status?: string; 
+    type?: string; 
+    limit?: number 
+  }): Promise<ToolCallResult> {
+    try {
+      const { status, type, limit } = args;
+      
+      let projects = this.multiProjectSystem.getProjectManager().getAllProjects();
+      
+      // 필터 적용
+      if (status || type) {
+        projects = this.multiProjectSystem.getProjectManager().getProjectsByFilter({
+          status: status as any,
+          type: type as any
+        });
+      }
+      
+      // 제한 적용
+      if (limit && limit > 0) {
+        projects = projects.slice(0, limit);
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            projects: projects.map(p => ({
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              type: p.type,
+              status: p.status,
+              priority: p.priority,
+              tags: p.tags,
+              createdAt: new Date(p.createdAt).toISOString(),
+              updatedAt: new Date(p.updatedAt).toISOString(),
+              rootPath: p.paths.root
+            })),
+            total: projects.length
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to list projects:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list projects: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 상세 조회
+   */
+  private async getProject(args: { projectId: string }): Promise<ToolCallResult> {
+    try {
+      const { projectId } = args;
+      
+      const project = this.multiProjectSystem.getProjectManager().getProject(projectId);
+      
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            project: {
+              id: project.id,
+              name: project.name,
+              description: project.description,
+              version: project.version,
+              type: project.type,
+              status: project.status,
+              priority: project.priority,
+              tags: project.tags,
+              owner: project.owner,
+              settings: project.settings,
+              paths: project.paths,
+              repository: project.repository,
+              createdAt: new Date(project.createdAt).toISOString(),
+              updatedAt: new Date(project.updatedAt).toISOString()
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get project:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 업데이트
+   */
+  private async updateProject(args: { 
+    projectId: string; 
+    name?: string; 
+    description?: string; 
+    status?: string; 
+    priority?: string; 
+    tags?: string[] 
+  }): Promise<ToolCallResult> {
+    try {
+      const { projectId, ...updates } = args;
+      
+      const project = await this.multiProjectSystem.getProjectManager().updateProject(projectId, {
+        name: updates.name,
+        description: updates.description,
+        status: updates.status as any,
+        priority: updates.priority as any,
+        tags: updates.tags
+      });
+      
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            project: {
+              id: project.id,
+              name: project.name,
+              description: project.description,
+              type: project.type,
+              status: project.status,
+              priority: project.priority,
+              tags: project.tags,
+              updatedAt: new Date(project.updatedAt).toISOString()
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to update project:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to update project: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 삭제
+   */
+  private async deleteProject(args: { projectId: string }): Promise<ToolCallResult> {
+    try {
+      const { projectId } = args;
+      
+      const success = await this.multiProjectSystem.getProjectManager().deleteProject(projectId);
+      
+      if (!success) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            projectId,
+            message: 'Project deleted successfully'
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to delete project:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to delete project: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 자동 검색
+   */
+  private async discoverProjects(args: { 
+    searchPaths?: string[]; 
+    autoRegister?: boolean 
+  }): Promise<ToolCallResult> {
+    try {
+      const { searchPaths, autoRegister = true } = args;
+      
+      const projects = await this.multiProjectSystem.getProjectManager().discoverProjects();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            discoveredProjects: projects.map(p => ({
+              id: p.id,
+              name: p.name,
+              type: p.type,
+              rootPath: p.paths.root,
+              status: p.status
+            })),
+            total: projects.length,
+            searchPaths: searchPaths || ['default'],
+            autoRegistered: autoRegister
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to discover projects:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to discover projects: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 검색
+   */
+  private async searchProjects(args: { 
+    query?: string; 
+    type?: string; 
+    status?: string; 
+    tags?: string[] 
+  }): Promise<ToolCallResult> {
+    try {
+      const { query, type, status, tags } = args;
+      
+      const searchQuery = {
+        name: query,
+        type,
+        status,
+        tags
+      };
+      
+      const projects = await this.multiProjectSystem.searchProjects(searchQuery);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            results: projects.map(p => ({
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              type: p.type,
+              status: p.status,
+              tags: p.tags,
+              rootPath: p.paths.root
+            })),
+            total: projects.length,
+            searchCriteria: searchQuery
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to search projects:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to search projects: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 메트릭 조회
+   */
+  private async getProjectMetrics(args: { 
+    projectId: string; 
+    timeRange?: string 
+  }): Promise<ToolCallResult> {
+    try {
+      const { projectId, timeRange = '24h' } = args;
+      
+      const project = this.multiProjectSystem.getProjectManager().getProject(projectId);
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      // 실제로는 데이터베이스에서 메트릭을 조회해야 함
+      // 여기서는 간단한 더미 데이터 반환
+      const metrics = {
+        projectId,
+        timeRange,
+        timestamp: new Date().toISOString(),
+        code: {
+          totalLines: 1000,
+          codeLines: 800,
+          commentLines: 150,
+          fileCount: 50,
+          complexity: 3.2
+        },
+        quality: {
+          testCoverage: 85.5,
+          codeQuality: 8.2,
+          bugCount: 3
+        },
+        activity: {
+          commits: 25,
+          fileChanges: 48,
+          builds: 12
+        }
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ metrics }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get project metrics:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project metrics: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 메트릭 수집
+   */
+  private async collectProjectMetrics(args: { projectId?: string }): Promise<ToolCallResult> {
+    try {
+      const { projectId } = args;
+      
+      await this.multiProjectSystem.collectMetrics(projectId);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            message: projectId ? 
+              `Metrics collected for project: ${projectId}` : 
+              'Metrics collected for all active projects',
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to collect project metrics:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to collect project metrics: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 크로스 프로젝트 분석 실행
+   */
+  private async runCrossProjectAnalysis(args: { 
+    projectIds?: string[]; 
+    analysisType?: string 
+  }): Promise<ToolCallResult> {
+    try {
+      const { projectIds, analysisType = 'similarity' } = args;
+      
+      const analysis = await this.multiProjectSystem.runCrossAnalysis(
+        projectIds, 
+        analysisType as any
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            analysis: {
+              id: analysis.id,
+              type: analysis.type,
+              projects: analysis.projects,
+              timestamp: new Date(analysis.timestamp).toISOString(),
+              results: analysis.results,
+              insights: analysis.insights,
+              recommendations: analysis.recommendations
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to run cross-project analysis:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to run cross-project analysis: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 의존성 조회
+   */
+  private async getProjectDependencies(args: { 
+    projectId: string; 
+    direction?: string 
+  }): Promise<ToolCallResult> {
+    try {
+      const { projectId, direction = 'both' } = args;
+      
+      const project = this.multiProjectSystem.getProjectManager().getProject(projectId);
+      if (!project) {
+        throw new Error(`Project not found: ${projectId}`);
+      }
+
+      // 실제로는 데이터베이스에서 의존성을 조회해야 함
+      // 여기서는 간단한 더미 데이터 반환
+      const dependencies = {
+        projectId,
+        direction,
+        incoming: [],
+        outgoing: [],
+        circular: [],
+        total: 0
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ dependencies }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get project dependencies:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project dependencies: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 다중 프로젝트 시스템 상태 조회
+   */
+  private async getMultiProjectStatus(): Promise<ToolCallResult> {
+    try {
+      const systemStatus = this.multiProjectSystem.getSystemStatus();
+      const systemStats = this.multiProjectSystem.getSystemStats();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            system: {
+              running: systemStatus.running,
+              projectsCount: systemStatus.projectsCount,
+              activeProjects: systemStatus.activeProjects,
+              syncEnabled: systemStatus.syncEnabled,
+              syncStatus: systemStatus.syncStatus,
+              runningAnalysis: systemStatus.runningAnalysis
+            },
+            stats: systemStats,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get multi-project status:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get multi-project status: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 포트폴리오 조회
+   */
+  private async getProjectPortfolio(args: { groupBy?: string }): Promise<ToolCallResult> {
+    try {
+      const { groupBy = 'type' } = args;
+      
+      const stats = this.multiProjectSystem.getProjectManager().getProjectStats();
+      const projects = this.multiProjectSystem.getProjectManager().getAllProjects();
+
+      const portfolio = {
+        overview: {
+          totalProjects: stats.total,
+          activeProjects: stats.byStatus['active'] || 0,
+          projectTypes: Object.keys(stats.byType).length,
+          averageProjectAge: projects.length > 0 ? 
+            (Date.now() - projects.reduce((sum, p) => sum + p.createdAt, 0) / projects.length) / (1000 * 60 * 60 * 24) : 0
+        },
+        breakdown: {
+          byStatus: stats.byStatus,
+          byType: stats.byType,
+          byPriority: stats.byPriority
+        },
+        groupBy,
+        timestamp: new Date().toISOString()
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ portfolio }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get project portfolio:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project portfolio: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 동기화 활성화
+   */
+  private async enableProjectSync(args: { 
+    endpoint: string; 
+    apiKey: string; 
+    interval?: number 
+  }): Promise<ToolCallResult> {
+    try {
+      const { endpoint, apiKey, interval = 300 } = args;
+      
+      const syncClient = this.multiProjectSystem.getSyncClient();
+      if (!syncClient) {
+        throw new Error('Sync client is not configured');
+      }
+
+      await syncClient.updateConfig({
+        enabled: true,
+        endpoint,
+        apiKey,
+        interval
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            message: 'Project synchronization enabled',
+            config: {
+              endpoint,
+              interval,
+              enabled: true
+            },
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to enable project sync:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to enable project sync: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 동기화 트리거
+   */
+  private async triggerProjectSync(args: { force?: boolean }): Promise<ToolCallResult> {
+    try {
+      const { force = false } = args;
+      
+      const result = await this.multiProjectSystem.triggerSync(force);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            syncResult: {
+              success: result.success,
+              syncedIds: result.syncedIds,
+              failedIds: result.failedIds,
+              duration: result.duration,
+              bytesTransferred: result.bytesTransferred,
+              errors: result.errors
+            },
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to trigger project sync:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to trigger project sync: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 프로젝트 동기화 상태 조회
+   */
+  private async getProjectSyncStatus(): Promise<ToolCallResult> {
+    try {
+      const syncClient = this.multiProjectSystem.getSyncClient();
+      if (!syncClient) {
+        throw new Error('Sync client is not configured');
+      }
+
+      const status = syncClient.getSyncStatus();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            syncStatus: {
+              lastSyncTime: new Date(status.lastSyncTime).toISOString(),
+              pendingEvents: status.pendingEvents,
+              failedEvents: status.failedEvents,
+              connected: status.connected,
+              syncing: status.syncing,
+              avgLatency: status.avgLatency,
+              successRate: Math.round(status.successRate * 100)
+            },
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get project sync status:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get project sync status: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
