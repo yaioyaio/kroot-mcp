@@ -22,8 +22,18 @@ describe('Critical Path Coverage', () => {
 
   beforeEach(async () => {
     eventEngine = new EventEngine();
+    
+    // Use dynamic import to avoid circular dependency issues
+    const { StorageManager } = await import('../../src/storage');
     storageManager = new StorageManager(':memory:');
-    await storageManager.initialize();
+    
+    // Ensure initialize method exists
+    if (storageManager.initialize) {
+      await storageManager.initialize();
+    }
+    
+    // Use dynamic import for SecurityManager
+    const { SecurityManager } = await import('../../src/security');
     securityManager = SecurityManager.getInstance();
   });
 

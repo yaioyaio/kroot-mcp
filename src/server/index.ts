@@ -61,6 +61,7 @@ import {
   cacheManager,
   scalingManager
 } from '../performance/index.js';
+import { createPluginManager, type PluginManager } from '../plugins/index.js';
 import { 
   getSecurityManager,
   DEFAULT_SECURITY_CONFIG
@@ -111,6 +112,7 @@ class DevFlowMonitorServer {
   private gitMonitor?: GitMonitor;
   private activityLog: Array<MonitorEvent> = [];
   private aiMonitor = aiMonitor;
+  private pluginManager: PluginManager;
   // private wsServerStarted = false;
 
   constructor() {
@@ -132,6 +134,17 @@ class DevFlowMonitorServer {
         },
       },
     );
+
+    // Initialize plugin manager
+    this.pluginManager = createPluginManager({
+      pluginDirs: ['./plugins', './node_modules/@devflow-plugins'],
+      autoLoad: true,
+      hotReload: true,
+      maxPlugins: 50,
+      sandboxEnabled: true,
+      healthCheckInterval: 60000,
+      metricsInterval: 30000,
+    });
 
     this.setupTools();
     this.setupHandlers();
@@ -996,6 +1009,235 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 플러그인 관리 도구들
+    this.registerTool({
+      name: 'listPlugins',
+      description: '설치된 모든 플러그인 목록을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          category: {
+            type: 'string',
+            description: '플러그인 카테고리로 필터링 (옵션)',
+          },
+          status: {
+            type: 'string',
+            enum: ['unloaded', 'loading', 'loaded', 'running', 'paused', 'error', 'disabled'],
+            description: '플러그인 상태로 필터링 (옵션)',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getPluginInfo',
+      description: '특정 플러그인의 상세 정보를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'loadPlugin',
+      description: '플러그인을 로드합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'unloadPlugin',
+      description: '플러그인을 언로드합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'activatePlugin',
+      description: '플러그인을 활성화합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'deactivatePlugin',
+      description: '플러그인을 비활성화합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'restartPlugin',
+      description: '플러그인을 재시작합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'installPlugin',
+      description: '레지스트리에서 플러그인을 설치합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginName: {
+            type: 'string',
+            description: '설치할 플러그인 이름',
+          },
+          version: {
+            type: 'string',
+            description: '플러그인 버전 (옵션, 최신 버전 사용)',
+          },
+        },
+        required: ['pluginName'],
+      },
+    });
+
+    this.registerTool({
+      name: 'uninstallPlugin',
+      description: '플러그인을 제거합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '제거할 플러그인 ID',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'searchPlugins',
+      description: '플러그인을 검색합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: '검색어',
+          },
+          local: {
+            type: 'boolean',
+            description: '로컬 플러그인만 검색할지 여부',
+            default: false,
+          },
+        },
+        required: ['query'],
+      },
+    });
+
+    this.registerTool({
+      name: 'checkPluginHealth',
+      description: '플러그인의 상태를 체크합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '체크할 플러그인 ID (생략 시 모든 플러그인)',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'getPluginMetrics',
+      description: '플러그인 시스템의 메트릭을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '특정 플러그인 ID (옵션)',
+          },
+        },
+      },
+    });
+
+    this.registerTool({
+      name: 'updatePlugin',
+      description: '플러그인을 업데이트합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          pluginId: {
+            type: 'string',
+            description: '업데이트할 플러그인 ID',
+          },
+          version: {
+            type: 'string',
+            description: '업데이트할 버전 (옵션, 최신 버전 사용)',
+          },
+        },
+        required: ['pluginId'],
+      },
+    });
+
+    this.registerTool({
+      name: 'checkPluginUpdates',
+      description: '플러그인 업데이트를 확인합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
+    this.registerTool({
+      name: 'getPluginSystemStats',
+      description: '플러그인 시스템 전체 통계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -1286,6 +1528,52 @@ class DevFlowMonitorServer {
 
       case 'assignRole':
         return await this.assignRole(args as { userId: string; roleId: string; assignedBy: string; reason?: string });
+
+      // 플러그인 관리 도구들
+      case 'listPlugins':
+        return this.listPlugins(args as { category?: string; status?: string });
+
+      case 'getPluginInfo':
+        return this.getPluginInfo(args as { pluginId: string });
+
+      case 'loadPlugin':
+        return await this.loadPlugin(args as { pluginId: string });
+
+      case 'unloadPlugin':
+        return await this.unloadPlugin(args as { pluginId: string });
+
+      case 'activatePlugin':
+        return await this.activatePlugin(args as { pluginId: string });
+
+      case 'deactivatePlugin':
+        return await this.deactivatePlugin(args as { pluginId: string });
+
+      case 'restartPlugin':
+        return await this.restartPlugin(args as { pluginId: string });
+
+      case 'installPlugin':
+        return await this.installPlugin(args as { pluginName: string; version?: string });
+
+      case 'uninstallPlugin':
+        return await this.uninstallPlugin(args as { pluginId: string });
+
+      case 'searchPlugins':
+        return await this.searchPlugins(args as { query: string; local?: boolean });
+
+      case 'checkPluginHealth':
+        return await this.checkPluginHealth(args as { pluginId?: string });
+
+      case 'getPluginMetrics':
+        return this.getPluginMetrics(args as { pluginId?: string });
+
+      case 'updatePlugin':
+        return await this.updatePlugin(args as { pluginId: string; version?: string });
+
+      case 'checkPluginUpdates':
+        return await this.checkPluginUpdates();
+
+      case 'getPluginSystemStats':
+        return this.getPluginSystemStats();
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -2300,6 +2588,19 @@ class DevFlowMonitorServer {
   async start(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+    
+    // Initialize plugin manager
+    try {
+      await this.pluginManager.initialize();
+      this.logInfo('Plugin manager initialized');
+      
+      // Auto-load plugins if configured
+      await this.pluginManager.discoverPlugins();
+      this.logInfo('Auto-loaded plugins');
+    } catch (error) {
+      this.logError('Failed to initialize plugin manager:', error);
+    }
+    
     this.logInfo('DevFlow Monitor MCP server started');
   }
 
@@ -4018,6 +4319,458 @@ class DevFlowMonitorServer {
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to assign role: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 목록 조회
+   */
+  private listPlugins(args: { category?: string; status?: string }): any {
+    try {
+      let plugins = this.pluginManager.getPlugins();
+
+      // 카테고리 필터링
+      if (args.category) {
+        plugins = plugins.filter(plugin => 
+          plugin.manifest.category === args.category
+        );
+      }
+
+      // 상태 필터링
+      if (args.status) {
+        plugins = plugins.filter(plugin => 
+          this.pluginManager.getPluginStatus(plugin.id) === args.status
+        );
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            plugins: plugins.map(plugin => ({
+              id: plugin.id,
+              name: plugin.manifest.name,
+              version: plugin.manifest.version,
+              description: plugin.manifest.description,
+              category: plugin.manifest.category,
+              status: this.pluginManager.getPluginStatus(plugin.id),
+              author: plugin.manifest.author
+            })),
+            total: plugins.length
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to list plugins:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list plugins: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 정보 조회
+   */
+  private getPluginInfo(args: { pluginId: string }): any {
+    try {
+      const pluginInfo = this.pluginManager.getPluginInfo(args.pluginId);
+      
+      if (!pluginInfo) {
+        throw new Error(`Plugin not found: ${args.pluginId}`);
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            plugin: pluginInfo
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get plugin info:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get plugin info: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 로드
+   */
+  private async loadPlugin(args: { pluginId: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.loadPlugin(args.pluginId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} loaded successfully` : `Failed to load plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to load plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to load plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 언로드
+   */
+  private async unloadPlugin(args: { pluginId: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.unloadPlugin(args.pluginId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} unloaded successfully` : `Failed to unload plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to unload plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to unload plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 활성화
+   */
+  private async activatePlugin(args: { pluginId: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.activatePlugin(args.pluginId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} activated successfully` : `Failed to activate plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to activate plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to activate plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 비활성화
+   */
+  private async deactivatePlugin(args: { pluginId: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.deactivatePlugin(args.pluginId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} deactivated successfully` : `Failed to deactivate plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to deactivate plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to deactivate plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 재시작
+   */
+  private async restartPlugin(args: { pluginId: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.restartPlugin(args.pluginId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} restarted successfully` : `Failed to restart plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to restart plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to restart plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 설치
+   */
+  private async installPlugin(args: { pluginName: string; version?: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.installPlugin(args.pluginName, args.version);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginName} installed successfully` : `Failed to install plugin ${args.pluginName}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to install plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to install plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 제거
+   */
+  private async uninstallPlugin(args: { pluginId: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.uninstallPlugin(args.pluginId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} uninstalled successfully` : `Failed to uninstall plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to uninstall plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to uninstall plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 검색
+   */
+  private async searchPlugins(args: { query: string; local?: boolean }): Promise<any> {
+    try {
+      const plugins = this.pluginManager.getPlugins();
+      const results = plugins.filter(plugin => 
+        plugin.manifest.name.toLowerCase().includes(args.query.toLowerCase()) ||
+        plugin.manifest.description.toLowerCase().includes(args.query.toLowerCase()) ||
+        plugin.manifest.tags?.some(tag => tag.toLowerCase().includes(args.query.toLowerCase()))
+      );
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            results: results.map(plugin => ({
+              id: plugin.id,
+              name: plugin.manifest.name,
+              version: plugin.manifest.version,
+              description: plugin.manifest.description,
+              author: plugin.manifest.author,
+              category: plugin.manifest.category,
+              tags: plugin.manifest.tags,
+              status: this.pluginManager.getPluginStatus(plugin.id)
+            })),
+            total: results.length,
+            query: args.query,
+            local: args.local || false
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to search plugins:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to search plugins: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 헬스 체크
+   */
+  private async checkPluginHealth(args: { pluginId?: string }): Promise<any> {
+    try {
+      let healthResults;
+      
+      if (args.pluginId) {
+        // 특정 플러그인 헬스 체크
+        const result = await this.pluginManager.checkPluginHealth(args.pluginId);
+        healthResults = { [args.pluginId]: result };
+      } else {
+        // 모든 플러그인 헬스 체크
+        healthResults = await this.pluginManager.checkAllPluginsHealth();
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            healthStatus: healthResults,
+            timestamp: new Date().toISOString()
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to check plugin health:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to check plugin health: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 메트릭 조회
+   */
+  private getPluginMetrics(args: { pluginId?: string }): any {
+    try {
+      let metrics;
+      
+      if (args.pluginId) {
+        metrics = this.pluginManager.getPluginMetrics(args.pluginId);
+      } else {
+        // Get metrics for all plugins
+        const plugins = this.pluginManager.getPlugins();
+        metrics = {};
+        for (const plugin of plugins) {
+          const pluginMetrics = this.pluginManager.getPluginMetrics(plugin.id);
+          if (pluginMetrics) {
+            metrics[plugin.id] = pluginMetrics;
+          }
+        }
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            metrics,
+            timestamp: new Date().toISOString()
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get plugin metrics:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get plugin metrics: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 업데이트
+   */
+  private async updatePlugin(args: { pluginId: string; version?: string }): Promise<any> {
+    try {
+      const success = await this.pluginManager.updatePlugin(args.pluginId, args.version);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success,
+            message: success ? `Plugin ${args.pluginId} updated successfully` : `Failed to update plugin ${args.pluginId}`
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to update plugin:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to update plugin: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 업데이트 확인
+   */
+  private async checkPluginUpdates(): Promise<any> {
+    try {
+      const updates = await this.pluginManager.checkForUpdates();
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            updates: updates.map(update => ({
+              pluginId: update.pluginId,
+              currentVersion: update.currentVersion,
+              latestVersion: update.latestVersion,
+              updateAvailable: update.currentVersion !== update.latestVersion
+            })),
+            total: updates.length,
+            timestamp: new Date().toISOString()
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to check plugin updates:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to check plugin updates: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 플러그인 시스템 통계
+   */
+  private getPluginSystemStats(): any {
+    try {
+      const stats = this.pluginManager.getSystemStats();
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            totalPlugins: stats.totalPlugins,
+            loadedPlugins: stats.loadedPlugins,
+            activePlugins: stats.activePlugins,
+            failedPlugins: stats.failedPlugins,
+            categories: stats.categories,
+            memoryUsage: stats.memoryUsage,
+            uptime: stats.uptime,
+            lastHealthCheck: stats.lastHealthCheck,
+            timestamp: new Date().toISOString()
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      this.logError('Failed to get plugin system stats:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get plugin system stats: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

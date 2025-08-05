@@ -25,16 +25,19 @@ describe('DevFlow Monitor E2E - Complete Workflow', () => {
     // Clean up test directory
     await rm(testDir, { recursive: true, force: true });
     
-    // Start MCP server
-    mcpProcess = spawn('node', [
-      join(__dirname, '../../../dist/server/index.js')
+    // Start MCP server using ts-node to run TypeScript directly
+    mcpProcess = spawn('npx', [
+      'ts-node',
+      '--esm',
+      join(__dirname, '../../../src/server/index.ts')
     ], {
       env: {
         ...process.env,
         NODE_ENV: 'test',
         MCP_TEST_MODE: 'true',
         WEBSOCKET_PORT: String(serverPort)
-      }
+      },
+      cwd: join(__dirname, '../../..')
     });
 
     // Wait for server to start

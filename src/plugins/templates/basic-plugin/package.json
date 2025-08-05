@@ -1,0 +1,48 @@
+{
+  "id": "example-basic-plugin",
+  "name": "example-basic-plugin",
+  "version": "1.0.0",
+  "description": "A basic DevFlow Monitor plugin template",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "author": "DevFlow Monitor",
+  "category": "utility",
+  "tags": ["example", "template", "basic"],
+  "keywords": ["devflow", "monitor", "plugin"],
+  "license": "MIT",
+  "minDevFlowVersion": "1.0.0",
+  "permissions": [
+    "events:read",
+    "events:write"
+  ],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true,
+        "description": "Enable or disable the plugin"
+      },
+      "logLevel": {
+        "type": "string",
+        "enum": ["debug", "info", "warn", "error"],
+        "default": "info",
+        "description": "Logging level"
+      }
+    }
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "devflow": ">=1.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  }
+}
