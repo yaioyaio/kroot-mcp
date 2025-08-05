@@ -88,6 +88,17 @@ import {
   type ReportSchedule,
   type ReportTemplate
 } from '../reports/index.js';
+import {
+  FeedbackSystem,
+  FeedbackType,
+  FeedbackStatus,
+  FeedbackPriority,
+  type FeedbackMetadata,
+  type ImprovementSuggestion,
+  type UserPreference,
+  type ABTestConfig,
+  type ABTestResult
+} from '../feedback/index.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -133,6 +144,7 @@ class DevFlowMonitorServer {
   private fileMonitor?: FileMonitor;
   private multiProjectSystem: MultiProjectSystem;
   private reportSystem: ReportSystem;
+  private feedbackSystem: FeedbackSystem;
   private gitMonitor?: GitMonitor;
   private activityLog: Array<MonitorEvent> = [];
   private aiMonitor = aiMonitor;
@@ -220,6 +232,17 @@ class DevFlowMonitorServer {
         storageManager
       }
     );
+
+    // 피드백 시스템 초기화
+    this.feedbackSystem = new FeedbackSystem({
+      database: storageManager.getDatabase(),
+      projectManager: this.multiProjectSystem.getProjectManager(),
+      stageAnalyzer,
+      metricsCollector,
+      autoAnalyze: true,
+      enablePreferenceLearning: true,
+      enableABTesting: true
+    });
 
     this.setupTools();
     this.setupHandlers();
@@ -1683,6 +1706,237 @@ class DevFlowMonitorServer {
       }
     });
 
+    // 피드백 시스템 도구들
+    this.registerTool({
+      name: 'submitFeedback',
+      description: '사용자 피드백을 제출합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['bug_report', 'feature_request', 'usability_issue', 'performance_issue', 'documentation', 'general', 'praise'],
+            description: '피드백 타입'
+          },
+          title: {
+            type: 'string',
+            description: '피드백 제목'
+          },
+          description: {
+            type: 'string',
+            description: '피드백 설명'
+          },
+          projectId: {
+            type: 'string',
+            description: '프로젝트 ID (선택)'
+          },
+          priority: {
+            type: 'string',
+            enum: ['critical', 'high', 'medium', 'low'],
+            description: '우선순위 (선택)'
+          },
+          tags: {
+            type: 'array',
+            items: { type: 'string' },
+            description: '태그 목록'
+          }
+        },
+        required: ['type', 'title', 'description']
+      }
+    });
+
+    this.registerTool({
+      name: 'listFeedback',
+      description: '피드백 목록을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description: '조회할 개수',
+            default: 20
+          },
+          type: {
+            type: 'string',
+            enum: ['bug_report', 'feature_request', 'usability_issue', 'performance_issue', 'documentation', 'general', 'praise'],
+            description: '피드백 타입 필터'
+          },
+          status: {
+            type: 'string',
+            enum: ['new', 'reviewing', 'in_progress', 'resolved', 'closed', 'deferred'],
+            description: '상태 필터'
+          },
+          priority: {
+            type: 'string',
+            enum: ['critical', 'high', 'medium', 'low'],
+            description: '우선순위 필터'
+          },
+          projectId: {
+            type: 'string',
+            description: '프로젝트 ID 필터'
+          }
+        }
+      }
+    });
+
+    this.registerTool({
+      name: 'getFeedbackDetails',
+      description: '특정 피드백의 상세 정보를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          feedbackId: {
+            type: 'string',
+            description: '피드백 ID'
+          }
+        },
+        required: ['feedbackId']
+      }
+    });
+
+    this.registerTool({
+      name: 'updateFeedbackStatus',
+      description: '피드백 상태를 업데이트합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          feedbackId: {
+            type: 'string',
+            description: '피드백 ID'
+          },
+          status: {
+            type: 'string',
+            enum: ['new', 'reviewing', 'in_progress', 'resolved', 'closed', 'deferred'],
+            description: '새로운 상태'
+          }
+        },
+        required: ['feedbackId', 'status']
+      }
+    });
+
+    this.registerTool({
+      name: 'listImprovementSuggestions',
+      description: '개선 제안 목록을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          status: {
+            type: 'string',
+            enum: ['proposed', 'approved', 'in_progress', 'completed', 'rejected'],
+            description: '상태 필터'
+          }
+        }
+      }
+    });
+
+    this.registerTool({
+      name: 'getUserPreferences',
+      description: '사용자 선호도를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          userId: {
+            type: 'string',
+            description: '사용자 ID'
+          }
+        },
+        required: ['userId']
+      }
+    });
+
+    this.registerTool({
+      name: 'createABTest',
+      description: 'A/B 테스트를 생성합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: '테스트 이름'
+          },
+          description: {
+            type: 'string',
+            description: '테스트 설명'
+          },
+          variants: {
+            type: 'array',
+            description: '테스트 변형 목록',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                trafficPercentage: { type: 'number' },
+                changes: { type: 'object' },
+                isControl: { type: 'boolean' }
+              },
+              required: ['name', 'trafficPercentage', 'changes', 'isControl']
+            }
+          },
+          metrics: {
+            type: 'array',
+            description: '측정 메트릭 목록',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                type: { 
+                  type: 'string',
+                  enum: ['conversion', 'engagement', 'performance', 'custom']
+                },
+                goal: { type: 'number' },
+                calculation: { type: 'string' }
+              },
+              required: ['name', 'type', 'calculation']
+            }
+          },
+          audiencePercentage: {
+            type: 'number',
+            description: '대상 사용자 비율 (0-100)',
+            default: 100
+          }
+        },
+        required: ['name', 'description', 'variants', 'metrics']
+      }
+    });
+
+    this.registerTool({
+      name: 'listActiveABTests',
+      description: '활성 A/B 테스트 목록을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    });
+
+    this.registerTool({
+      name: 'getABTestResults',
+      description: 'A/B 테스트 결과를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          testId: {
+            type: 'string',
+            description: '테스트 ID'
+          }
+        },
+        required: ['testId']
+      }
+    });
+
+    this.registerTool({
+      name: 'getFeedbackStats',
+      description: '피드백 통계를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          projectId: {
+            type: 'string',
+            description: '프로젝트 ID (선택)'
+          }
+        }
+      }
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -2073,6 +2327,28 @@ class DevFlowMonitorServer {
         return await this.deliverReportTool(args as any);
       case 'runScheduleNow':
         return await this.runScheduleNowTool(args as any);
+
+      // 피드백 시스템 도구들
+      case 'submitFeedback':
+        return await this.submitFeedbackTool(args as any);
+      case 'listFeedback':
+        return await this.listFeedbackTool(args as any);
+      case 'getFeedbackDetails':
+        return await this.getFeedbackDetailsTool(args as any);
+      case 'updateFeedbackStatus':
+        return await this.updateFeedbackStatusTool(args as any);
+      case 'listImprovementSuggestions':
+        return await this.listImprovementSuggestionsTool(args as any);
+      case 'getUserPreferences':
+        return await this.getUserPreferencesTool(args as any);
+      case 'createABTest':
+        return await this.createABTestTool(args as any);
+      case 'listActiveABTests':
+        return await this.listActiveABTestsTool();
+      case 'getABTestResults':
+        return await this.getABTestResultsTool(args as any);
+      case 'getFeedbackStats':
+        return await this.getFeedbackStatsTool(args as any);
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -3106,6 +3382,14 @@ class DevFlowMonitorServer {
       this.logInfo('Multi-project system started');
     } catch (error) {
       this.logError('Failed to start multi-project system:', error);
+    }
+
+    // Initialize feedback system
+    try {
+      await this.feedbackSystem.start();
+      this.logInfo('Feedback system started');
+    } catch (error) {
+      this.logError('Failed to start feedback system:', error);
     }
     
     this.logInfo('DevFlow Monitor MCP server started');
@@ -6398,6 +6682,418 @@ class DevFlowMonitorServer {
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to run schedule: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 피드백 제출 도구
+   */
+  private async submitFeedbackTool(args: {
+    type: string;
+    title: string;
+    description: string;
+    projectId?: string;
+    priority?: string;
+    tags?: string[];
+  }): Promise<ToolCallResult> {
+    try {
+      const feedback = await this.feedbackSystem.submitFeedback({
+        type: args.type as FeedbackType,
+        title: args.title,
+        description: args.description,
+        projectId: args.projectId,
+        priority: args.priority as FeedbackPriority,
+        tags: args.tags
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            feedback: {
+              id: feedback.id,
+              type: feedback.type,
+              title: feedback.title,
+              status: feedback.status,
+              priority: feedback.priority,
+              submittedAt: new Date(feedback.submittedAt).toISOString()
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to submit feedback:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to submit feedback: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 피드백 목록 조회 도구
+   */
+  private async listFeedbackTool(args: {
+    limit?: number;
+    type?: string;
+    status?: string;
+    priority?: string;
+    projectId?: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const feedbacks = await this.feedbackSystem.listFeedback(
+        args.limit,
+        0,
+        {
+          type: args.type as FeedbackType,
+          status: args.status as FeedbackStatus,
+          priority: args.priority as FeedbackPriority,
+          projectId: args.projectId
+        }
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            feedbacks: feedbacks.map(f => ({
+              id: f.id,
+              type: f.type,
+              title: f.title,
+              status: f.status,
+              priority: f.priority,
+              submittedAt: new Date(f.submittedAt).toISOString(),
+              tags: f.tags
+            })),
+            total: feedbacks.length
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to list feedback:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list feedback: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 피드백 상세 조회 도구
+   */
+  private async getFeedbackDetailsTool(args: {
+    feedbackId: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const feedback = await this.feedbackSystem.getFeedback(args.feedbackId);
+
+      if (!feedback) {
+        throw new McpError(ErrorCode.InvalidRequest, 'Feedback not found');
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            feedback: {
+              id: feedback.id,
+              type: feedback.type,
+              title: feedback.title,
+              description: feedback.description,
+              status: feedback.status,
+              priority: feedback.priority,
+              source: feedback.source,
+              submitter: feedback.submitter,
+              projectId: feedback.projectId,
+              submittedAt: new Date(feedback.submittedAt).toISOString(),
+              updatedAt: new Date(feedback.updatedAt).toISOString(),
+              tags: feedback.tags,
+              attachments: feedback.attachments
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get feedback details:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get feedback details: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 피드백 상태 업데이트 도구
+   */
+  private async updateFeedbackStatusTool(args: {
+    feedbackId: string;
+    status: string;
+  }): Promise<ToolCallResult> {
+    try {
+      await this.feedbackSystem.updateFeedbackStatus(
+        args.feedbackId,
+        args.status as FeedbackStatus
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            feedbackId: args.feedbackId,
+            newStatus: args.status
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to update feedback status:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to update feedback status: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 개선 제안 목록 조회 도구
+   */
+  private async listImprovementSuggestionsTool(args: {
+    status?: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const suggestions = await this.feedbackSystem.listImprovementSuggestions(args.status);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            suggestions: suggestions.map(s => ({
+              id: s.id,
+              type: s.type,
+              title: s.title,
+              description: s.description,
+              impact: s.impact,
+              status: s.status,
+              feedbackCount: s.feedbackIds.length,
+              createdAt: new Date(s.createdAt).toISOString()
+            })),
+            total: suggestions.length
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to list improvement suggestions:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list improvement suggestions: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 사용자 선호도 조회 도구
+   */
+  private async getUserPreferencesTool(args: {
+    userId: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const preferences = await this.feedbackSystem.getUserPreferences(args.userId);
+
+      if (!preferences) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              message: 'No preferences found for this user',
+              userId: args.userId
+            }, null, 2)
+          }]
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            preferences: {
+              userId: preferences.userId,
+              preferredFeatures: preferences.preferredFeatures,
+              workflowPatterns: preferences.workflowPatterns,
+              uiPreferences: preferences.uiPreferences,
+              notificationPreferences: preferences.notificationPreferences,
+              confidence: preferences.confidence,
+              learnedAt: new Date(preferences.learnedAt).toISOString()
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get user preferences:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get user preferences: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * A/B 테스트 생성 도구
+   */
+  private async createABTestTool(args: {
+    name: string;
+    description: string;
+    variants: any[];
+    metrics: any[];
+    audiencePercentage?: number;
+  }): Promise<ToolCallResult> {
+    try {
+      const test = await this.feedbackSystem.createABTest(
+        args.name,
+        args.description,
+        args.variants,
+        args.metrics,
+        args.audiencePercentage
+      );
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            test: {
+              id: test.id,
+              name: test.name,
+              description: test.description,
+              status: test.status,
+              variants: test.variants.map(v => ({
+                id: v.id,
+                name: v.name,
+                trafficPercentage: v.trafficPercentage,
+                isControl: v.isControl
+              })),
+              metrics: test.metrics,
+              createdAt: new Date(test.createdAt).toISOString()
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to create A/B test:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to create A/B test: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 활성 A/B 테스트 목록 조회 도구
+   */
+  private async listActiveABTestsTool(): Promise<ToolCallResult> {
+    try {
+      const tests = await this.feedbackSystem.listActiveABTests();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            tests: tests.map(t => ({
+              id: t.id,
+              name: t.name,
+              description: t.description,
+              status: t.status,
+              variantCount: t.variants.length,
+              metricCount: t.metrics.length,
+              audiencePercentage: t.audience.percentage,
+              startTime: t.startTime ? new Date(t.startTime).toISOString() : null,
+              createdAt: new Date(t.createdAt).toISOString()
+            })),
+            total: tests.length
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to list active A/B tests:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list active A/B tests: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * A/B 테스트 결과 조회 도구
+   */
+  private async getABTestResultsTool(args: {
+    testId: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const results = await this.feedbackSystem.getABTestResults(args.testId);
+
+      if (!results) {
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              message: 'No results available for this test',
+              testId: args.testId
+            }, null, 2)
+          }]
+        };
+      }
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            results: {
+              testId: results.testId,
+              variantResults: results.variantResults,
+              winner: results.winner,
+              analyzedAt: new Date(results.analyzedAt).toISOString()
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get A/B test results:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get A/B test results: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 피드백 통계 조회 도구
+   */
+  private async getFeedbackStatsTool(args: {
+    projectId?: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const stats = await this.feedbackSystem.getFeedbackStats(args.projectId);
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            stats: {
+              total: stats.total,
+              byType: stats.byType,
+              byStatus: stats.byStatus,
+              byPriority: stats.byPriority,
+              projectId: args.projectId || 'all'
+            }
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get feedback stats:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get feedback stats: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
