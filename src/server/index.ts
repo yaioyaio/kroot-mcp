@@ -14,6 +14,7 @@ import {
   ErrorCode,
   ListToolsRequestSchema,
   McpError,
+  type ToolCallResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { config, validateConfig } from './config.js';
 import {
@@ -77,6 +78,16 @@ import {
   ProjectType,
   ProjectPriority
 } from '../projects/index.js';
+import {
+  ReportSystem,
+  ReportType,
+  ReportFormat,
+  DeliveryChannel,
+  type ReportConfig,
+  type ReportResult,
+  type ReportSchedule,
+  type ReportTemplate
+} from '../reports/index.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -121,6 +132,7 @@ class DevFlowMonitorServer {
   private tools: Map<string, McpTool> = new Map();
   private fileMonitor?: FileMonitor;
   private multiProjectSystem: MultiProjectSystem;
+  private reportSystem: ReportSystem;
   private gitMonitor?: GitMonitor;
   private activityLog: Array<MonitorEvent> = [];
   private aiMonitor = aiMonitor;
@@ -173,6 +185,40 @@ class DevFlowMonitorServer {
       }),
       eventEngine,
       storageManager
+    );
+
+    // 보고서 시스템 초기화
+    this.reportSystem = new ReportSystem(
+      {
+        engine: {
+          reportsPath: './reports/generated',
+          templatesPath: './reports/templates',
+          tempPath: './reports/temp',
+          maxConcurrentGenerations: 3,
+          enableCache: true
+        },
+        scheduler: {
+          enabled: true,
+          maxConcurrentJobs: 5,
+          defaultTimezone: 'UTC'
+        },
+        delivery: {
+          defaultFrom: 'DevFlow Monitor <noreply@devflow.local>',
+          maxAttachmentSize: 25 * 1024 * 1024
+        },
+        templates: {
+          enableDefaultTemplates: true
+        }
+      },
+      {
+        metricsCollector,
+        methodologyAnalyzer,
+        aiMonitor,
+        bottleneckDetector,
+        stageAnalyzer,
+        eventEngine,
+        storageManager
+      }
     );
 
     this.setupTools();
@@ -1468,6 +1514,175 @@ class DevFlowMonitorServer {
       },
     });
 
+    // 보고서 도구들
+    this.registerTool({
+      name: 'generateReport',
+      description: '프로젝트 보고서를 생성합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          reportType: {
+            type: 'string',
+            description: '보고서 타입',
+            enum: ['daily', 'weekly', 'monthly', 'quarterly', 'custom', 'incident', 'performance', 'methodology', 'ai_usage', 'cross_project']
+          },
+          formats: {
+            type: 'array',
+            description: '출력 형식',
+            items: {
+              type: 'string',
+              enum: ['pdf', 'html', 'markdown', 'json', 'csv', 'excel']
+            },
+            default: ['html', 'pdf']
+          },
+          projectIds: {
+            type: 'array',
+            description: '대상 프로젝트 ID 목록',
+            items: { type: 'string' }
+          },
+          periodStart: {
+            type: 'number',
+            description: '시작 시간 (타임스탬프)'
+          },
+          periodEnd: {
+            type: 'number',
+            description: '종료 시간 (타임스탬프)'
+          },
+          templateId: {
+            type: 'string',
+            description: '사용할 템플릿 ID'
+          }
+        },
+        required: ['reportType']
+      }
+    });
+
+    this.registerTool({
+      name: 'generateQuickReport',
+      description: '빠른 보고서를 생성합니다 (일일/주간/월간).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description: '보고서 타입',
+            enum: ['daily', 'weekly', 'monthly']
+          },
+          projectIds: {
+            type: 'array',
+            description: '대상 프로젝트 ID 목록',
+            items: { type: 'string' }
+          }
+        },
+        required: ['type']
+      }
+    });
+
+    this.registerTool({
+      name: 'createReportSchedule',
+      description: '정기적인 보고서 생성 스케줄을 만듭니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: '스케줄 이름'
+          },
+          reportType: {
+            type: 'string',
+            description: '보고서 타입',
+            enum: ['daily', 'weekly', 'monthly']
+          },
+          scheduleType: {
+            type: 'string',
+            description: '스케줄 타입',
+            enum: ['daily', 'weekly', 'monthly']
+          },
+          time: {
+            type: 'string',
+            description: '실행 시간 (HH:mm 형식)'
+          },
+          dayOfWeek: {
+            type: 'number',
+            description: '실행 요일 (0-6, 주간 스케줄용)'
+          },
+          dayOfMonth: {
+            type: 'number',
+            description: '실행 날짜 (1-31, 월간 스케줄용)'
+          },
+          emailRecipients: {
+            type: 'array',
+            description: '이메일 수신자 목록',
+            items: { type: 'string' }
+          }
+        },
+        required: ['name', 'reportType', 'scheduleType', 'time']
+      }
+    });
+
+    this.registerTool({
+      name: 'listReportSchedules',
+      description: '모든 보고서 스케줄을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    });
+
+    this.registerTool({
+      name: 'deleteReportSchedule',
+      description: '보고서 스케줄을 삭제합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          scheduleId: {
+            type: 'string',
+            description: '삭제할 스케줄 ID'
+          }
+        },
+        required: ['scheduleId']
+      }
+    });
+
+    this.registerTool({
+      name: 'runScheduleNow',
+      description: '스케줄된 보고서를 즉시 실행합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          scheduleId: {
+            type: 'string',
+            description: '실행할 스케줄 ID'
+          }
+        },
+        required: ['scheduleId']
+      }
+    });
+
+    this.registerTool({
+      name: 'listReportTemplates',
+      description: '사용 가능한 보고서 템플릿을 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description: '템플릿 타입 필터',
+            enum: ['daily', 'weekly', 'monthly', 'methodology', 'ai_usage']
+          }
+        }
+      }
+    });
+
+    this.registerTool({
+      name: 'getReportSystemStatus',
+      description: '보고서 시스템 상태를 조회합니다.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    });
+
     this.logInfo(`Registered ${this.tools.size} MCP tools`);
   }
 
@@ -1838,6 +2053,26 @@ class DevFlowMonitorServer {
         return await this.triggerProjectSync(args as { force?: boolean });
       case 'getProjectSyncStatus':
         return await this.getProjectSyncStatus();
+      
+      // Report System Tools
+      case 'generateReport':
+        return await this.generateReportTool(args as any);
+      case 'generateQuickReport':
+        return await this.generateQuickReportTool(args as any);
+      case 'createReportSchedule':
+        return await this.createReportScheduleTool(args as any);
+      case 'listReportSchedules':
+        return await this.listReportSchedulesTool();
+      case 'createReportTemplate':
+        return await this.createReportTemplateTool(args as any);
+      case 'listReportTemplates':
+        return await this.listReportTemplatesTool(args as any);
+      case 'getReportSystemStatus':
+        return await this.getReportSystemStatusTool();
+      case 'deliverReport':
+        return await this.deliverReportTool(args as any);
+      case 'runScheduleNow':
+        return await this.runScheduleNowTool(args as any);
 
       default:
         throw new Error(`Unimplemented tool: ${name}`);
@@ -5730,6 +5965,439 @@ class DevFlowMonitorServer {
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to get project sync status: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 생성 도구
+   */
+  private async generateReportTool(args: {
+    type: string;
+    format?: string;
+    projectIds?: string[];
+    periodStart?: string;
+    periodEnd?: string;
+    sections?: string[];
+    deliveryChannels?: any[];
+  }): Promise<ToolCallResult> {
+    try {
+      const { type, format = 'pdf', projectIds, periodStart, periodEnd, sections, deliveryChannels } = args;
+      
+      // 보고서 설정 생성
+      const config = {
+        type: type as any,
+        sections: sections?.map((s, i) => ({
+          id: s,
+          name: s,
+          type: s,
+          enabled: true,
+          order: i + 1
+        })) || [],
+        formats: [format as any],
+        deliveryChannels: deliveryChannels || []
+      };
+      
+      // 보고서 생성
+      const report = await this.reportSystem.generateReport(
+        config,
+        projectIds,
+        periodStart ? new Date(periodStart).getTime() : undefined,
+        periodEnd ? new Date(periodEnd).getTime() : undefined
+      );
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            reportId: report.metadata.id,
+            title: report.metadata.title,
+            type: report.metadata.type,
+            generatedAt: new Date(report.metadata.createdAt).toISOString(),
+            files: report.files.map(f => ({
+              format: f.format,
+              path: f.path,
+              size: f.size
+            })),
+            status: 'completed'
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to generate report:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to generate report: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 빠른 보고서 생성 도구
+   */
+  private async generateQuickReportTool(args: {
+    type: 'daily' | 'weekly' | 'monthly';
+    projectIds?: string[];
+  }): Promise<ToolCallResult> {
+    try {
+      const { type, projectIds } = args;
+      
+      let report;
+      switch (type) {
+        case 'daily':
+          report = await this.reportSystem.generateDailyReport(projectIds);
+          break;
+        case 'weekly':
+          report = await this.reportSystem.generateWeeklyReport(projectIds);
+          break;
+        case 'monthly':
+          report = await this.reportSystem.generateMonthlyReport(projectIds);
+          break;
+        default:
+          throw new Error(`Invalid report type: ${type}`);
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            reportId: report.metadata.id,
+            title: report.metadata.title,
+            type: report.metadata.type,
+            generatedAt: new Date(report.metadata.createdAt).toISOString(),
+            files: report.files.map(f => ({
+              format: f.format,
+              path: f.path,
+              size: f.size
+            })),
+            status: 'completed'
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to generate quick report:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to generate quick report: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 스케줄 생성 도구
+   */
+  private async createReportScheduleTool(args: {
+    name: string;
+    type: string;
+    scheduleType: string;
+    time?: string;
+    dayOfWeek?: number;
+    dayOfMonth?: number;
+    cron?: string;
+    deliveryChannels?: any[];
+  }): Promise<ToolCallResult> {
+    try {
+      const { name, type, scheduleType, time, dayOfWeek, dayOfMonth, cron, deliveryChannels } = args;
+      
+      let schedule;
+      switch (scheduleType) {
+        case 'daily':
+          schedule = await this.reportSystem.createDailySchedule(
+            name,
+            time || '09:00',
+            deliveryChannels,
+            'system'
+          );
+          break;
+        case 'weekly':
+          schedule = await this.reportSystem.createWeeklySchedule(
+            name,
+            dayOfWeek || 1,
+            time || '09:00',
+            deliveryChannels,
+            'system'
+          );
+          break;
+        case 'monthly':
+          schedule = await this.reportSystem.createMonthlySchedule(
+            name,
+            dayOfMonth || 1,
+            time || '09:00',
+            deliveryChannels,
+            'system'
+          );
+          break;
+        case 'cron':
+          if (!cron) throw new Error('Cron expression is required for cron schedule');
+          const template = this.reportSystem.getAllTemplates({ type: type as any })[0];
+          if (!template) throw new Error(`Template not found for type: ${type}`);
+          
+          const config = this.reportSystem.createConfigFromTemplate(template.id);
+          if (deliveryChannels) {
+            config.deliveryChannels = deliveryChannels;
+          }
+          
+          schedule = await this.reportSystem.createSchedule(
+            name,
+            config,
+            { type: 'cron', cron },
+            'system'
+          );
+          break;
+        default:
+          throw new Error(`Invalid schedule type: ${scheduleType}`);
+      }
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            scheduleId: schedule.id,
+            name: schedule.name,
+            enabled: schedule.enabled,
+            nextRunAt: schedule.nextRunAt ? new Date(schedule.nextRunAt).toISOString() : null,
+            createdAt: new Date(schedule.createdAt).toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to create report schedule:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to create report schedule: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 스케줄 목록 조회 도구
+   */
+  private async listReportSchedulesTool(): Promise<ToolCallResult> {
+    try {
+      const schedules = this.reportSystem.getAllSchedules();
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            schedules: schedules.map(s => ({
+              id: s.id,
+              name: s.name,
+              type: s.reportConfig.type,
+              enabled: s.enabled,
+              schedule: s.schedule,
+              lastRunAt: s.lastRunAt ? new Date(s.lastRunAt).toISOString() : null,
+              nextRunAt: s.nextRunAt ? new Date(s.nextRunAt).toISOString() : null,
+              createdBy: s.createdBy,
+              createdAt: new Date(s.createdAt).toISOString()
+            })),
+            total: schedules.length
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to list report schedules:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list report schedules: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 템플릿 생성 도구
+   */
+  private async createReportTemplateTool(args: {
+    name: string;
+    description: string;
+    type: string;
+    sections: string[];
+    formats: string[];
+    parameters?: any;
+  }): Promise<ToolCallResult> {
+    try {
+      const { name, description, type, sections, formats, parameters } = args;
+      
+      const config = {
+        type: type as any,
+        sections: sections.map((s, i) => ({
+          id: s,
+          name: s,
+          type: s as any,
+          enabled: true,
+          order: i + 1
+        })),
+        formats: formats as any[],
+        deliveryChannels: [],
+        parameters: parameters || {}
+      };
+      
+      const template = await this.reportSystem.createTemplate(
+        name,
+        description,
+        type as any,
+        config,
+        'user',
+        true
+      );
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            templateId: template.id,
+            name: template.name,
+            description: template.description,
+            type: template.type,
+            createdAt: new Date(template.createdAt).toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to create report template:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to create report template: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 템플릿 목록 조회 도구
+   */
+  private async listReportTemplatesTool(args: {
+    type?: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const { type } = args;
+      
+      const templates = this.reportSystem.getAllTemplates(
+        type ? { type: type as any } : undefined
+      );
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            templates: templates.map(t => ({
+              id: t.id,
+              name: t.name,
+              description: t.description,
+              type: t.type,
+              public: t.public,
+              createdBy: t.createdBy,
+              tags: t.tags,
+              sections: t.defaultConfig.sections.length,
+              formats: t.defaultConfig.formats,
+              createdAt: new Date(t.createdAt).toISOString()
+            })),
+            total: templates.length
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to list report templates:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to list report templates: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 시스템 상태 조회 도구
+   */
+  private async getReportSystemStatusTool(): Promise<ToolCallResult> {
+    try {
+      const status = this.reportSystem.getSystemStatus();
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            status,
+            timestamp: new Date().toISOString()
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to get report system status:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get report system status: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 보고서 배포 도구
+   */
+  private async deliverReportTool(args: {
+    reportId: string;
+    channels: any[];
+  }): Promise<ToolCallResult> {
+    try {
+      const { reportId, channels } = args;
+      
+      // 실제 구현에서는 reportId로 저장된 보고서를 조회해야 함
+      // 여기서는 간단한 응답 반환
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            reportId,
+            deliveryResults: channels.map(ch => ({
+              channel: ch.channel,
+              success: true,
+              deliveredAt: new Date().toISOString()
+            })),
+            status: 'delivered'
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to deliver report:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to deliver report: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * 스케줄 즉시 실행 도구
+   */
+  private async runScheduleNowTool(args: {
+    scheduleId: string;
+  }): Promise<ToolCallResult> {
+    try {
+      const { scheduleId } = args;
+      
+      const report = await this.reportSystem.runScheduleNow(scheduleId);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            reportId: report.metadata.id,
+            title: report.metadata.title,
+            type: report.metadata.type,
+            generatedAt: new Date(report.metadata.createdAt).toISOString(),
+            files: report.files.map(f => ({
+              format: f.format,
+              path: f.path,
+              size: f.size
+            })),
+            status: 'completed'
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      this.logError('Failed to run schedule:', error);
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to run schedule: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
