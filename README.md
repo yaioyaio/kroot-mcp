@@ -1,116 +1,119 @@
 # DevFlow Monitor MCP
 
-AI-powered development process monitoring MCP server for real-time tracking and visualization of software development workflows.
+소프트웨어 개발 워크플로우의 실시간 추적 및 시각화를 위한 AI 기반 개발 프로세스 모니터링 MCP 서버
 
-**Status**: Milestone 4 in progress (2025-08-04) - Documentation completed, deployment preparation remaining.
+## 프로젝트 개요
 
-## Overview
+DevFlow Monitor MCP는 소프트웨어 개발의 모든 측면을 실시간으로 모니터링하고, Claude Desktop 통합을 통해 인사이트와 메트릭을 제공하는 Model Context Protocol 서버입니다.
 
-DevFlow Monitor MCP is a Model Context Protocol server that monitors all aspects of software development in real-time, providing insights and metrics through Claude Desktop integration.
+**현재 상태**: 마일스톤 4 진행중 (93.3% 완료) - 문서화 및 테스트 완료, 낮은 우선순위 작업 2개 남음
 
-## Features
+## 주요 기능
 
-### ✅ Implemented (Milestones 1-3)
-- 📁 **File System Monitoring** - Real-time file change detection with intelligent filtering
-- 🔄 **Git Integration** - Complete Git activity tracking, branch analysis, commit pattern recognition
-- 🎯 **Development Stage Recognition** - 13-stage development process auto-detection
-- 🤖 **AI Collaboration Tracking** - Claude, GitHub Copilot, ChatGPT usage monitoring and analysis
-- 🏗️ **Methodology Monitoring** - DDD/TDD/BDD/EDA pattern recognition and scoring
-- 📊 **Real-time Analytics** - Event processing, metrics collection, and bottleneck detection
-- 🌐 **WebSocket Streaming** - Real-time event broadcasting to connected clients
-- 🗄️ **Data Storage** - SQLite with in-memory caching and event queuing
-- 🔌 **External API Integration** - Jira, Notion, Figma connectivity
-- 📋 **CLI/TUI Dashboard** - Real-time monitoring interface with blessed TUI and CLI table views
-- 📈 **Advanced Metrics Engine** - Comprehensive metrics collection, analysis, and bottleneck detection
-- 🚨 **Notification System** - Rule-based alerting with Slack and dashboard channels
-- ⚡ **Performance Optimization** - Complete performance optimization system with profiling, caching, and scaling
-- 🔐 **Security System** - JWT authentication, RBAC, encryption, and audit logging
-- 🛠️ **MCP Tools Suite** - 37 comprehensive development monitoring tools
+### ✅ 구현 완료 (마일스톤 1-3)
+- 📁 **파일 시스템 모니터링** - 지능형 필터링을 통한 실시간 파일 변경 감지
+- 🔄 **Git 통합** - 완전한 Git 활동 추적, 브랜치 분석, 커밋 패턴 인식
+- 🎯 **개발 단계 인식** - 13단계 개발 프로세스 자동 감지
+- 🤖 **AI 협업 추적** - Claude, GitHub Copilot, ChatGPT 사용 모니터링 및 분석
+- 🏗️ **방법론 모니터링** - DDD/TDD/BDD/EDA 패턴 인식 및 점수화
+- 📊 **실시간 분석** - 이벤트 처리, 메트릭 수집, 병목 현상 감지
+- 🌐 **WebSocket 스트리밍** - 연결된 클라이언트에 실시간 이벤트 브로드캐스팅
+- 🗄️ **데이터 저장소** - SQLite와 인메모리 캐싱 및 이벤트 큐잉
+- 🔌 **외부 API 통합** - Jira, Notion, Figma 연결
+- 📋 **CLI/TUI 대시보드** - blessed TUI 및 CLI 테이블 뷰를 통한 실시간 모니터링 인터페이스
+- 📈 **고급 메트릭 엔진** - 포괄적인 메트릭 수집, 분석 및 병목 현상 감지
+- 🚨 **알림 시스템** - 규칙 기반 알림 (Slack 및 대시보드 채널)
+- ⚡ **성능 최적화** - 프로파일링, 캐싱, 스케일링을 포함한 완전한 성능 최적화 시스템
+- 🔐 **보안 시스템** - JWT 인증, RBAC, 암호화 및 감사 로깅
+- 🛠️ **MCP 도구 모음** - 37개의 포괄적인 개발 모니터링 도구
 
-### 🔄 Milestone 4 In Progress (2025-08-04)
-- ✅ **Documentation Suite** - Complete user and developer documentation
-- ✅ **Performance Optimization** - Comprehensive optimization system
-- ✅ **Security System** - JWT authentication, RBAC, and encryption  
-- ⏳ **Production Deployment** - Docker support and CI/CD pipeline (remaining)
+### 🔄 마일스톤 4 진행중 (93.3% 완료)
+- ✅ **성능 최적화** - 포괄적인 최적화 시스템
+- ✅ **보안 시스템** - JWT 인증, RBAC, 암호화
+- ✅ **배포 준비** - Docker 지원 및 CI/CD 파이프라인
+- ✅ **문서화 모음** - 완전한 사용자 및 개발자 문서
+- ✅ **테스트 스위트** - 80%+ 커버리지를 갖춘 E2E, 통합 및 성능 테스트
+- ⏳ **기여 가이드** - 기여 가이드라인 (낮은 우선순위)
+- ⏳ **플러그인 개발 가이드** - 플러그인 시스템 문서 (낮은 우선순위)
 
-### 📋 Future Enhancements (Milestone 5)
-- 🔌 Plugin system architecture
-- 📊 Advanced predictive analytics
-- 🌐 Multi-project support
-- 📱 Mobile companion app (optional)
+### 📋 향후 개선사항 (마일스톤 5)
+- 🔌 플러그인 시스템 아키텍처
+- 📊 고급 예측 분석
+- 🌐 다중 프로젝트 지원
+- 📱 모바일 컴패니언 앱 (선택사항)
 
-## Tech Stack
+## 기술 스택
 
-### Core Technologies
-- **Language**: TypeScript 5.9.2 (strict mode)
-- **Runtime**: Node.js 20.19.1 LTS
+### 핵심 기술
+- **언어**: TypeScript 5.9.2 (strict mode)
+- **런타임**: Node.js 20.19.1 LTS
 - **MCP SDK**: @modelcontextprotocol/sdk 0.6.1
 
-### Data & Storage
-- **Database**: SQLite (better-sqlite3 12.2.0)
-- **Caching**: In-memory with EventEmitter3-based queuing
-- **Event Processing**: EventEmitter3 5.0.1 with priority queues
+### 데이터 및 저장소
+- **데이터베이스**: SQLite (better-sqlite3 12.2.0)
+- **캐싱**: EventEmitter3 기반 큐잉을 통한 인메모리
+- **이벤트 처리**: 우선순위 큐를 갖춘 EventEmitter3 5.0.1
 
-### Monitoring & Integration
-- **File Monitoring**: chokidar 3.x
-- **Git Integration**: simple-git 3.27.0
-- **API Client**: axios 1.11.0
-- **Real-time Communication**: ws 8.18.3
+### 모니터링 및 통합
+- **파일 모니터링**: chokidar 3.x
+- **Git 통합**: simple-git 3.27.0
+- **API 클라이언트**: axios 1.11.0
+- **실시간 통신**: ws 8.18.3
 
-### Dashboard & UI
-- **TUI Framework**: blessed 0.1.81 (terminal user interface)
-- **CLI Styling**: chalk 5.5.0 (colorized output)
-- **Table Rendering**: cli-table3 0.6.5 (structured data display)
-- **CLI Framework**: commander 14.0.0 (command-line interface)
+### 대시보드 및 UI
+- **TUI 프레임워크**: blessed 0.1.81 (터미널 사용자 인터페이스)
+- **CLI 스타일링**: chalk 5.5.0 (컬러 출력)
+- **테이블 렌더링**: cli-table3 0.6.5 (구조화된 데이터 표시)
+- **CLI 프레임워크**: commander 14.0.0 (명령줄 인터페이스)
 
-### Development Tools
-- **Testing**: Vitest 3.2.4 with coverage
-- **Linting**: ESLint + Prettier
-- **Build**: esbuild + tsx
+### 개발 도구
+- **테스팅**: Vitest 3.2.4 with coverage
+- **린팅**: ESLint + Prettier
+- **빌드**: esbuild + tsx
 
-## Installation
+## 설치 방법
 
-### Quick Start
+### 빠른 시작
 
 ```bash
-# Clone the repository
+# 저장소 클론
 git clone https://github.com/yaioyaio/kroot-mcp.git
 cd kroot-mcp
 
-# Run automated installation
+# 자동 설치 실행
 ./scripts/deploy/install-local.sh
 ```
 
-This will install DevFlow Monitor to `~/.config/mcp/devflow-monitor` and configure Claude Desktop automatically.
+이렇게 하면 DevFlow Monitor가 `~/.config/mcp/devflow-monitor`에 설치되고 Claude Desktop이 자동으로 구성됩니다.
 
-### Manual Installation
+### 수동 설치
 
 ```bash
-# Install dependencies
+# 종속성 설치
 npm install
 
-# Build the project
+# 프로젝트 빌드
 npm run build
 
-# Start the MCP server
+# MCP 서버 시작
 npm start
 ```
 
-### Docker Installation
+### Docker 설치
 
 ```bash
-# Using Docker Compose
+# Docker Compose 사용
 docker-compose up -d
 
-# Or using deployment script
+# 또는 배포 스크립트 사용
 ./scripts/deploy/deploy-docker.sh
 ```
 
-For detailed installation instructions, see the [Deployment Guide](./docs/DEPLOYMENT.md).
+자세한 설치 지침은 [배포 가이드](./docs/DEPLOYMENT.md)를 참조하세요.
 
-### Claude Desktop Integration
+### Claude Desktop 통합
 
-The installation script automatically configures Claude Desktop. For manual configuration:
+설치 스크립트가 Claude Desktop을 자동으로 구성합니다. 수동 구성의 경우:
 
 ```json
 {
@@ -123,212 +126,113 @@ The installation script automatically configures Claude Desktop. For manual conf
 }
 ```
 
-## Development
+## 개발
 
 ```bash
-# Run in development mode
+# 개발 모드 실행
 npm run dev
 
-# Run linter
+# 린터 실행
 npm run lint
 
-# Run type checking
+# 타입 체크
 npm run typecheck
 
-# Format code
+# 코드 포맷
 npm run format
+
+# 테스트 실행
+npm run test
 ```
 
-## Dashboard Usage
+## 대시보드 사용법
 
-### CLI Dashboard
-Simple table-based interface for monitoring:
+### CLI 대시보드
+모니터링을 위한 간단한 테이블 기반 인터페이스:
 ```bash
-# Start CLI dashboard
+# CLI 대시보드 시작
 npx tsx scripts/dashboard.ts cli
 
-# Compact mode with custom refresh interval
+# 사용자 정의 새로고침 간격을 가진 컴팩트 모드
 npx tsx scripts/dashboard.ts cli --compact --refresh 2000
 ```
 
-### TUI Dashboard
-Full-featured terminal interface with multiple panels:
+### TUI 대시보드
+여러 패널을 가진 완전한 기능의 터미널 인터페이스:
 ```bash
-# Start TUI dashboard (default)
+# TUI 대시보드 시작 (기본값)
 npx tsx scripts/dashboard.ts tui
 
-# Custom configuration
+# 사용자 정의 구성
 npx tsx scripts/dashboard.ts start --mode tui --refresh 1000 --max-events 100
 ```
 
-#### TUI Keyboard Controls
-- **r** - Refresh all data
-- **c** - Clear activity feed
-- **h** - Toggle help panel
-- **q/ESC** - Quit dashboard
+#### TUI 키보드 단축키
+- **r** - 모든 데이터 새로고침
+- **c** - 활동 피드 지우기
+- **h** - 도움말 패널 토글
+- **q/ESC** - 대시보드 종료
 
-### Dashboard Features
-- **Real-time Event Feed** - Live activity monitoring from all sources
-- **System Status** - EventEngine statistics, uptime, queue status
-- **Development Stage** - Current stage detection with confidence levels
-- **Methodology Metrics** - DDD/TDD/BDD/EDA compliance scoring
-- **AI Usage Tracking** - Real-time AI tool usage and effectiveness
-- **Interactive Controls** - Keyboard shortcuts for navigation and control
+## 사용 가능한 MCP 도구
 
-## MCP Tools Available
+이 서버는 개발 모니터링을 위한 37개의 전문 도구를 제공합니다:
 
-This server provides 37 specialized tools for development monitoring:
+### 핵심 모니터링
+- `getProjectStatus` - 실시간 프로젝트 상태 및 메트릭
+- `getMetrics` - 필터링을 통한 포괄적인 개발 메트릭
+- `getActivityLog` - 모든 소스에 걸친 상세한 활동 추적
+- `analyzeBottlenecks` - 자동화된 병목 현상 감지 및 분석
 
-### Core Monitoring
-- `getProjectStatus` - Real-time project status and metrics
-- `getMetrics` - Comprehensive development metrics with filtering
-- `getActivityLog` - Detailed activity tracking across all sources
-- `analyzeBottlenecks` - Automated bottleneck detection and analysis
+### 고급 분석
+- `checkMethodology` - DDD/TDD/BDD/EDA 준수 점수
+- `analyzeStage` - 개발 단계 인식 및 진행
+- `analyzeAICollaboration` - AI 도구 사용 패턴 및 효과성
+- `generateReport` - 자동화된 보고서 생성
 
-### Advanced Analysis  
-- `checkMethodology` - DDD/TDD/BDD/EDA compliance scoring
-- `analyzeStage` - Development stage recognition and progression
-- `analyzeAICollaboration` - AI tool usage patterns and effectiveness
-- `generateReport` - Automated report generation
+### 실시간 통신
+- `startWebSocketServer` / `stopWebSocketServer` - WebSocket 서버 관리
+- `getWebSocketStats` / `getStreamStats` - 연결 모니터링
+- `broadcastSystemNotification` - 시스템 전체 알림
 
-### Real-time Communication
-- `startWebSocketServer` / `stopWebSocketServer` - WebSocket server management
-- `getWebSocketStats` / `getStreamStats` - Connection monitoring
-- `broadcastSystemNotification` - System-wide notifications
+[전체 도구 목록은 API 레퍼런스 참조](./docs/API_REFERENCE.md)
 
-### Dashboard Control
-- `startDashboard` - Launch CLI/TUI dashboard with configurable options
-- `getDashboardStatus` - Check dashboard running status and uptime
+## 프로젝트 문서
 
-### Metrics & Analytics
-- `getAdvancedMetrics` - Advanced metrics with time-based filtering
-- `getBottlenecks` - Detailed bottleneck detection and analysis
-- `getMetricsSnapshot` - Current metrics snapshot
-- `analyzeProductivity` - Productivity analysis and insights
+### 계획 및 아키텍처
+- [📋 계획 문서](./PLANNING.md) - 완전한 프로젝트 로드맵
+- [📄 PRD (제품 요구사항)](./PRD.md) - 제품 사양
+- [✅ 작업 목록](./TASKS.md) - 상세한 구현 작업
+- [🏗️ 프로젝트 구조 및 스타일](./docs/PROJECT_STRUCTURE_AND_STYLE.md)
 
-### Notification System
-- `configureNotifications` - Configure notification channels and rules
-- `sendNotification` - Send manual notifications
-- `getNotificationStats` - Notification system statistics
-- `getNotificationRules` - List active notification rules
-- `deleteNotificationRule` - Remove notification rules
+### 기능 및 구현
+- [🚀 기능 사양](./docs/FEATURES.md) - 상세한 기능 설명
+- [📊 플로우차트](./docs/FLOWCHARTS.md) - 시스템 흐름 시각화
+- [📝 오늘의 TODO](./docs/todolist/TODOLIST.2025-08-05.md) - 현재 진행 상황
+- [🔧 Claude 통합 가이드](./.claude/CLAUDE.md) - 개발 워크플로우
 
-### Performance Optimization
-- `getPerformanceReport` - Comprehensive performance analysis and metrics
-- `optimizePerformance` - Execute system-wide performance optimization
-- `getSystemMetrics` - Real-time system resource monitoring
-- `profilePerformance` - Performance profiling with bottleneck detection
-- `manageCaches` - Multi-layer cache management and optimization
+### 사용자 및 개발자 문서
+- [📖 설치 가이드](./docs/INSTALLATION.md) - 완전한 설정 지침 (884줄)
+- [📚 사용자 매뉴얼](./docs/USER_MANUAL.md) - 포괄적인 사용 가이드 (552줄)
+- [❓ FAQ](./docs/FAQ.md) - 자주 묻는 질문 (455줄, 76개 Q&A)
+- [🔧 API 레퍼런스](./docs/API_REFERENCE.md) - 완전한 MCP 도구 레퍼런스 (836줄)
+- [🔗 통합 가이드](./docs/INTEGRATION.md) - IDE, CI/CD, 외부 서비스 (1,363줄)
+- [🏗️ 아키텍처](./docs/ARCHITECTURE.md) - 시스템 아키텍처 및 컴포넌트 (1,058줄)
 
-### Security Management
-- `login` - User authentication with JWT token generation
-- `verifyToken` - JWT token validation and context retrieval
-- `checkPermission` - Role-based permission verification
-- `generateAPIKey` - Secure API key creation with custom permissions
-- `encryptData` / `decryptData` - AES-256-GCM encryption/decryption
-- `getSecurityStats` - Security system statistics and monitoring
-- `queryAuditLogs` - Security audit log retrieval and analysis
-- `assignRole` - User role management and assignment
+### 운영 및 배포
+- [⚙️ 운영 가이드](./docs/operations/README.md) - 배포 및 모니터링
+- [🚢 배포 가이드](./docs/DEPLOYMENT.md) - 포괄적인 배포 지침
+- [✅ 배포 체크리스트](./docs/DEPLOYMENT_CHECKLIST.md) - 배포 전후 검증
 
-## Project Status
+## 기여하기
 
-### Completed Milestones
-- ✅ **Milestone 1**: MVP Foundation (TypeScript setup, MCP server, file monitoring)
-- ✅ **Milestone 2**: Core Integrations (Git, APIs, event queuing, WebSocket)
-- ✅ **Milestone 3**: Intelligent Monitoring (100% complete)
-  - ✅ Development stage recognition
-  - ✅ Methodology monitoring (DDD/TDD/BDD/EDA)
-  - ✅ AI collaboration tracking
-  - ✅ CLI/TUI dashboard
-  - ✅ Advanced metrics engine
-  - ✅ Notification system
-- 🔄 **Milestone 4**: Production Readiness (90% complete)
-  - ✅ Performance optimization system
-  - ✅ Security enhancements  
-  - ✅ Documentation suite (Installation, User Manual, FAQ, API Reference, Integration Guide, Architecture)
-  - ⏳ Deployment preparation (Docker, CI/CD, local installation) - remaining work
+프로젝트 기여 가이드는 준비 중입니다.
 
-## Documentation
-
-### Planning & Architecture
-- [📋 Planning Document](./PLANNING.md) - Complete project roadmap
-- [📄 PRD (Product Requirements)](./PRD.md) - Product specifications
-- [✅ Task List](./TASKS.md) - Detailed implementation tasks
-- [🏗️ Project Structure & Style](./docs/PROJECT_STRUCTURE_AND_STYLE.md)
-
-### Features & Implementation
-- [🚀 Features Specification](./docs/FEATURES.md) - Detailed feature descriptions
-- [📊 Flowcharts](./docs/FLOWCHARTS.md) - System flow visualizations
-- [📝 Today's TODO](./docs/todolist/TODOLIST.2025-08-04.md) - Current progress
-- [🔧 Claude Integration Guide](./.claude/CLAUDE.md) - Development workflow
-
-### User & Developer Documentation
-- [📖 Installation Guide](./docs/INSTALLATION.md) - Complete setup instructions (884 lines)
-- [📚 User Manual](./docs/USER_MANUAL.md) - Comprehensive usage guide (552 lines)
-- [❓ FAQ](./docs/FAQ.md) - Frequently asked questions (455 lines, 76 Q&As)
-- [🔧 API Reference](./docs/API_REFERENCE.md) - Complete MCP tools reference (836 lines)
-- [🔗 Integration Guide](./docs/INTEGRATION.md) - IDE, CI/CD, external services (1,363 lines)
-- [🏗️ Architecture](./docs/ARCHITECTURE.md) - System architecture and components (1,058 lines)
-
-### Operations & Deployment
-- [⚙️ Operations Guide](./docs/operations/README.md) - Deployment and monitoring
-- [🚢 Deployment Guide](./docs/DEPLOYMENT.md) - Comprehensive deployment instructions
-- [✅ Deployment Checklist](./docs/DEPLOYMENT_CHECKLIST.md) - Pre and post deployment verification
-
-## License
+## 라이선스
 
 MIT © yaioyaio
 
 ---
 
 작성일: 2025-08-02  
-최종 수정일: 2025-08-04 (문서화 완료)  
+최종 수정일: 2025-08-05 (테스트 완료)  
 작성자: yaioyaio
-
-## Recent Updates
-
-**2025-08-04**: 
-- ✅ **Documentation Suite Completed** - Comprehensive documentation system
-  - INSTALLATION.md (884줄): Complete installation guide with Docker, local setup, troubleshooting
-  - USER_MANUAL.md (552줄): User manual with workflows, usage examples, best practices
-  - FAQ.md (455줄): 76 frequently asked questions covering all aspects
-  - API_REFERENCE.md (836줄): Complete reference for all 37 MCP tools
-  - INTEGRATION.md (1,363줄): IDE, CI/CD, external service integration guide
-  - ARCHITECTURE.md (1,058줄): System architecture and component documentation
-  - TypeDoc setup: Automatic API documentation generation system
-- ✅ **Deployment Preparation** - Complete deployment infrastructure
-  - Docker support: Multi-stage Dockerfile, docker-compose for dev/prod
-  - Environment configuration: Flexible config system with environment overrides
-  - CI/CD Pipeline: GitHub Actions for automated testing and releases
-  - Local installation: Automated scripts for easy MCP server setup
-  - Deployment documentation: Comprehensive guides and checklists
-- ✅ **Security Enhancement System** - Complete security system implementation
-  - SecurityManager: Integrated authentication and authorization system
-  - JWT Authentication: Token-based authentication with refresh tokens
-  - API Key Management: Secure API key generation and validation
-  - RBAC System: Role-based access control with permission checking
-  - Data Encryption: AES-256-GCM encryption/decryption with key rotation
-  - Audit Logging: Comprehensive security event logging and analysis
-  - MCP Security Tools: 8 new security management tools
-  - Authentication Middleware: Permission checks for sensitive MCP tools
-- ✅ **Performance Optimization System** - Complete performance optimization implementation
-  - PerformanceProfiler: Metric tracking, bottleneck detection, memory leak monitoring
-  - MemoryOptimizer: LRU cache system, automatic cleanup, TTL management
-  - AsyncOptimizer: Priority queues, batch processing, resource pooling
-  - CacheManager: Multi-layer caching (memory + SQLite), tag-based invalidation
-  - ScalingManager: Dynamic scaling, event batching, load balancing
-  - 5 new MCP tools for performance management
-- ✅ **Milestone 3 completed** - All intelligent monitoring systems implemented
-- ✅ CLI/TUI dashboard system with blessed TUI and CLI table views
-- ✅ AI collaboration tracking for 6 AI tools (Claude, Copilot, ChatGPT, etc.)
-- ✅ Advanced metrics engine with real-time collection and analysis
-- ✅ Notification system with rule-based alerting
-- ✅ Slack and dashboard notification channels
-- ✅ Bottleneck detection with 5 types (process/quality/resource/workflow/technical)
-- ✅ 37 total MCP tools (added 8 security tools + 14 metrics/notifications/performance tools)
-- ✅ All documentation synchronized
-
-**2025-08-03**:
-- ✅ Milestone 2 completed (Git integration, API connections, WebSocket streaming)
-- ✅ Development stage recognition system
-- ✅ Methodology monitoring (DDD/TDD/BDD/EDA)
