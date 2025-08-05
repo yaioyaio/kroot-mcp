@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov', 'json-summary'],
@@ -19,6 +20,8 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/**/types.ts',
         'src/**/index.ts', // Barrel exports
+        'tests/manual/**',
+        'tests/setup.ts',
       ],
       thresholds: {
         lines: 80,
@@ -31,7 +34,6 @@ export default defineConfig({
     },
     include: ['src/**/*.{test,spec}.{js,ts}', 'tests/**/*.{test,spec}.{js,ts}'],
     exclude: ['node_modules', 'dist', 'tests/manual'],
-    setupFiles: ['./tests/setup.ts'],
     reporters: ['default', 'html', 'json'],
     outputFile: {
       json: './coverage/test-results.json',
