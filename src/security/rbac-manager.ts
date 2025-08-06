@@ -6,14 +6,11 @@
 import { EventEmitter } from 'eventemitter3';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  User,
   Role,
   Permission,
   PermissionAction,
-  AuthContext,
   SecurityEvent,
-  RESERVED_ROLES,
-  RESERVED_PERMISSIONS
+  RESERVED_ROLES
 } from './types.js';
 
 export interface PermissionCheck {

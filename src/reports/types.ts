@@ -5,9 +5,9 @@
  */
 
 import { EventCategory, EventSeverity } from '../events/types/base.js';
-import { DevelopmentStage } from '../analyzers/types/stages.js';
+import { DevelopmentStage } from '../analyzers/types/stage.js';
 import { BottleneckType } from '../analyzers/types/metrics.js';
-import { Methodology } from '../analyzers/types/methodology.js';
+import { DevelopmentMethodology } from '../analyzers/types/methodology.js';
 
 /**
  * 보고서 타입
@@ -187,7 +187,7 @@ export interface ReportFilters {
   developmentStages?: DevelopmentStage[];
   
   /** 방법론 필터 */
-  methodologies?: Methodology[];
+  methodologies?: DevelopmentMethodology[];
   
   /** 병목 타입 필터 */
   bottleneckTypes?: BottleneckType[];

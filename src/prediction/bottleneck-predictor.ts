@@ -25,11 +25,11 @@ interface BottleneckIndicator {
 export class BottleneckPredictor extends EventEmitter {
   private indicators: Map<string, BottleneckIndicator> = new Map();
   private predictionHistory: BottleneckPrediction[] = [];
-  private predictionInterval: NodeJS.Timer | null = null;
+  private predictionInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private metricsCollector: MetricsCollector,
-    private bottleneckDetector: BottleneckDetector,
+    private _bottleneckDetector: BottleneckDetector,
     private patternRecognizer: PatternRecognizer
   ) {
     super();
@@ -197,8 +197,8 @@ export class BottleneckPredictor extends EventEmitter {
    * Update current indicator values
    */
   private async updateIndicatorValues() {
-    const metrics = await this.metricsCollector.getMetrics();
-    const recentMetrics = metrics.filter(m => 
+    const metrics = await (this.metricsCollector as any).getMetrics();
+    const recentMetrics = metrics.filter((m: any) => 
       new Date(m.timestamp).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
     );
 
@@ -385,7 +385,11 @@ export class BottleneckPredictor extends EventEmitter {
 
     let trendSum = 0;
     for (let i = 1; i < values.length; i++) {
-      trendSum += (values[i] - values[i - 1]) / values[i - 1];
+      const current = values[i];
+      const previous = values[i - 1];
+      if (current !== undefined && previous !== undefined && previous !== 0) {
+        trendSum += (current - previous) / previous;
+      }
     }
 
     return trendSum / (values.length - 1);

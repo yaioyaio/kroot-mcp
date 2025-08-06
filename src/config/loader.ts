@@ -150,9 +150,12 @@ export class ConfigLoader {
     this.config = this.applyEnvironmentVariables(this.config);
     
     // Validate configuration
-    this.validateConfig(this.config);
+    if (this.config) {
+      this.validateConfig(this.config);
+      return this.config;
+    }
     
-    return this.config!;
+    throw new Error('Failed to load configuration');
   }
 
   /**

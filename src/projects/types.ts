@@ -17,7 +17,7 @@ export interface ProjectMetadata {
   name: string;
   
   /** 프로젝트 설명 */
-  description?: string;
+  description?: string | undefined;
   
   /** 프로젝트 버전 */
   version: string;
@@ -50,7 +50,7 @@ export interface ProjectMetadata {
   paths: ProjectPaths;
   
   /** 리포지토리 정보 */
-  repository?: RepositoryInfo;
+  repository?: RepositoryInfo | undefined;
 }
 
 /**

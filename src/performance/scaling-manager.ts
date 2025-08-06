@@ -58,7 +58,7 @@ export class ScalingManager extends EventEmitter {
   private scalingHistory: ScalingAction[] = [];
   private resourceMetrics: ResourceMetrics;
   private isMonitoring = false;
-  private monitoringInterval?: NodeJS.Timeout;
+  private monitoringInterval?: NodeJS.Timeout | undefined;
 
   // 이벤트 배치 처리
   private eventBatches = new Map<string, any[]>();
@@ -69,7 +69,7 @@ export class ScalingManager extends EventEmitter {
   private poolMetrics = new Map<string, { active: number; idle: number; total: number }>();
 
   // 로드 밸런싱
-  private loadBalancer: LoadBalancer;
+  // private loadBalancer: LoadBalancer; // TODO: Implement load balancing
 
   constructor(config?: Partial<ScalingConfig>) {
     super();
@@ -99,12 +99,13 @@ export class ScalingManager extends EventEmitter {
       errorRate: 0
     };
 
-    this.loadBalancer = new LoadBalancer({
-      algorithm: 'least_connections',
-      healthCheckInterval: 30000,
-      maxRetries: 3,
-      timeout: 5000
-    });
+    // TODO: LoadBalancer 구현 필요
+    // this.loadBalancer = new LoadBalancer({
+    //   algorithm: 'least_connections',
+    //   healthCheckInterval: 30000,
+    //   maxRetries: 3,
+    //   timeout: 5000
+    // });
 
     this.initializeMonitoring();
   }
@@ -536,7 +537,7 @@ export class ScalingManager extends EventEmitter {
   /**
    * 배치 이벤트 처리
    */
-  private async processBatchEvents(batchName: string, events: any[]): Promise<void> {
+  private async processBatchEvents(_batchName: string, events: any[]): Promise<void> {
     // 실제 이벤트 처리 로직
     await asyncOptimizer.parallel(
       events.map(event => () => this.processEvent(event)),
@@ -547,7 +548,7 @@ export class ScalingManager extends EventEmitter {
   /**
    * 개별 이벤트 처리
    */
-  private async processEvent(event: any): Promise<void> {
+  private async processEvent(_event: any): Promise<void> {
     // 이벤트 처리 시뮬레이션
     await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
   }
@@ -780,7 +781,7 @@ export class ScalingManager extends EventEmitter {
 /**
  * 로드 밸런서
  */
-class LoadBalancer {
+/* class LoadBalancer {
   private config: LoadBalancerConfig;
   private instances: Array<{ id: string; healthy: boolean; connections: number; weight: number }> = [];
   private currentIndex = 0;
@@ -820,7 +821,7 @@ class LoadBalancer {
       case 'weighted':
         return this.weighted(healthyInstances);
       default:
-        return healthyInstances[0].id;
+        return healthyInstances[0]?.id || '';
     }
   }
 
@@ -849,7 +850,7 @@ class LoadBalancer {
     
     return instances[0].id;
   }
-}
+} */
 
 // 싱글톤 인스턴스
 export const scalingManager = new ScalingManager();

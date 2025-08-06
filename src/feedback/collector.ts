@@ -25,6 +25,7 @@ type DatabaseService = {
 import type { ProjectManager } from '../projects/project-manager.js';
 import type { StageAnalyzer } from '../analyzers/stage-analyzer.js';
 import type { MetricsCollector } from '../analyzers/metrics-collector.js';
+import { DevelopmentStage } from '../analyzers/types/stage.js';
 import { Logger } from '../utils/logger.js';
 
 const logger = new Logger('FeedbackCollector');
@@ -37,25 +38,25 @@ export interface FeedbackCollectorConfig {
   database: DatabaseService;
   
   /** 프로젝트 매니저 */
-  projectManager?: ProjectManager;
+  projectManager?: ProjectManager | undefined;
   
   /** 스테이지 분석기 */
-  stageAnalyzer?: StageAnalyzer;
+  stageAnalyzer?: StageAnalyzer | undefined;
   
   /** 메트릭 수집기 */
-  metricsCollector?: MetricsCollector;
+  metricsCollector?: MetricsCollector | undefined;
   
   /** 자동 컨텍스트 수집 여부 */
-  autoCollectContext?: boolean;
+  autoCollectContext?: boolean | undefined;
   
   /** 익명 피드백 허용 여부 */
-  allowAnonymous?: boolean;
+  allowAnonymous?: boolean | undefined;
   
   /** 최대 첨부 파일 크기 (바이트) */
-  maxAttachmentSize?: number;
+  maxAttachmentSize?: number | undefined;
   
   /** 최대 첨부 파일 개수 */
-  maxAttachments?: number;
+  maxAttachments?: number | undefined;
 }
 
 /**
@@ -72,32 +73,32 @@ export interface FeedbackSubmitOptions {
   description: string;
   
   /** 소스 */
-  source?: FeedbackSource;
+  source?: FeedbackSource | undefined;
   
   /** 우선순위 */
-  priority?: FeedbackPriority;
+  priority?: FeedbackPriority | undefined;
   
   /** 프로젝트 ID */
-  projectId?: string;
+  projectId?: string | undefined;
   
   /** 제출자 정보 */
   submitter?: {
     id?: string;
     email?: string;
     name?: string;
-  };
+  } | undefined;
   
   /** 태그 */
-  tags?: string[];
+  tags?: string[] | undefined;
   
   /** 첨부 파일 */
-  attachments?: FeedbackAttachment[];
+  attachments?: FeedbackAttachment[] | undefined;
   
   /** 커스텀 컨텍스트 */
-  customContext?: Record<string, any>;
+  customContext?: Record<string, any> | undefined;
   
   /** 사용성 메트릭 */
-  usabilityMetrics?: UsabilityMetrics;
+  usabilityMetrics?: UsabilityMetrics | undefined;
 }
 
 /**
@@ -194,11 +195,11 @@ export class FeedbackCollector extends EventEmitter {
         priority: options.priority || this.calculatePriority(options),
         source: options.source || FeedbackSource.IN_APP,
         submitter: options.submitter || {},
-        projectId: options.projectId,
         submittedAt: Date.now(),
         updatedAt: Date.now(),
         tags: options.tags || [],
-        attachments: options.attachments || []
+        ...(options.projectId && { projectId: options.projectId }),
+        ...(options.attachments && { attachments: options.attachments })
       };
       
       // 익명 피드백 체크
@@ -331,15 +332,17 @@ export class FeedbackCollector extends EventEmitter {
     if (projectId && this.config.projectManager) {
       try {
         const project = await this.config.projectManager.getProject(projectId);
-        const projectStats = await this.config.projectManager.getProjectStats(projectId);
+        const projectStats = await this.config.projectManager.getProjectStats();
         
-        context.project = {
-          id: project.id,
-          name: project.name,
-          stage: this.config.stageAnalyzer?.getCurrentStage(projectId) || DevelopmentStage.PLANNING,
-          activeTime: projectStats.totalActiveTime,
-          eventCount: projectStats.totalEvents
-        };
+        if (project) {
+          context.project = {
+            id: project.id,
+            name: project.name,
+            stage: this.config.stageAnalyzer?.getCurrentStage() || DevelopmentStage.PLANNING,
+            activeTime: Date.now() - project.createdAt,
+            eventCount: projectStats.total
+          };
+        }
       } catch (error) {
         logger.warn('Failed to collect project context', { projectId, error });
       }
@@ -348,13 +351,14 @@ export class FeedbackCollector extends EventEmitter {
     // 성능 메트릭 수집
     if (this.config.metricsCollector) {
       try {
-        const metrics = this.config.metricsCollector.getRecentMetrics('1h');
-        const cpuMetrics = metrics.filter(m => m.name === 'cpu_usage');
-        const memoryMetrics = metrics.filter(m => m.name === 'memory_usage');
+        const snapshot = this.config.metricsCollector.getMetricsSnapshot();
+        const allMetrics = snapshot.metrics;
+        const cpuMetrics = allMetrics.cpu_usage?.values || [];
+        const memoryMetrics = allMetrics.memory_usage?.values || [];
         
         context.performance = {
-          cpuUsage: cpuMetrics.length > 0 ? cpuMetrics[cpuMetrics.length - 1].value : 0,
-          memoryUsage: memoryMetrics.length > 0 ? memoryMetrics[memoryMetrics.length - 1].value : 0,
+          cpuUsage: cpuMetrics.length > 0 ? (cpuMetrics[cpuMetrics.length - 1]?.value ?? 0) : 0,
+          memoryUsage: memoryMetrics.length > 0 ? (memoryMetrics[memoryMetrics.length - 1]?.value ?? 0) : 0,
           eventQueueSize: 0, // TODO: 실제 큐 크기 가져오기
           responseTime: 0 // TODO: 평균 응답 시간 계산
         };

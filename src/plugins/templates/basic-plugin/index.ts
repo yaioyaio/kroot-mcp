@@ -59,13 +59,13 @@ export class BasicPlugin implements Plugin {
     }
   };
 
-  private context?: PluginAPIContext;
+  private context: PluginAPIContext | undefined;
   private config: BasicPluginConfig = {
     enabled: true,
     logLevel: 'info'
   };
   private isActive = false;
-  private eventListeners = new Map<string, Function>();
+  private eventListeners = new Map<string, (...args: any[]) => void>();
 
   /**
    * 플러그인 초기화
@@ -219,7 +219,7 @@ export class BasicPlugin implements Plugin {
     } catch (error) {
       return {
         status: 'error',
-        message: error.message,
+        message: (error as Error).message,
         lastCheck: new Date()
       };
     }

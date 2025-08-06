@@ -10,7 +10,7 @@ export interface PerformanceMetric {
   startTime: number;
   endTime?: number;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, any> | undefined;
 }
 
 export interface MemorySnapshot {
@@ -35,6 +35,7 @@ export interface ProfilerStats {
   minResponseTime: number;
   memoryTrend: 'increasing' | 'stable' | 'decreasing';
   memoryLeakPotential: number; // 0-100 score
+  memoryUsage: MemorySnapshot;
   bottlenecks: BottleneckInfo[];
   recommendations: string[];
 }
@@ -53,8 +54,9 @@ export class PerformanceProfiler extends EventEmitter {
   private memorySnapshots: MemorySnapshot[] = [];
   private cpuSnapshots: CPUSnapshot[] = [];
   private isMonitoring = false;
-  private monitoringInterval?: NodeJS.Timeout;
+  private monitoringInterval?: NodeJS.Timeout | undefined;
   private maxHistorySize = 1000;
+  private performanceHistory: ProfilerStats[] = [];
 
   constructor() {
     super();
@@ -244,12 +246,22 @@ export class PerformanceProfiler extends EventEmitter {
 
     const bottlenecks = this.analyzeBottlenecks();
     
+    const latestSnapshot = this.memorySnapshots[this.memorySnapshots.length - 1] || {
+      timestamp: Date.now(),
+      heapUsed: 0,
+      heapTotal: 0,
+      external: 0,
+      rss: 0,
+      arrayBuffers: 0
+    };
+    
     return {
       averageResponseTime: durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
       maxResponseTime: durations.length > 0 ? Math.max(...durations) : 0,
       minResponseTime: durations.length > 0 ? Math.min(...durations) : 0,
       memoryTrend: this.getMemoryTrend(),
       memoryLeakPotential: this.getMemoryLeakPotential(),
+      memoryUsage: latestSnapshot,
       bottlenecks,
       recommendations: this.generateRecommendations(bottlenecks)
     };
@@ -328,8 +340,12 @@ export class PerformanceProfiler extends EventEmitter {
     }
 
     const recent = this.memorySnapshots.slice(-10);
-    const first = recent[0].heapUsed;
-    const last = recent[recent.length - 1].heapUsed;
+    const first = recent[0]?.heapUsed;
+    const last = recent[recent.length - 1]?.heapUsed;
+    
+    if (first === undefined || last === undefined) {
+      return 'stable';
+    }
     
     const changePercent = ((last - first) / first) * 100;
     
@@ -349,7 +365,9 @@ export class PerformanceProfiler extends EventEmitter {
     const recent = this.memorySnapshots.slice(-20);
     const increases = recent.reduce((count, snapshot, index) => {
       if (index === 0) return count;
-      return snapshot.heapUsed > recent[index - 1].heapUsed ? count + 1 : count;
+      const prevSnapshot = recent[index - 1];
+      if (!prevSnapshot) return count;
+      return snapshot.heapUsed > prevSnapshot.heapUsed ? count + 1 : count;
     }, 0);
 
     // 20개 중 15개 이상이 증가 추세면 메모리 누수 의심
@@ -383,10 +401,65 @@ export class PerformanceProfiler extends EventEmitter {
   private calculateMemoryGrowthRate(snapshots: MemorySnapshot[]): number {
     if (snapshots.length < 2) return 0;
 
-    const first = snapshots[0].heapUsed;
-    const last = snapshots[snapshots.length - 1].heapUsed;
+    const first = snapshots[0]?.heapUsed;
+    const last = snapshots[snapshots.length - 1]?.heapUsed;
+    
+    if (first === undefined || last === undefined) return 0;
     
     return (last - first) / first;
+  }
+
+  /**
+   * 메모리 누수 심각도 계산
+   */
+  private getMemoryLeakSeverity(): 'none' | 'low' | 'medium' | 'high' | 'critical' {
+    const score = this.calculateMemoryLeakScore();
+    
+    if (score >= 80) return 'critical';
+    if (score >= 60) return 'high';
+    if (score >= 40) return 'medium';
+    if (score >= 20) return 'low';
+    return 'none';
+  }
+
+  /**
+   * 메모리 누수 점수 계산
+   */
+  private calculateMemoryLeakScore(): number {
+    const recentMetrics = this.performanceHistory.slice(-10);
+    if (recentMetrics.length < 3) return 0;
+
+    // 메모리 증가 추세 분석
+    let memoryIncreaseCount = 0;
+    let totalMemoryIncrease = 0;
+
+    for (let i = 1; i < recentMetrics.length; i++) {
+      const current = recentMetrics[i];
+      const previous = recentMetrics[i - 1];
+      
+      if (current && previous) {
+        const memoryDiff = current.memoryUsage.heapUsed - previous.memoryUsage.heapUsed;
+        if (memoryDiff > 0) {
+          memoryIncreaseCount++;
+          totalMemoryIncrease += memoryDiff;
+        }
+      }
+    }
+
+    const increaseRatio = memoryIncreaseCount / (recentMetrics.length - 1);
+    const avgIncrease = totalMemoryIncrease / memoryIncreaseCount || 0;
+
+    // 점수 계산 (0-100)
+    let score = 0;
+    
+    // 증가 빈도 (최대 50점)
+    score += increaseRatio * 50;
+    
+    // 평균 증가량 (최대 50점)
+    const maxIncreaseThreshold = 10 * 1024 * 1024; // 10MB
+    score += Math.min((avgIncrease / maxIncreaseThreshold) * 50, 50);
+
+    return Math.min(score, 100);
   }
 
   /**

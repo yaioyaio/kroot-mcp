@@ -4,17 +4,14 @@
  */
 
 import { EventEmitter } from 'events';
-import { join } from 'path';
 import { PluginLoader } from './loader.js';
 import { PluginRegistry } from './registry.js';
 import {
-  Plugin,
   PluginDescriptor,
   PluginStatus,
   PluginLoaderConfig,
   PluginHealthStatus,
   PluginMetrics,
-  PluginEvents
 } from './types.js';
 
 /**
@@ -347,7 +344,7 @@ export class PluginManager extends EventEmitter {
       } catch (error) {
         healthResults[plugin.id] = {
           status: 'error',
-          message: error.message,
+          message: (error as Error).message,
           lastCheck: new Date()
         };
       }
@@ -359,7 +356,7 @@ export class PluginManager extends EventEmitter {
   /**
    * 플러그인 메트릭 조회
    */
-  getPluginMetrics(pluginId: string): PluginMetrics | null {
+  getPluginMetrics(_pluginId: string): PluginMetrics | null {
     // 실제 메트릭 수집 로직 구현 필요
     return null;
   }

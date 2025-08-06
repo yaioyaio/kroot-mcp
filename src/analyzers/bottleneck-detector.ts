@@ -453,6 +453,14 @@ export class BottleneckDetector extends EventEmitter {
   }
 
   /**
+   * 병목 현상 분석 (공개 메서드)
+   */
+  public analyzeBottlenecks(): Bottleneck[] {
+    this.detectBottlenecks();
+    return this.getAllBottlenecks();
+  }
+
+  /**
    * 병목 현상 통계
    */
   getBottleneckStats() {

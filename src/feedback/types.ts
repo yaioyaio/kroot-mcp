@@ -4,8 +4,7 @@
  * 사용자 피드백 수집, 분석, 개선을 위한 핵심 타입들을 정의합니다.
  */
 
-import { EventCategory, EventSeverity } from '../events/types/base.js';
-import { DevelopmentStage } from '../analyzers/types/stages.js';
+import { DevelopmentStage } from '../analyzers/types/stage.js';
 
 /**
  * 피드백 타입
@@ -411,7 +410,7 @@ export interface ABTestResult {
     variantId: string;
     confidence: number;
     improvement: number;
-  };
+  } | undefined;
   
   /** 분석 시간 */
   analyzedAt: number;

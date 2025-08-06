@@ -215,16 +215,18 @@ export class FeedbackAnalyzer extends EventEmitter {
     const words = text.split(/\s+/);
     for (let i = 0; i < words.length; i++) {
       const word = words[i];
+      if (!word) continue;
+      
       let wordScore = 0;
       
-      if (positiveWords.includes(word)) {
+      if (positiveWords.includes(word.toLowerCase())) {
         wordScore = 1;
-      } else if (negativeWords.includes(word)) {
+      } else if (negativeWords.includes(word.toLowerCase())) {
         wordScore = -1;
       }
       
       // 강화 단어 체크
-      if (wordScore !== 0 && i > 0 && intensifiers.includes(words[i - 1])) {
+      if (wordScore !== 0 && i > 0 && intensifiers.includes(words[i - 1]?.toLowerCase() || '')) {
         wordScore *= 1.5;
       }
       

@@ -5,7 +5,6 @@
 
 import { EventEmitter } from 'events';
 import { promises as fs } from 'fs';
-import { join } from 'path';
 import axios, { AxiosInstance } from 'axios';
 import {
   PluginAPIContext,
@@ -133,7 +132,7 @@ export class PluginAPIProvider {
   /**
    * 파일 시스템 인터페이스 생성
    */
-  private createFileSystemInterface(pluginId: string, permissions: PluginPermission[]): PluginFileSystem {
+  private createFileSystemInterface(_pluginId: string, permissions: PluginPermission[]): PluginFileSystem {
     const canReadFiles = permissions.includes(PluginPermission.READ_FILES);
     const canWriteFiles = permissions.includes(PluginPermission.WRITE_FILES);
 
@@ -259,12 +258,12 @@ export class PluginAPIProvider {
   /**
    * 데이터베이스 인터페이스 생성
    */
-  private createDatabaseInterface(pluginId: string, permissions: PluginPermission[]): PluginDatabase {
+  private createDatabaseInterface(_pluginId: string, permissions: PluginPermission[]): PluginDatabase {
     const canReadDB = permissions.includes(PluginPermission.DATABASE_READ);
     const canWriteDB = permissions.includes(PluginPermission.DATABASE_WRITE);
 
     return {
-      query: async (sql: string, params?: any[]): Promise<any[]> => {
+      query: async (sql: string, _params?: any[]): Promise<any[]> => {
         if (!canReadDB && !sql.toLowerCase().trim().startsWith('select')) {
           throw new Error('Plugin does not have database read permission');
         }
@@ -277,7 +276,7 @@ export class PluginAPIProvider {
         throw new Error('Database interface not implemented yet');
       },
 
-      insert: async (table: string, data: Record<string, any>): Promise<number> => {
+      insert: async (_table: string, _data: Record<string, any>): Promise<number> => {
         if (!canWriteDB) {
           throw new Error('Plugin does not have database write permission');
         }
@@ -286,7 +285,7 @@ export class PluginAPIProvider {
         throw new Error('Database interface not implemented yet');
       },
 
-      update: async (table: string, data: Record<string, any>, where: Record<string, any>): Promise<number> => {
+      update: async (_table: string, _data: Record<string, any>, _where: Record<string, any>): Promise<number> => {
         if (!canWriteDB) {
           throw new Error('Plugin does not have database write permission');
         }
@@ -295,7 +294,7 @@ export class PluginAPIProvider {
         throw new Error('Database interface not implemented yet');
       },
 
-      delete: async (table: string, where: Record<string, any>): Promise<number> => {
+      delete: async (_table: string, _where: Record<string, any>): Promise<number> => {
         if (!canWriteDB) {
           throw new Error('Plugin does not have database write permission');
         }
@@ -315,7 +314,7 @@ export class PluginAPIProvider {
     const registeredTools = new Map<string, Function>();
 
     return {
-      registerTool: (name: string, description: string, handler: Function): void => {
+      registerTool: (name: string, _description: string, handler: Function): void => {
         if (!canUseMCPTools) {
           throw new Error('Plugin does not have MCP tools permission');
         }
@@ -378,7 +377,7 @@ export class PluginAPIProvider {
         });
       },
 
-      createRule: async (rule: any): Promise<string> => {
+      createRule: async (_rule: any): Promise<string> => {
         if (!canSendNotifications) {
           throw new Error('Plugin does not have notification permission');
         }
@@ -423,12 +422,12 @@ export class PluginAPIProvider {
         });
       },
 
-      subscribe: (event: string, handler: Function): void => {
+      subscribe: (event: string, handler: (...args: any[]) => void): void => {
         this.eventBus.on(`plugin.broadcast.${event}`, handler);
         this.eventBus.on(`plugin.message.${pluginId}`, handler);
       },
 
-      unsubscribe: (event: string, handler: Function): void => {
+      unsubscribe: (event: string, handler: (...args: any[]) => void): void => {
         this.eventBus.off(`plugin.broadcast.${event}`, handler);
         this.eventBus.off(`plugin.message.${pluginId}`, handler);
       }
@@ -488,7 +487,7 @@ export class PluginAPIProvider {
   /**
    * 글로벌 이벤트 구독
    */
-  onGlobalEvent(event: string, handler: Function): void {
+  onGlobalEvent(event: string, handler: (...args: any[]) => void): void {
     this.eventBus.on(event, handler);
   }
 
@@ -511,17 +510,17 @@ export class PluginAPIProvider {
   /**
    * 플러그인 스토리지 지속성 (향후 구현)
    */
-  private async persistPluginStorage(pluginId: string, storage: Map<string, any>): Promise<void> {
-    // JSON 파일로 저장하거나 데이터베이스에 저장
-    // 구현 필요
-  }
+  // private async persistPluginStorage(_pluginId: string, _storage: Map<string, any>): Promise<void> {
+  //   // JSON 파일로 저장하거나 데이터베이스에 저장
+  //   // 구현 필요
+  // }
 
   /**
    * 플러그인 스토리지 복원 (향후 구현)
    */
-  private async restorePluginStorage(pluginId: string): Promise<Map<string, any>> {
-    // JSON 파일에서 복원하거나 데이터베이스에서 복원
-    // 구현 필요
-    return new Map<string, any>();
-  }
+  // private async restorePluginStorage(_pluginId: string): Promise<Map<string, any>> {
+  //   // JSON 파일에서 복원하거나 데이터베이스에서 복원
+  //   // 구현 필요
+  //   return new Map<string, any>();
+  // }
 }

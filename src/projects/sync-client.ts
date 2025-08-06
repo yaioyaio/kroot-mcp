@@ -11,7 +11,7 @@ import Database from 'better-sqlite3';
 
 import {
   SyncEvent,
-  SyncStatus,
+  SyncStatus as SyncStatusEnum,
   ProjectMetadata,
   ConflictResolutionStrategy
 } from './types.js';
@@ -112,7 +112,7 @@ export interface SyncError {
 /**
  * 동기화 상태
  */
-export interface SyncStatus {
+export interface SyncClientStatus {
   /** 마지막 동기화 시간 */
   lastSyncTime: number;
   
@@ -159,7 +159,7 @@ export class SyncClient extends EventEmitter {
   private logger: Logger;
   private httpClient: AxiosInstance;
   
-  private syncTimer?: NodeJS.Timeout;
+  private syncTimer?: NodeJS.Timeout | undefined;
   private isConnected = false;
   private isSyncing = false;
   private syncStats = {
@@ -329,7 +329,7 @@ export class SyncClient extends EventEmitter {
         });
 
         try {
-          const batchResult = await this.syncEventsBatch(batch);
+          const batchResult = await this.syncEventsBatch(batch || []);
           
           result.syncedIds.push(...batchResult.syncedIds);
           result.failedIds.push(...batchResult.failedIds);
@@ -340,7 +340,7 @@ export class SyncClient extends EventEmitter {
           this.logger.error('배치 동기화 실패:', error);
           
           // 배치 전체를 실패로 처리
-          const failedIds = batch.map(event => event.syncId);
+          const failedIds = batch?.map(event => event.syncId) || [];
           result.failedIds.push(...failedIds);
           
           result.errors.push({
@@ -494,11 +494,11 @@ export class SyncClient extends EventEmitter {
         lastSyncError: row.last_sync_error,
         syncedAt: row.synced_at,
         timestamp: row.created_at,
-        category: 'sync',
-        severity: 'info',
+        category: 'sync' as const,
+        severity: 'info' as const,
         source: 'sync-client',
         data: {}
-      }));
+      } as SyncEvent));
 
     } catch (error) {
       this.logger.error('동기화 대기 이벤트 조회 실패:', error);
@@ -686,7 +686,7 @@ export class SyncClient extends EventEmitter {
   /**
    * 현재 동기화 상태 조회
    */
-  getSyncStatus(): SyncStatus {
+  getSyncStatus(): SyncClientStatus {
     const pendingEvents = this.getPendingEvents().length;
     const failedEvents = this.db.prepare(
       'SELECT COUNT(*) as count FROM sync_events WHERE sync_status = "failed"'
@@ -702,7 +702,7 @@ export class SyncClient extends EventEmitter {
         this.syncStats.totalLatency / this.syncStats.totalSyncs : 0,
       successRate: this.syncStats.totalSyncs > 0 ? 
         this.syncStats.successfulSyncs / this.syncStats.totalSyncs : 0
-    };
+    } as SyncStatus;
   }
 
   /**
@@ -741,7 +741,7 @@ export class SyncClient extends EventEmitter {
         projectId,
         deviceId: this.config.deviceId,
         userId: this.config.userId,
-        syncStatus: SyncStatus.PENDING,
+        syncStatus: SyncStatusEnum.PENDING,
         syncAttempts: 0
       };
 
@@ -759,7 +759,7 @@ export class SyncClient extends EventEmitter {
         syncEvent.deviceId,
         syncEvent.userId,
         syncEvent.type,
-        JSON.stringify(syncEvent.eventData),
+        JSON.stringify(syncEvent.data),
         syncEvent.syncStatus,
         syncEvent.syncAttempts,
         syncEvent.timestamp

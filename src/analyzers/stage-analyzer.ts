@@ -707,6 +707,13 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
   }
 
   /**
+   * 현재 개발 단계 가져오기
+   */
+  public getCurrentStage(_projectId?: string): DevelopmentStage {
+    return this.currentStage || DevelopmentStage.PRD;
+  }
+
+  /**
    * 특정 단계의 활동 시간 계산
    */
   public getStageTimeSpent(stage: DevelopmentStage): number {

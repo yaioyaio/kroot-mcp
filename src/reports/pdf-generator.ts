@@ -5,6 +5,8 @@
  */
 
 import PDFDocument from 'pdfkit';
+
+type PDFDocumentInstance = InstanceType<typeof PDFDocument>;
 import * as fs from 'fs';
 import * as path from 'path';
 import { Logger } from '../utils/logger.js';
@@ -130,7 +132,7 @@ export class PDFGenerator {
   /**
    * 스타일 적용
    */
-  private applyStyles(doc: PDFDocument, styling: ReportStyling): void {
+  private applyStyles(doc: PDFDocumentInstance, styling: ReportStyling): void {
     // 색상 스키마 설정
     if (styling.colors) {
       // PDFKit에서는 직접적인 테마 적용이 제한적이므로
@@ -156,7 +158,7 @@ export class PDFGenerator {
    * 표지 생성
    */
   private generateCoverPage(
-    doc: PDFDocument,
+    doc: PDFDocumentInstance,
     metadata: ReportMetadata,
     config: ReportConfig
   ): void {
@@ -214,7 +216,7 @@ export class PDFGenerator {
   /**
    * 목차 생성
    */
-  private generateTableOfContents(doc: PDFDocument, sections: ReportSection[]): void {
+  private generateTableOfContents(doc: PDFDocumentInstance, sections: ReportSection[]): void {
     doc.fontSize(24)
        .fillColor('#333333')
        .text('Table of Contents');
@@ -233,8 +235,7 @@ export class PDFGenerator {
       
       doc.fillColor('#666666')
          .text(`Page ${pageNumber}`, {
-           align: 'right',
-           continued: -1
+           align: 'right'
          });
       
       doc.moveDown(0.5);
@@ -248,7 +249,7 @@ export class PDFGenerator {
    * 섹션 생성
    */
   private generateSection(
-    doc: PDFDocument,
+    doc: PDFDocumentInstance,
     section: ReportSection,
     data: ReportData
   ): void {
@@ -317,7 +318,7 @@ export class PDFGenerator {
   /**
    * 경영진 요약 생성
    */
-  private generateExecutiveSummary(doc: PDFDocument, data: ReportData): void {
+  private generateExecutiveSummary(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.executiveSummary) return;
     
     const summary = data.analysis.executiveSummary;
@@ -349,7 +350,7 @@ export class PDFGenerator {
   /**
    * 메트릭 개요 생성
    */
-  private generateMetricsOverview(doc: PDFDocument, data: ReportData): void {
+  private generateMetricsOverview(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.metrics) return;
     
     // 메트릭 차트가 있다면 표시
@@ -368,7 +369,7 @@ export class PDFGenerator {
   /**
    * 활동 타임라인 생성
    */
-  private generateActivityTimeline(doc: PDFDocument, data: ReportData): void {
+  private generateActivityTimeline(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.events || data.events.length === 0) return;
     
     // 활동 히트맵 차트
@@ -396,7 +397,7 @@ export class PDFGenerator {
   /**
    * 개발 단계 생성
    */
-  private generateDevelopmentStages(doc: PDFDocument, data: ReportData): void {
+  private generateDevelopmentStages(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.developmentStages) return;
     
     const stages = data.analysis.developmentStages;
@@ -418,7 +419,7 @@ export class PDFGenerator {
   /**
    * 방법론 준수도 생성
    */
-  private generateMethodologyCompliance(doc: PDFDocument, data: ReportData): void {
+  private generateMethodologyCompliance(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.methodologyCompliance) return;
     
     const compliance = data.analysis.methodologyCompliance;
@@ -440,7 +441,7 @@ export class PDFGenerator {
   /**
    * AI 협업 생성
    */
-  private generateAICollaboration(doc: PDFDocument, data: ReportData): void {
+  private generateAICollaboration(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.aiCollaboration) return;
     
     const ai = data.analysis.aiCollaboration;
@@ -471,7 +472,7 @@ export class PDFGenerator {
   /**
    * 병목 분석 생성
    */
-  private generateBottleneckAnalysis(doc: PDFDocument, data: ReportData): void {
+  private generateBottleneckAnalysis(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.bottlenecks) return;
     
     // 병목 테이블
@@ -484,7 +485,7 @@ export class PDFGenerator {
   /**
    * 성능 트렌드 생성
    */
-  private generatePerformanceTrends(doc: PDFDocument, data: ReportData): void {
+  private generatePerformanceTrends(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.performanceTrends) return;
     
     const trends = data.analysis.performanceTrends;
@@ -501,7 +502,7 @@ export class PDFGenerator {
   /**
    * 품질 메트릭 생성
    */
-  private generateQualityMetrics(doc: PDFDocument, data: ReportData): void {
+  private generateQualityMetrics(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.qualityMetrics) return;
     
     const quality = data.analysis.qualityMetrics;
@@ -526,7 +527,7 @@ export class PDFGenerator {
   /**
    * 팀 생산성 생성
    */
-  private generateTeamProductivity(doc: PDFDocument, data: ReportData): void {
+  private generateTeamProductivity(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.teamProductivity) return;
     
     const productivity = data.analysis.teamProductivity;
@@ -543,7 +544,7 @@ export class PDFGenerator {
   /**
    * 권장사항 생성
    */
-  private generateRecommendations(doc: PDFDocument, data: ReportData): void {
+  private generateRecommendations(doc: PDFDocumentInstance, data: ReportData): void {
     if (!data.analysis?.recommendations || data.analysis.recommendations.length === 0) return;
     
     const recommendations = data.analysis.recommendations;
@@ -566,7 +567,7 @@ export class PDFGenerator {
    * 커스텀 섹션 생성
    */
   private generateCustomSection(
-    doc: PDFDocument,
+    doc: PDFDocumentInstance,
     section: ReportSection,
     data: ReportData
   ): void {
@@ -584,7 +585,7 @@ export class PDFGenerator {
   /**
    * 페이지 번호 추가
    */
-  private addPageNumbers(doc: PDFDocument): void {
+  private addPageNumbers(doc: PDFDocumentInstance): void {
     const pages = doc.bufferedPageRange();
     
     for (let i = 0; i < pages.count; i++) {
@@ -614,7 +615,7 @@ export class PDFGenerator {
    */
   
   private drawMetricBox(
-    doc: PDFDocument,
+    doc: PDFDocumentInstance,
     label: string,
     value: string,
     x: number,
@@ -645,7 +646,7 @@ export class PDFGenerator {
   }
 
   private drawProgressBar(
-    doc: PDFDocument,
+    doc: PDFDocumentInstance,
     label: string,
     value: number
   ): void {
@@ -673,7 +674,7 @@ export class PDFGenerator {
   }
 
   private drawTrendIndicator(
-    doc: PDFDocument,
+    doc: PDFDocumentInstance,
     label: string,
     trend: any
   ): void {
@@ -696,7 +697,7 @@ export class PDFGenerator {
        .text(` ${changeSymbol} ${Math.abs(trend.change)}%`);
   }
 
-  private drawChart(doc: PDFDocument, chart: ChartData): void {
+  private drawChart(doc: PDFDocumentInstance, chart: ChartData): void {
     // 실제 구현에서는 차트 라이브러리를 사용하여 이미지로 변환 후 삽입
     // 여기서는 플레이스홀더 표시
     const chartHeight = 200;
@@ -714,7 +715,7 @@ export class PDFGenerator {
     doc.moveDown(chartHeight / doc.currentLineHeight());
   }
 
-  private drawTable(doc: PDFDocument, table: TableData): void {
+  private drawTable(doc: PDFDocumentInstance, table: TableData): void {
     // 테이블 제목
     doc.fontSize(12)
        .fillColor('#333333')
@@ -772,7 +773,7 @@ export class PDFGenerator {
     doc.y = currentY + 10;
   }
 
-  private drawMetricsTable(doc: PDFDocument, metrics: any): void {
+  private drawMetricsTable(doc: PDFDocumentInstance, metrics: any): void {
     // 메트릭을 테이블 형태로 표시
     const metricsArray = Object.entries(metrics).filter(([_, value]) => 
       typeof value === 'number' || typeof value === 'string'

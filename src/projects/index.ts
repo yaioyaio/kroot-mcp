@@ -17,7 +17,7 @@ export type {
   SyncConfig, 
   SyncResult, 
   SyncError, 
-  SyncStatus as SyncClientStatus 
+  SyncClientStatus 
 } from './sync-client.js';
 
 // 크로스 프로젝트 분석기

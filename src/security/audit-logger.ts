@@ -6,12 +6,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { EventEmitter } from 'eventemitter3';
-import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
 import {
   SecurityEvent,
   SecurityEventType,
-  User,
   SecurityConfig
 } from './types.js';
 
@@ -69,7 +67,7 @@ export interface AuditSummary {
 
 export class AuditLogger extends EventEmitter {
   private config: AuditLogConfig;
-  private database: Database.Database;
+  private database!: Database.Database;
   private currentLogFile: string | null = null;
   private logBuffer: AuditEntry[] = [];
   private rotationTimer?: NodeJS.Timeout;
@@ -78,7 +76,7 @@ export class AuditLogger extends EventEmitter {
   private readonly BUFFER_SIZE = 100;
   private readonly FLUSH_INTERVAL = 5000; // 5초마다 플러시
 
-  constructor(config: AuditLogConfig, securityConfig?: SecurityConfig) {
+  constructor(config: AuditLogConfig, _securityConfig?: SecurityConfig) {
     super();
     this.config = config;
     this.initializeDatabase();
@@ -134,7 +132,7 @@ export class AuditLogger extends EventEmitter {
   /**
    * 감사 로그 기록
    */
-  async log(event: SecurityEvent, severity?: string, category?: string): Promise<void> {
+  async log(event: SecurityEvent, severity?: 'low' | 'medium' | 'high' | 'critical', category?: string): Promise<void> {
     try {
       const auditEntry: AuditEntry = {
         id: event.id,

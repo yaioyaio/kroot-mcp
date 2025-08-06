@@ -79,8 +79,8 @@ export class ProjectManager extends EventEmitter {
   private eventEngine: EventEngine;
   private storageManager: StorageManager;
   
-  private metricsTimer?: NodeJS.Timeout;
-  private analysisTimer?: NodeJS.Timeout;
+  private metricsTimer?: NodeJS.Timeout | undefined;
+  private analysisTimer?: NodeJS.Timeout | undefined;
   private runningAnalysis = new Set<string>();
   
   constructor(

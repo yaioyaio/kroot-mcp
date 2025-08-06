@@ -10,7 +10,6 @@ import {
   StageType,
   StageCondition,
   StageAction,
-  StageTransition,
   ActionType
 } from './types';
 
@@ -650,7 +649,10 @@ export class StageBuilder extends EventEmitter {
     const stages: WorkflowStage[] = [];
 
     for (let i = 0; i < stageConfigs.length; i++) {
-      const { definitionId, configuration } = stageConfigs[i];
+      const config = stageConfigs[i];
+      if (!config) continue;
+      
+      const { definitionId, configuration } = config;
       const stageId = `stage_${i + 1}`;
       
       const stage = this.buildStage(stageId, definitionId, configuration);

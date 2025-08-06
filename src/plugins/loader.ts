@@ -5,21 +5,17 @@
 
 import { EventEmitter } from 'events';
 import { promises as fs, watch } from 'fs';
-import { join, dirname, basename, extname } from 'path';
+import { join, dirname, extname } from 'path';
 import { createHash } from 'crypto';
-import { Worker } from 'worker_threads';
 import {
   Plugin,
-  PluginMetadata,
   PluginManifest,
   PluginDescriptor,
   PluginRuntime,
   PluginStatus,
   PluginLoaderConfig,
   PluginAPIContext,
-  PluginEvents,
   PluginHealthStatus,
-  PluginLifecycle,
   PluginSandboxInfo
 } from './types.js';
 import { PluginAPIProvider } from './api-provider.js';
@@ -252,7 +248,7 @@ export class PluginLoader extends EventEmitter {
       // ES 모듈 또는 CommonJS 모듈 동적 로드
       let pluginModule;
       
-      if (extname(pluginPath) === '.mjs' || descriptor.manifest.type === 'module') {
+      if (extname(pluginPath) === '.mjs' || (descriptor.manifest as any).type === 'module') {
         pluginModule = await import(`file://${pluginPath}`);
       } else {
         // CommonJS 모듈의 경우
@@ -276,7 +272,7 @@ export class PluginLoader extends EventEmitter {
 
       return instance;
     } catch (error) {
-      throw new Error(`Failed to load plugin module: ${error.message}`);
+      throw new Error(`Failed to load plugin module: ${(error as Error).message}`);
     }
   }
 
@@ -550,7 +546,7 @@ export class PluginLoader extends EventEmitter {
     } catch (error) {
       const status: PluginHealthStatus = {
         status: 'error',
-        message: error.message,
+        message: (error as Error).message,
         lastCheck: new Date()
       };
       
@@ -565,7 +561,7 @@ export class PluginLoader extends EventEmitter {
   private startWatching(): void {
     for (const pluginDir of this.config.pluginDirs) {
       try {
-        const watcher = watch(pluginDir, { recursive: true }, (eventType, filename) => {
+        const watcher = watch(pluginDir, { recursive: true }, (_eventType, filename) => {
           if (filename && filename.endsWith('package.json')) {
             this.handlePluginChange(pluginDir, filename);
           }

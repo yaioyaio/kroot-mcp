@@ -64,11 +64,11 @@ export class ReportSystem extends EventEmitter {
   private config: ReportSystemConfig;
   
   // 컴포넌트
-  private reportEngine: ReportEngine;
-  private reportScheduler: ReportScheduler;
-  private reportDelivery: ReportDelivery;
-  private templateManager: TemplateManager;
-  private pdfGenerator: PDFGenerator;
+  private reportEngine!: ReportEngine;
+  private reportScheduler!: ReportScheduler;
+  private reportDelivery!: ReportDelivery;
+  private templateManager!: TemplateManager;
+  private pdfGenerator!: PDFGenerator;
   
   // 의존성
   private dependencies: {

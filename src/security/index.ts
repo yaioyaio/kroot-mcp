@@ -11,9 +11,9 @@ import { AuditLogger } from './audit-logger.js';
 import {
   SecurityConfig,
   SecurityEvent,
-  User,
   AuthContext,
-  PermissionCheck
+  PermissionCheck,
+  LoginRequest
 } from './types.js';
 
 export interface SecurityManagerConfig {
@@ -103,10 +103,16 @@ export class SecurityManager extends EventEmitter {
     rememberMe?: boolean
   ) {
     this.ensureInitialized();
-    return this.authManager.login(
-      { username, password, rememberMe },
-      clientInfo
-    );
+    const loginRequest: LoginRequest = {
+      username,
+      password
+    };
+    
+    if (rememberMe !== undefined) {
+      loginRequest.rememberMe = rememberMe;
+    }
+    
+    return this.authManager.login(loginRequest, clientInfo);
   }
 
   /**
@@ -219,7 +225,13 @@ export class SecurityManager extends EventEmitter {
    */
   async assignRole(userId: string, roleId: string, assignedBy: string, reason?: string) {
     this.ensureInitialized();
-    return this.rbacManager.assignRole({ userId, roleId, assignedBy, reason });
+    const request: any = { userId, roleId, assignedBy };
+    
+    if (reason !== undefined) {
+      request.reason = reason;
+    }
+    
+    return this.rbacManager.assignRole(request);
   }
 
   /**

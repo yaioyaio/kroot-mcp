@@ -476,19 +476,22 @@ export class TemplateManager extends EventEmitter {
     category?: string,
     tags: string[] = []
   ): Promise<ReportTemplate> {
-    const template: ReportTemplate = {
+    const template: any = {
       id: uuidv4(),
       name,
       description,
       type,
       defaultConfig,
-      category,
       tags,
       public: isPublic,
       createdBy,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
+    
+    if (category !== undefined) {
+      template.category = category;
+    }
     
     // 저장
     this.templates.set(template.id, template);

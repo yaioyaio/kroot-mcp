@@ -11,7 +11,7 @@ import {
   VelocityFactor,
   PredictionResult
 } from './types';
-import { DevelopmentEvent } from '../events/types';
+import { BaseEvent as DevelopmentEvent } from '../events/types/base.js';
 import { MetricsCollector } from '../analyzers/metrics-collector';
 import { PatternRecognizer } from './pattern-recognizer';
 
@@ -25,7 +25,7 @@ export class VelocityPredictor extends EventEmitter {
   private dataPoints: VelocityDataPoint[] = [];
   private readonly maxDataPoints = 1000;
   private currentVelocity: number = 0;
-  private predictionInterval: NodeJS.Timer | null = null;
+  private predictionInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private metricsCollector: MetricsCollector,
@@ -91,18 +91,18 @@ export class VelocityPredictor extends EventEmitter {
    * Calculate current development velocity
    */
   private async calculateCurrentVelocity(): Promise<number> {
-    const metrics = await this.metricsCollector.getMetrics();
-    const recentMetrics = metrics.filter(m => 
+    const metrics = await (this.metricsCollector as any).getMetrics();
+    const recentMetrics = metrics.filter((m: any) => 
       new Date(m.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000
     );
 
     if (recentMetrics.length === 0) return 0;
 
     // Calculate velocity based on multiple factors
-    const commitCount = recentMetrics.filter(m => m.category === 'git' && m.name === 'commits').length;
-    const filesChanged = recentMetrics.filter(m => m.category === 'file' && m.name === 'changes').length;
-    const testsWritten = recentMetrics.filter(m => m.category === 'test' && m.name === 'created').length;
-    const bugsFixed = recentMetrics.filter(m => m.category === 'git' && m.metadata?.type === 'fix').length;
+    const commitCount = recentMetrics.filter((m: any) => m.category === 'git' && m.name === 'commits').length;
+    const filesChanged = recentMetrics.filter((m: any) => m.category === 'file' && m.name === 'changes').length;
+    const testsWritten = recentMetrics.filter((m: any) => m.category === 'test' && m.name === 'created').length;
+    const bugsFixed = recentMetrics.filter((m: any) => m.category === 'git' && m.metadata?.type === 'fix').length;
     
     // Weighted velocity calculation
     const velocity = (
@@ -157,7 +157,7 @@ export class VelocityPredictor extends EventEmitter {
     // Technical debt factor
     const recentEvents = await this.getRecentEvents();
     const debuggingEvents = recentEvents.filter(e => 
-      e.metadata?.action === 'debug' || e.category === 'error'
+      e.metadata?.action === 'debug' || e.category === 'system'
     );
     
     if (debuggingEvents.length > 10) {
@@ -224,7 +224,7 @@ export class VelocityPredictor extends EventEmitter {
     
     // Apply factors
     let predictedVelocity = movingAverage + trend;
-    const currentFactors = recentPoints[recentPoints.length - 1].factors;
+    const currentFactors = recentPoints[recentPoints.length - 1]?.factors || [];
     
     for (const factor of currentFactors) {
       predictedVelocity *= (1 + factor.impact);
@@ -273,7 +273,11 @@ export class VelocityPredictor extends EventEmitter {
 
     let trendSum = 0;
     for (let i = 1; i < points.length; i++) {
-      trendSum += points[i].velocity - points[i - 1].velocity;
+      const current = points[i];
+      const previous = points[i - 1];
+      if (current && previous) {
+        trendSum += current.velocity - previous.velocity;
+      }
     }
 
     return trendSum / (points.length - 1);

@@ -15,8 +15,6 @@ import {
   FeedbackEvent,
   FeedbackEventType
 } from './types.js';
-import type { Database } from 'better-sqlite3';
-
 type DatabaseService = {
   prepare: (sql: string) => any;
 };
@@ -74,7 +72,7 @@ export class ABTestManager extends EventEmitter {
   private config: Required<ABTestManagerConfig>;
   private db: DatabaseService;
   private activeTests: Map<string, ABTestConfig> = new Map();
-  private metricsTimer?: NodeJS.Timeout;
+  private metricsTimer?: NodeJS.Timeout | undefined;
   private userAssignments: Map<string, Map<string, string>> = new Map(); // testId -> userId -> variantId
   
   constructor(config: ABTestManagerConfig) {
@@ -225,10 +223,10 @@ export class ABTestManager extends EventEmitter {
         description,
         status: 'draft',
         variants: variants.map(v => ({ ...v, id: uuidv4() })),
-        audience: {
+        audience: audienceCriteria ? {
           percentage: audiencePercentage,
           criteria: audienceCriteria
-        },
+        } : { percentage: audiencePercentage },
         metrics,
         createdAt: Date.now()
       };
@@ -609,11 +607,13 @@ export class ABTestManager extends EventEmitter {
       
       // 주요 메트릭 기준으로 개선도 계산
       const primaryMetric = test.metrics[0]; // 첫 번째 메트릭을 주요 메트릭으로 간주
+      if (!primaryMetric) continue;
+      
       const controlValue = controlResult.metrics[primaryMetric.name];
       const variantValue = result.metrics[primaryMetric.name];
       
       let improvement = 0;
-      if (controlValue !== 0) {
+      if (controlValue !== undefined && variantValue !== undefined && controlValue !== 0) {
         improvement = ((variantValue - controlValue) / controlValue) * 100;
       }
       
@@ -651,7 +651,7 @@ export class ABTestManager extends EventEmitter {
     if (hashValue * 100 > test.audience.percentage) {
       // 테스트 대상이 아님 - 컨트롤 그룹에 할당
       const controlVariant = test.variants.find(v => v.isControl);
-      return controlVariant?.id || test.variants[0].id;
+      return controlVariant?.id || test.variants[0]?.id || '';
     }
     
     // 트래픽 비율에 따라 변형 선택
@@ -666,7 +666,7 @@ export class ABTestManager extends EventEmitter {
     }
     
     // 기본값 (발생하지 않아야 함)
-    return test.variants[test.variants.length - 1].id;
+    return test.variants[test.variants.length - 1]?.id || '';
   }
   
   /**

@@ -231,6 +231,13 @@ export class StorageManager {
   }
 
   /**
+   * Get database instance
+   */
+  getDatabase(): DatabaseManager {
+    return this.db;
+  }
+
+  /**
    * Close database connection
    */
   close(): void {

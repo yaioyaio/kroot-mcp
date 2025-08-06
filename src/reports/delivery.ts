@@ -37,22 +37,22 @@ export interface DeliverySystemConfig {
       user: string;
       pass: string;
     };
-  };
+  } | undefined;
   
   /** 기본 발신자 */
-  defaultFrom?: string;
+  defaultFrom?: string | undefined;
   
   /** 재시도 설정 */
   retry?: {
     attempts: number;
     delay: number;
-  };
+  } | undefined;
   
   /** 타임아웃 (밀리초) */
-  timeout?: number;
+  timeout?: number | undefined;
   
   /** 최대 첨부파일 크기 (바이트) */
-  maxAttachmentSize?: number;
+  maxAttachmentSize?: number | undefined;
 }
 
 /**

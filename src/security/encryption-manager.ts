@@ -45,7 +45,7 @@ export class EncryptionManager extends EventEmitter {
   private readonly DEFAULT_ALGORITHM = 'aes-256-gcm';
   private readonly DEFAULT_KEY_LENGTH = 32;
   private readonly DEFAULT_IV_LENGTH = 16;
-  private readonly DEFAULT_TAG_LENGTH = 16;
+  // private readonly DEFAULT_TAG_LENGTH = 16;
 
   constructor(config: SecurityConfig, keyRotationConfig?: KeyRotationConfig) {
     super();
@@ -116,8 +116,10 @@ export class EncryptionManager extends EventEmitter {
       const iv = crypto.randomBytes(ivLength);
       
       // 암호화 수행
-      const cipher = crypto.createCipher(algorithm, activeKey.key);
-      cipher.setAAD(Buffer.from(activeKey.id)); // Additional Authenticated Data
+      const cipher = crypto.createCipheriv(algorithm, activeKey.key, iv);
+      if (algorithm.includes('gcm')) {
+        (cipher as any).setAAD(Buffer.from(activeKey.id)); // Additional Authenticated Data
+      }
       
       const inputBuffer = typeof data === 'string' ? Buffer.from(data, 'utf8') : data;
       const encrypted = Buffer.concat([
@@ -133,9 +135,12 @@ export class EncryptionManager extends EventEmitter {
 
       const result: EncryptionResult = {
         encrypted: encrypted.toString(encoding),
-        iv: iv.toString(encoding),
-        tag
+        iv: iv.toString(encoding)
       };
+      
+      if (tag !== undefined) {
+        result.tag = tag;
+      }
 
       this.logSecurityEvent({
         type: 'data_encrypted',
@@ -183,8 +188,11 @@ export class EncryptionManager extends EventEmitter {
       const encoding = options?.encoding || 'base64';
 
       // 복호화 수행
-      const decipher = crypto.createDecipher(algorithm, key.key);
-      decipher.setAAD(Buffer.from(key.id)); // Additional Authenticated Data
+      const ivBuffer = Buffer.from(input.iv, encoding);
+      const decipher = crypto.createDecipheriv(algorithm, key.key, ivBuffer);
+      if (algorithm.includes('gcm')) {
+        (decipher as any).setAAD(Buffer.from(key.id)); // Additional Authenticated Data
+      }
       
       // 인증 태그 설정 (GCM 모드에서만)
       if (algorithm.includes('gcm') && input.tag) {
@@ -390,10 +398,13 @@ export class EncryptionManager extends EventEmitter {
       const [keyId, encrypted, iv, tag] = parts;
       
       const decryptionInput: DecryptionInput = {
-        encrypted,
-        iv,
-        tag: tag || undefined
+        encrypted: encrypted || '',
+        iv: iv || ''
       };
+      
+      if (tag) {
+        decryptionInput.tag = tag;
+      }
 
       const decryptedData = await this.decrypt(decryptionInput, keyId);
       const tokenData = JSON.parse(decryptedData);

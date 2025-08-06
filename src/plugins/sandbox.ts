@@ -3,7 +3,7 @@
  * 플러그인을 격리된 환경에서 실행
  */
 
-import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
+import { Worker } from 'worker_threads';
 import { EventEmitter } from 'events';
 import { createHash } from 'crypto';
 import { join } from 'path';
@@ -354,7 +354,7 @@ export class PluginSandbox extends EventEmitter {
   /**
    * 로거 API 처리
    */
-  private async handleLoggerAPI(pluginId: string, method: string, args: any[]): Promise<any> {
+  private async handleLoggerAPI(pluginId: string, _method: string, args: any[]): Promise<any> {
     const [level, message, meta] = args;
     console.log(`[Plugin:${pluginId}] [${level.toUpperCase()}] ${message}`, meta || '');
     return true;
@@ -363,7 +363,7 @@ export class PluginSandbox extends EventEmitter {
   /**
    * 스토리지 API 처리
    */
-  private async handleStorageAPI(pluginId: string, method: string, args: any[]): Promise<any> {
+  private async handleStorageAPI(_pluginId: string, _method: string, _args: any[]): Promise<any> {
     // 실제 스토리지 구현과 연결
     throw new Error('Storage API not implemented yet');
   }
@@ -371,7 +371,7 @@ export class PluginSandbox extends EventEmitter {
   /**
    * 파일 시스템 API 처리
    */
-  private async handleFileSystemAPI(pluginId: string, method: string, args: any[]): Promise<any> {
+  private async handleFileSystemAPI(_pluginId: string, _method: string, _args: any[]): Promise<any> {
     // 실제 파일 시스템 구현과 연결
     throw new Error('FileSystem API not implemented yet');
   }
@@ -379,7 +379,7 @@ export class PluginSandbox extends EventEmitter {
   /**
    * HTTP API 처리
    */
-  private async handleHTTPAPI(pluginId: string, method: string, args: any[]): Promise<any> {
+  private async handleHTTPAPI(_pluginId: string, _method: string, _args: any[]): Promise<any> {
     // 실제 HTTP 클라이언트 구현과 연결
     throw new Error('HTTP API not implemented yet');
   }

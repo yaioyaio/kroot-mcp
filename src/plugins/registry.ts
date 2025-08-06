@@ -267,7 +267,7 @@ export class PluginRegistry {
       await fs.unlink(tempFile);
 
     } catch (error) {
-      throw new Error(`Failed to download and extract plugin: ${error.message}`);
+      throw new Error(`Failed to download and extract plugin: ${(error as Error).message}`);
     }
   }
 
@@ -303,7 +303,7 @@ export class PluginRegistry {
       });
 
     } catch (error) {
-      console.warn('[PluginRegistry] Failed to install dependencies:', error.message);
+      console.warn('[PluginRegistry] Failed to install dependencies:', (error as Error).message);
       // 종속성 설치 실패는 치명적이지 않음
     }
   }

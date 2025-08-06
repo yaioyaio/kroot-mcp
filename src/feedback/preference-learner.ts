@@ -14,7 +14,8 @@ import {
 type DatabaseService = {
   prepare: (sql: string) => any;
 };
-import type { ProjectEvent } from '../events/types/base.js';
+import type { BaseEvent } from '../events/types/base.js';
+import { EventCategory } from '../events/types/base.js';
 import { Logger } from '../utils/logger.js';
 
 const logger = new Logger('PreferenceLearner');
@@ -74,7 +75,7 @@ export interface PreferenceLearnerConfig {
 export class PreferenceLearner extends EventEmitter {
   private config: Required<PreferenceLearnerConfig>;
   private db: DatabaseService;
-  private learningTimer?: NodeJS.Timeout;
+  private learningTimer?: NodeJS.Timeout | undefined;
   private behaviorBuffer: Map<string, UserBehaviorEvent[]> = new Map();
   
   constructor(config: PreferenceLearnerConfig) {
@@ -187,12 +188,12 @@ export class PreferenceLearner extends EventEmitter {
   /**
    * 프로젝트 이벤트로부터 행동 추출
    */
-  async extractBehaviorFromEvent(event: ProjectEvent, userId: string): Promise<void> {
+  async extractBehaviorFromEvent(event: BaseEvent, userId: string): Promise<void> {
     let behaviorEvent: UserBehaviorEvent | null = null;
     
     // 이벤트 타입에 따른 행동 추출
     switch (event.category) {
-      case 'methodology':
+      case EventCategory.METHODOLOGY:
         behaviorEvent = {
           type: 'workflow_complete',
           userId,
@@ -201,7 +202,7 @@ export class PreferenceLearner extends EventEmitter {
         };
         break;
         
-      case 'ai_collaboration':
+      case EventCategory.AI_COLLABORATION:
         behaviorEvent = {
           type: 'tool_use',
           userId,
@@ -211,7 +212,7 @@ export class PreferenceLearner extends EventEmitter {
         };
         break;
         
-      case 'development':
+      case EventCategory.DEVELOPMENT:
         if (event.metadata?.stage) {
           behaviorEvent = {
             type: 'workflow_complete',
@@ -431,7 +432,10 @@ export class PreferenceLearner extends EventEmitter {
     // 간단한 단축키 할당 (실제로는 더 정교한 로직 필요)
     const shortcutKeys = ['Ctrl+1', 'Ctrl+2', 'Ctrl+3', 'Ctrl+4', 'Ctrl+5'];
     sortedFeatures.forEach(([feature], index) => {
-      shortcuts[feature] = shortcutKeys[index];
+      const shortcut = shortcutKeys[index];
+      if (shortcut) {
+        shortcuts[feature] = shortcut;
+      }
     });
     
     if (Object.keys(shortcuts).length > 0) {
@@ -496,7 +500,7 @@ export class PreferenceLearner extends EventEmitter {
     
     // 시간 범위
     const timeRange = behaviors.length > 0
-      ? behaviors[behaviors.length - 1].timestamp - behaviors[0].timestamp
+      ? (behaviors[behaviors.length - 1]?.timestamp || 0) - (behaviors[0]?.timestamp || 0)
       : 0;
     const timeRangeScore = Math.min(timeRange / (7 * 24 * 60 * 60 * 1000), 1) * 0.2; // 7일 기준
     

@@ -56,7 +56,7 @@ export class AsyncOptimizer extends EventEmitter {
   private taskCounter = 0;
 
   // 배치 처리
-  private batchQueues = new Map<string, { items: any[], config: BatchConfig, timer?: NodeJS.Timeout }>();
+  private batchQueues = new Map<string, { items: any[], config: BatchConfig, timer?: NodeJS.Timeout | undefined }>();
 
   // 리소스 풀
   private resourcePools = new Map<string, any[]>();

@@ -18,7 +18,8 @@ import {
   LoginResponse,
   SecurityEvent,
   SessionInfo,
-  APIKey
+  APIKey,
+  PermissionAction
 } from './types.js';
 
 export class AuthManager extends EventEmitter {
@@ -324,11 +325,11 @@ export class AuthManager extends EventEmitter {
       keyHash,
       userId,
       permissions: permissions.map(perm => {
-        const [resource, action] = perm.split(':');
+        const [resource = '', action = ''] = perm.split(':');
         return {
           id: uuidv4(),
           resource,
-          action: action as any,
+          action: action as PermissionAction,
           createdAt: new Date()
         };
       }),

@@ -358,7 +358,9 @@ export class CacheManager extends EventEmitter {
     const entriesToRemove = Math.ceil(entries.length * 0.2);
     
     for (let i = 0; i < entriesToRemove && i < entries.length; i++) {
-      const [key] = entries[i];
+      const entry = entries[i];
+      if (!entry) continue;
+      const [key] = entry;
       this.memoryCache.delete(key);
       this.emit('memoryEntryEvicted', { key });
     }

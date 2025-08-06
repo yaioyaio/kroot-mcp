@@ -209,13 +209,13 @@ export interface PluginRuntime {
   /** 로드 시간 */
   loadedAt: Date;
   /** 활성화 시간 */
-  activatedAt?: Date;
+  activatedAt?: Date | undefined;
   /** 마지막 오류 */
-  lastError?: Error;
+  lastError?: Error | undefined;
   /** 성능 메트릭 */
   metrics: PluginMetrics;
   /** 샌드박스 정보 */
-  sandbox?: PluginSandboxInfo;
+  sandbox?: PluginSandboxInfo | undefined;
 }
 
 /**
@@ -243,7 +243,7 @@ export interface PluginMetrics {
  */
 export interface PluginSandboxInfo {
   /** 프로세스 ID */
-  pid?: number;
+  pid?: number | undefined;
   /** 격리 레벨 */
   isolationLevel: 'none' | 'basic' | 'strict';
   /** 리소스 제한 */

@@ -127,6 +127,7 @@ export type SecurityEventType =
   | 'token_expired'
   | 'token_verified'
   | 'token_verification_failed'
+  | 'token_creation_failed'
   | 'permission_denied'
   | 'permission_granted'
   | 'unauthorized_access'
@@ -144,7 +145,17 @@ export type SecurityEventType =
   | 'key_rotation_failed'
   | 'key_rotation_scheduled'
   | 'old_keys_cleaned'
-  | 'automatic_key_rotation_failed';
+  | 'automatic_key_rotation_failed'
+  | 'encryption_initialized'
+  | 'data_encrypted'
+  | 'encryption_failed'
+  | 'data_decrypted'
+  | 'decryption_failed'
+  | 'hash_created'
+  | 'hash_failed'
+  | 'hmac_created'
+  | 'hmac_failed'
+  | 'secure_token_created';
 
 export interface RateLimitConfig {
   windowMs: number;

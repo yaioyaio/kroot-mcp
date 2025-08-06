@@ -17,9 +17,8 @@ import {
   AnalysisResult,
   Insight,
   Recommendation,
-  ProjectDependency,
   DependencyType,
-  ActionItem
+  ProjectPriority
 } from './types.js';
 
 import { Logger } from '../utils/logger.js';
@@ -225,22 +224,24 @@ export class CrossProjectAnalyzer extends EventEmitter {
         const project1 = projects[i];
         const project2 = projects[j];
 
-        const similarity = await this.calculateProjectSimilarity(project1, project2, context);
-        
-        if (similarity.score >= this.config.minConfidence) {
-          results.push({
-            type: 'similarity',
-            score: similarity.score,
-            confidence: similarity.confidence,
-            data: {
-              project1Id: project1.id,
-              project1Name: project1.name,
-              project2Id: project2.id,
-              project2Name: project2.name,
-              details: similarity.details
-            },
-            description: `${project1.name}과 ${project2.name}의 유사도: ${Math.round(similarity.score * 100)}%`
-          });
+        if (project1 && project2) {
+          const similarity = await this.calculateProjectSimilarity(project1, project2, context);
+          
+          if (similarity.score >= this.config.minConfidence) {
+            results.push({
+              type: 'similarity',
+              score: similarity.score,
+              confidence: similarity.confidence,
+              data: {
+                project1Id: project1.id,
+                project1Name: project1.name,
+                project2Id: project2.id,
+                project2Name: project2.name,
+                details: similarity.details
+              },
+              description: `${project1.name}과 ${project2.name}의 유사도: ${Math.round(similarity.score * 100)}%`
+            });
+          }
         }
       }
     }
@@ -502,6 +503,8 @@ export class CrossProjectAnalyzer extends EventEmitter {
 
         const source = projects[i];
         const target = projects[j];
+        
+        if (!source || !target) continue;
 
         const dependencies = await this.detectProjectDependencies(source, target);
         
@@ -511,10 +514,10 @@ export class CrossProjectAnalyzer extends EventEmitter {
             score: dep.strength,
             confidence: 0.8,
             data: {
-              sourceId: source.id,
-              sourceName: source.name,
-              targetId: target.id,
-              targetName: target.name,
+              sourceId: source?.id || '',
+              sourceName: source?.name || '',
+              targetId: target?.id || '',
+              targetName: target?.name || '',
               dependencyType: dep.type,
               description: dep.description
             },
@@ -589,6 +592,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
       if (projectMetrics.length === 0) continue;
 
       const latestMetrics = projectMetrics[projectMetrics.length - 1];
+      if (!latestMetrics || !latestMetrics.performance) continue;
       const performance = latestMetrics.performance;
 
       // 빌드 시간 분석
@@ -642,6 +646,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
       if (projectMetrics.length === 0) continue;
 
       const latestMetrics = projectMetrics[projectMetrics.length - 1];
+      if (!latestMetrics || !latestMetrics.quality) continue;
       const quality = latestMetrics.quality;
 
       // 코드 품질 분석
@@ -737,6 +742,14 @@ export class CrossProjectAnalyzer extends EventEmitter {
 
     const first = recent[0];
     const last = recent[recent.length - 1];
+    
+    if (!first || !last || !first.quality || !last.quality || !first.performance || !last.performance) {
+      return {
+        direction: 'stable' as const,
+        confidence: 0,
+        details: {}
+      };
+    }
 
     // 주요 지표들의 변화 계산
     const qualityChange = (last.quality.codeQuality - first.quality.codeQuality) * 0.4;
@@ -778,8 +791,11 @@ export class CrossProjectAnalyzer extends EventEmitter {
     if (allMetrics.length === 0) return results;
 
     // 평균값 계산
-    const avgBuildTime = allMetrics.reduce((sum, m) => sum + m.performance.buildTime, 0) / allMetrics.length;
-    const avgTestTime = allMetrics.reduce((sum, m) => sum + m.performance.testTime, 0) / allMetrics.length;
+    const validMetrics = allMetrics.filter(m => m.performance);
+    if (validMetrics.length === 0) return results;
+    
+    const avgBuildTime = validMetrics.reduce((sum, m) => sum + m.performance.buildTime, 0) / validMetrics.length;
+    const avgTestTime = validMetrics.reduce((sum, m) => sum + m.performance.testTime, 0) / validMetrics.length;
 
     for (const project of projects) {
       const projectMetrics = metrics.get(project.id) || [];
@@ -787,6 +803,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
       if (projectMetrics.length === 0) continue;
 
       const latestMetrics = projectMetrics[projectMetrics.length - 1];
+      if (!latestMetrics || !latestMetrics.performance) continue;
       const performance = latestMetrics.performance;
 
       // 빌드 시간 병목

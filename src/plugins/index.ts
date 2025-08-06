@@ -6,6 +6,7 @@
 // 플러그인 매니저 (메인 API)
 export { PluginManager } from './manager.js';
 export type { PluginManagerConfig } from './manager.js';
+import { PluginManager } from './manager.js';
 
 // 플러그인 로더
 export { PluginLoader } from './loader.js';
@@ -92,8 +93,8 @@ export class PluginUtils {
    */
   static isCompatible(pluginVersion: string, systemVersion: string): boolean {
     // 간단한 호환성 체크 (메이저 버전이 같아야 함)
-    const pluginMajor = parseInt(pluginVersion.split('.')[0], 10);
-    const systemMajor = parseInt(systemVersion.split('.')[0], 10);
+    const pluginMajor = parseInt(pluginVersion.split('.')[0] || '0', 10);
+    const systemMajor = parseInt(systemVersion.split('.')[0] || '0', 10);
 
     return pluginMajor === systemMajor;
   }

@@ -9,6 +9,13 @@ export { AsyncOptimizer, asyncOptimizer } from './async-optimizer.js';
 export { CacheManager, cacheManager } from './cache-manager.js';
 export { ScalingManager, scalingManager } from './scaling-manager.js';
 
+// 내부에서 사용하기 위한 import
+import { performanceProfiler } from './performance-profiler.js';
+import { memoryOptimizer } from './memory-optimizer.js';
+import { asyncOptimizer } from './async-optimizer.js';
+import { cacheManager } from './cache-manager.js';
+import { scalingManager } from './scaling-manager.js';
+
 export type {
   PerformanceMetric,
   MemorySnapshot,
@@ -75,14 +82,14 @@ export class PerformanceManager {
    */
   private setupEventConnections(): void {
     // 메모리 압박 상황 시 최적화 트리거
-    memoryOptimizer.on('memoryPressure', async (event) => {
+    memoryOptimizer.on('memoryPressure', async (event: any) => {
       if (event.level === 'critical') {
         await this.performEmergencyOptimization();
       }
     });
 
     // 병목 현상 감지 시 스케일링 고려
-    performanceProfiler.on('bottleneckDetected', (bottleneck) => {
+    performanceProfiler.on('bottleneckDetected', (bottleneck: any) => {
       if (bottleneck.severity === 'critical') {
         scalingManager.emit('bottleneckAlert', bottleneck);
       }

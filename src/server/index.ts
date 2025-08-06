@@ -14,7 +14,6 @@ import {
   ErrorCode,
   ListToolsRequestSchema,
   McpError,
-  type ToolCallResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { config, validateConfig } from './config.js';
 import {
@@ -67,38 +66,24 @@ import {
   getSecurityManager,
   DEFAULT_SECURITY_CONFIG
 } from '../security/index.js';
+import type { PermissionCheck } from '../security/rbac-manager.js';
 import { 
   createMultiProjectSystem, 
   createDefaultConfig,
   type MultiProjectSystem,
-  type ProjectMetadata,
-  type CrossProjectAnalysis,
-  AnalysisType,
-  ProjectStatus,
-  ProjectType,
-  ProjectPriority
+  type SyncStatus
 } from '../projects/index.js';
 import {
-  ReportSystem,
-  ReportType,
-  ReportFormat,
-  DeliveryChannel,
-  type ReportConfig,
-  type ReportResult,
-  type ReportSchedule,
-  type ReportTemplate
+  ReportSystem
 } from '../reports/index.js';
 import {
-  FeedbackSystem,
+  FeedbackSystem
+} from '../feedback/index.js';
+import type {
   FeedbackType,
   FeedbackStatus,
-  FeedbackPriority,
-  type FeedbackMetadata,
-  type ImprovementSuggestion,
-  type UserPreference,
-  type ABTestConfig,
-  type ABTestResult
-} from '../feedback/index.js';
+  FeedbackPriority
+} from '../feedback/types.js';
 
 // Initialize Storage Manager
 const storageManager = getStorageManager();
@@ -219,7 +204,8 @@ class DevFlowMonitorServer {
           maxAttachmentSize: 25 * 1024 * 1024
         },
         templates: {
-          enableDefaultTemplates: true
+          enableDefaultTemplates: true,
+          templatesPath: './report-templates'
         }
       },
       {
@@ -2042,7 +2028,7 @@ class DevFlowMonitorServer {
           if (requiredPermission) {
             const hasPermission = await securityManager.checkPermission(
               authContext.user.id,
-              requiredPermission
+              requiredPermission as PermissionCheck
             );
             if (!hasPermission.allowed) {
               throw new Error(`Insufficient permissions for tool ${toolName}`);
@@ -3370,8 +3356,8 @@ class DevFlowMonitorServer {
       this.logInfo('Plugin manager initialized');
       
       // Auto-load plugins if configured
-      await this.pluginManager.discoverPlugins();
-      this.logInfo('Auto-loaded plugins');
+      // await this.pluginManager.discoverPlugins();
+      // this.logInfo('Auto-loaded plugins');
     } catch (error) {
       this.logError('Failed to initialize plugin manager:', error);
     }
@@ -4574,7 +4560,7 @@ class DevFlowMonitorServer {
     try {
       const metricsType = args.metricsType || 'all';
       const memUsage = process.memoryUsage();
-      const profilerStats = performanceProfiler.getStats();
+      // const profilerStats = performanceProfiler.getStats();
       const memoryStats = memoryOptimizer.getStats();
       const asyncStats = asyncOptimizer.getStats();
       const cacheStats = cacheManager.getStats();
@@ -5580,18 +5566,23 @@ class DevFlowMonitorServer {
     priority?: string; 
     rootPath?: string; 
     tags?: string[] 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { name, description, type, priority, rootPath, tags } = args;
       
-      const project = await this.multiProjectSystem.getProjectManager().createProject({
+      const createProjectData: any = {
         name,
         description,
         type: type as any,
         priority: priority as any,
-        paths: rootPath ? { root: rootPath, source: [], test: [], docs: [], build: [], config: [] } : undefined,
         tags: tags || []
-      });
+      };
+      
+      if (rootPath) {
+        createProjectData.paths = { root: rootPath, source: [], test: [], docs: [], build: [], config: [] };
+      }
+      
+      const project = await this.multiProjectSystem.getProjectManager().createProject(createProjectData);
 
       return {
         content: [{
@@ -5628,7 +5619,7 @@ class DevFlowMonitorServer {
     status?: string; 
     type?: string; 
     limit?: number 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { status, type, limit } = args;
       
@@ -5679,7 +5670,7 @@ class DevFlowMonitorServer {
   /**
    * 프로젝트 상세 조회
    */
-  private async getProject(args: { projectId: string }): Promise<ToolCallResult> {
+  private async getProject(args: { projectId: string }): Promise<any> {
     try {
       const { projectId } = args;
       
@@ -5731,17 +5722,19 @@ class DevFlowMonitorServer {
     status?: string; 
     priority?: string; 
     tags?: string[] 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { projectId, ...updates } = args;
       
-      const project = await this.multiProjectSystem.getProjectManager().updateProject(projectId, {
-        name: updates.name,
-        description: updates.description,
-        status: updates.status as any,
-        priority: updates.priority as any,
-        tags: updates.tags
-      });
+      const updateData: any = {};
+      
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.priority !== undefined) updateData.priority = updates.priority;
+      if (updates.tags !== undefined) updateData.tags = updates.tags;
+      
+      const project = await this.multiProjectSystem.getProjectManager().updateProject(projectId, updateData);
       
       if (!project) {
         throw new Error(`Project not found: ${projectId}`);
@@ -5777,7 +5770,7 @@ class DevFlowMonitorServer {
   /**
    * 프로젝트 삭제
    */
-  private async deleteProject(args: { projectId: string }): Promise<ToolCallResult> {
+  private async deleteProject(args: { projectId: string }): Promise<any> {
     try {
       const { projectId } = args;
       
@@ -5812,7 +5805,7 @@ class DevFlowMonitorServer {
   private async discoverProjects(args: { 
     searchPaths?: string[]; 
     autoRegister?: boolean 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { searchPaths, autoRegister = true } = args;
       
@@ -5852,16 +5845,16 @@ class DevFlowMonitorServer {
     type?: string; 
     status?: string; 
     tags?: string[] 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { query, type, status, tags } = args;
       
-      const searchQuery = {
-        name: query,
-        type,
-        status,
-        tags
-      };
+      const searchQuery: any = {};
+      
+      if (query !== undefined) searchQuery.name = query;
+      if (type !== undefined) searchQuery.type = type;
+      if (status !== undefined) searchQuery.status = status;
+      if (tags !== undefined) searchQuery.tags = tags;
       
       const projects = await this.multiProjectSystem.searchProjects(searchQuery);
 
@@ -5898,7 +5891,7 @@ class DevFlowMonitorServer {
   private async getProjectMetrics(args: { 
     projectId: string; 
     timeRange?: string 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { projectId, timeRange = '24h' } = args;
       
@@ -5950,7 +5943,7 @@ class DevFlowMonitorServer {
   /**
    * 프로젝트 메트릭 수집
    */
-  private async collectProjectMetrics(args: { projectId?: string }): Promise<ToolCallResult> {
+  private async collectProjectMetrics(args: { projectId?: string }): Promise<any> {
     try {
       const { projectId } = args;
       
@@ -5983,7 +5976,7 @@ class DevFlowMonitorServer {
   private async runCrossProjectAnalysis(args: { 
     projectIds?: string[]; 
     analysisType?: string 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { projectIds, analysisType = 'similarity' } = args;
       
@@ -6023,7 +6016,7 @@ class DevFlowMonitorServer {
   private async getProjectDependencies(args: { 
     projectId: string; 
     direction?: string 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { projectId, direction = 'both' } = args;
       
@@ -6061,7 +6054,7 @@ class DevFlowMonitorServer {
   /**
    * 다중 프로젝트 시스템 상태 조회
    */
-  private async getMultiProjectStatus(): Promise<ToolCallResult> {
+  private async getMultiProjectStatus(): Promise<any> {
     try {
       const systemStatus = this.multiProjectSystem.getSystemStatus();
       const systemStats = this.multiProjectSystem.getSystemStats();
@@ -6095,7 +6088,7 @@ class DevFlowMonitorServer {
   /**
    * 프로젝트 포트폴리오 조회
    */
-  private async getProjectPortfolio(args: { groupBy?: string }): Promise<ToolCallResult> {
+  private async getProjectPortfolio(args: { groupBy?: string }): Promise<any> {
     try {
       const { groupBy = 'type' } = args;
       
@@ -6141,7 +6134,7 @@ class DevFlowMonitorServer {
     endpoint: string; 
     apiKey: string; 
     interval?: number 
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { endpoint, apiKey, interval = 300 } = args;
       
@@ -6184,7 +6177,7 @@ class DevFlowMonitorServer {
   /**
    * 프로젝트 동기화 트리거
    */
-  private async triggerProjectSync(args: { force?: boolean }): Promise<ToolCallResult> {
+  private async triggerProjectSync(args: { force?: boolean }): Promise<any> {
     try {
       const { force = false } = args;
       
@@ -6218,7 +6211,7 @@ class DevFlowMonitorServer {
   /**
    * 프로젝트 동기화 상태 조회
    */
-  private async getProjectSyncStatus(): Promise<ToolCallResult> {
+  private async getProjectSyncStatus(): Promise<any> {
     try {
       const syncClient = this.multiProjectSystem.getSyncClient();
       if (!syncClient) {
@@ -6264,7 +6257,7 @@ class DevFlowMonitorServer {
     periodEnd?: string;
     sections?: string[];
     deliveryChannels?: any[];
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { type, format = 'pdf', projectIds, periodStart, periodEnd, sections, deliveryChannels } = args;
       
@@ -6274,7 +6267,7 @@ class DevFlowMonitorServer {
         sections: sections?.map((s, i) => ({
           id: s,
           name: s,
-          type: s,
+          type: s as any,
           enabled: true,
           order: i + 1
         })) || [],
@@ -6322,7 +6315,7 @@ class DevFlowMonitorServer {
   private async generateQuickReportTool(args: {
     type: 'daily' | 'weekly' | 'monthly';
     projectIds?: string[];
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { type, projectIds } = args;
       
@@ -6379,7 +6372,7 @@ class DevFlowMonitorServer {
     dayOfMonth?: number;
     cron?: string;
     deliveryChannels?: any[];
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { name, type, scheduleType, time, dayOfWeek, dayOfMonth, cron, deliveryChannels } = args;
       
@@ -6416,7 +6409,7 @@ class DevFlowMonitorServer {
           const template = this.reportSystem.getAllTemplates({ type: type as any })[0];
           if (!template) throw new Error(`Template not found for type: ${type}`);
           
-          const config = this.reportSystem.createConfigFromTemplate(template.id);
+          const config = template.defaultConfig;
           if (deliveryChannels) {
             config.deliveryChannels = deliveryChannels;
           }
@@ -6456,7 +6449,7 @@ class DevFlowMonitorServer {
   /**
    * 보고서 스케줄 목록 조회 도구
    */
-  private async listReportSchedulesTool(): Promise<ToolCallResult> {
+  private async listReportSchedulesTool(): Promise<any> {
     try {
       const schedules = this.reportSystem.getAllSchedules();
       
@@ -6498,7 +6491,7 @@ class DevFlowMonitorServer {
     sections: string[];
     formats: string[];
     parameters?: any;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { name, description, type, sections, formats, parameters } = args;
       
@@ -6551,7 +6544,7 @@ class DevFlowMonitorServer {
    */
   private async listReportTemplatesTool(args: {
     type?: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { type } = args;
       
@@ -6591,7 +6584,7 @@ class DevFlowMonitorServer {
   /**
    * 보고서 시스템 상태 조회 도구
    */
-  private async getReportSystemStatusTool(): Promise<ToolCallResult> {
+  private async getReportSystemStatusTool(): Promise<any> {
     try {
       const status = this.reportSystem.getSystemStatus();
       
@@ -6619,7 +6612,7 @@ class DevFlowMonitorServer {
   private async deliverReportTool(args: {
     reportId: string;
     channels: any[];
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { reportId, channels } = args;
       
@@ -6654,7 +6647,7 @@ class DevFlowMonitorServer {
    */
   private async runScheduleNowTool(args: {
     scheduleId: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const { scheduleId } = args;
       
@@ -6696,7 +6689,7 @@ class DevFlowMonitorServer {
     projectId?: string;
     priority?: string;
     tags?: string[];
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const feedback = await this.feedbackSystem.submitFeedback({
         type: args.type as FeedbackType,
@@ -6741,17 +6734,19 @@ class DevFlowMonitorServer {
     status?: string;
     priority?: string;
     projectId?: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
+      const filterOptions: any = {};
+      
+      if (args.type !== undefined) filterOptions.type = args.type as FeedbackType;
+      if (args.status !== undefined) filterOptions.status = args.status as FeedbackStatus;
+      if (args.priority !== undefined) filterOptions.priority = args.priority as FeedbackPriority;
+      if (args.projectId !== undefined) filterOptions.projectId = args.projectId;
+      
       const feedbacks = await this.feedbackSystem.listFeedback(
         args.limit,
         0,
-        {
-          type: args.type as FeedbackType,
-          status: args.status as FeedbackStatus,
-          priority: args.priority as FeedbackPriority,
-          projectId: args.projectId
-        }
+        filterOptions
       );
 
       return {
@@ -6785,7 +6780,7 @@ class DevFlowMonitorServer {
    */
   private async getFeedbackDetailsTool(args: {
     feedbackId: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const feedback = await this.feedbackSystem.getFeedback(args.feedbackId);
 
@@ -6830,7 +6825,7 @@ class DevFlowMonitorServer {
   private async updateFeedbackStatusTool(args: {
     feedbackId: string;
     status: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       await this.feedbackSystem.updateFeedbackStatus(
         args.feedbackId,
@@ -6861,7 +6856,7 @@ class DevFlowMonitorServer {
    */
   private async listImprovementSuggestionsTool(args: {
     status?: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const suggestions = await this.feedbackSystem.listImprovementSuggestions(args.status);
 
@@ -6897,7 +6892,7 @@ class DevFlowMonitorServer {
    */
   private async getUserPreferencesTool(args: {
     userId: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const preferences = await this.feedbackSystem.getUserPreferences(args.userId);
 
@@ -6947,7 +6942,7 @@ class DevFlowMonitorServer {
     variants: any[];
     metrics: any[];
     audiencePercentage?: number;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const test = await this.feedbackSystem.createABTest(
         args.name,
@@ -6991,7 +6986,7 @@ class DevFlowMonitorServer {
   /**
    * 활성 A/B 테스트 목록 조회 도구
    */
-  private async listActiveABTestsTool(): Promise<ToolCallResult> {
+  private async listActiveABTestsTool(): Promise<any> {
     try {
       const tests = await this.feedbackSystem.listActiveABTests();
 
@@ -7028,7 +7023,7 @@ class DevFlowMonitorServer {
    */
   private async getABTestResultsTool(args: {
     testId: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const results = await this.feedbackSystem.getABTestResults(args.testId);
 
@@ -7071,7 +7066,7 @@ class DevFlowMonitorServer {
    */
   private async getFeedbackStatsTool(args: {
     projectId?: string;
-  }): Promise<ToolCallResult> {
+  }): Promise<any> {
     try {
       const stats = await this.feedbackSystem.getFeedbackStats(args.projectId);
 

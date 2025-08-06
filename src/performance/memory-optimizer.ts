@@ -12,6 +12,7 @@ export interface MemoryConfig {
   gcThreshold: number; // 0-1 (heap usage percentage)
   cleanupInterval: number; // ms
   enableAutoCleanup: boolean;
+  defaultTTL?: number; // default time to live in ms
 }
 
 export interface CacheEntry<T = any> {
@@ -21,7 +22,7 @@ export interface CacheEntry<T = any> {
   accessCount: number;
   lastAccessed: number;
   size: number; // estimated size in bytes
-  ttl?: number; // time to live in ms
+  ttl: number | undefined; // time to live in ms
 }
 
 export interface MemoryStats {
@@ -37,7 +38,7 @@ export interface MemoryStats {
 export class MemoryOptimizer extends EventEmitter {
   private config: MemoryConfig;
   private cache = new Map<string, CacheEntry>();
-  private cleanupTimer?: NodeJS.Timeout;
+  private cleanupTimer?: NodeJS.Timeout | undefined;
   private gcEvents = 0;
   private cleanupEvents = 0;
   private isOptimizing = false;
@@ -97,7 +98,7 @@ export class MemoryOptimizer extends EventEmitter {
         accessCount: 1,
         lastAccessed: now,
         size: estimatedSize,
-        ttl: ttl || this.config.defaultTTL
+        ttl: ttl ?? this.config.defaultTTL
       };
 
       this.cache.set(key, entry);
@@ -213,8 +214,9 @@ export class MemoryOptimizer extends EventEmitter {
       this.cleanupExpiredEntries();
       
       // 여전히 압박 상황이면 LRU 정리
+      let entriesToRemove = 0;
       if (this.isMemoryPressureHigh()) {
-        const entriesToRemove = Math.floor(this.cache.size * 0.2); // 20% 제거
+        entriesToRemove = Math.floor(this.cache.size * 0.2); // 20% 제거
         
         for (let i = 0; i < entriesToRemove && this.lruTail; i++) {
           this.evictLRU();
@@ -229,7 +231,7 @@ export class MemoryOptimizer extends EventEmitter {
       }
 
       this.emit('emergencyCleanup', { 
-        entriesRemoved: entriesToRemove || 0,
+        entriesRemoved: entriesToRemove,
         memoryFreed: this.calculateCacheSize()
       });
     } finally {

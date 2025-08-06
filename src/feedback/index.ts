@@ -11,7 +11,6 @@ import {
   FeedbackStatus,
   FeedbackPriority,
   FeedbackEvent,
-  FeedbackEventType,
   ImprovementSuggestion,
   UserPreference,
   ABTestConfig,
@@ -61,7 +60,11 @@ export interface FeedbackSystemConfig {
  * 통합 피드백 시스템
  */
 export class FeedbackSystem extends EventEmitter {
-  private config: Required<FeedbackSystemConfig>;
+  private config: FeedbackSystemConfig & { 
+    autoAnalyze: boolean; 
+    enablePreferenceLearning: boolean; 
+    enableABTesting: boolean; 
+  };
   private collector: FeedbackCollector;
   private analyzer: FeedbackAnalyzer;
   private preferenceLearner?: PreferenceLearner;
