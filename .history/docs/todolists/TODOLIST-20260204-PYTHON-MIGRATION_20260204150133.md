@@ -2,8 +2,8 @@
 
 **작성일**: 2026-02-04
 **프로젝트**: DevFlow Monitor MCP (TypeScript → Python)
-**브랜치**: feature/python-mcp-20260204
 **예상 기간**: 17-26주 (4-6개월)
+**브랜치**: feature/python-migration-20260204
 **총 코드량**: ~55,000줄 TypeScript → Python 변환
 
 ---
