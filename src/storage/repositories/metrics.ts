@@ -163,19 +163,19 @@ export class MetricsRepository extends BaseRepository<MetricsRecord> {
   /**
    * Upsert metric (update if exists for same timestamp and timeframe)
    */
-  async upsert(data: MetricsRecord): Promise<MetricsRecord> {
+  async upsert(_data: MetricsRecord): Promise<MetricsRecord> {
     const existing = await this.findByCriteria({
-      metric_type: data.metric_type,
-      metric_name: data.metric_name,
-      timestamp: data.timestamp,
-      timeframe: data.timeframe,
+      metric_type: _data.metric_type,
+      metric_name: _data.metric_name,
+      timestamp: _data.timestamp,
+      timeframe: _data.timeframe,
     });
 
     const firstExisting = existing[0];
     if (firstExisting?.id) {
-      return (await this.update(firstExisting.id, { value: data.value })) as MetricsRecord;
+      return (await this.update(firstExisting.id, { value: _data.value })) as MetricsRecord;
     } else {
-      return await this.create(data);
+      return await this.create(_data);
     }
   }
 }

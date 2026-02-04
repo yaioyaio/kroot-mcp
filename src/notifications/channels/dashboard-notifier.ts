@@ -8,7 +8,7 @@ import { NotificationMessage } from '../types.js';
 
 export interface DashboardNotification {
   id: string;
-  message: NotificationMessage;
+  _message: NotificationMessage;
   read: boolean;
   readAt?: Date;
   dismissedAt?: Date;
@@ -21,10 +21,10 @@ export class DashboardNotifier extends EventEmitter {
   /**
    * 대시보드에 알림 전송
    */
-  async send(message: NotificationMessage, _config: any): Promise<any> {
+  async send(_message: NotificationMessage, _config: any): Promise<any> {
     const notification: DashboardNotification = {
-      id: message.id,
-      message,
+      id: _message.id,
+      _message,
       read: false,
     };
 
@@ -131,7 +131,7 @@ export class DashboardNotifier extends EventEmitter {
     
     if (olderThan) {
       this.notifications = this.notifications.filter(
-        n => n.message.createdAt > olderThan
+        n => n._message.createdAt > olderThan
       );
     } else {
       this.notifications = [];

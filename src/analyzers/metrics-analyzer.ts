@@ -51,15 +51,15 @@ export class MetricsAnalyzer extends EventEmitter {
 
     this.isRunning = true;
 
-    // 주기적 분석
-    this.analysisTimer = setInterval(() => {
-      this.performAnalysis();
-    }, this.options.analysisInterval || 120000); // 2분
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.analysisTimer = setInterval(() => {
+    //   this.performAnalysis();
+    // }, this.options.analysisInterval || 120000); // 2분
 
-    // 초기 분석
-    this.performAnalysis();
+    // 초기 분석 제거 - 사용자 요청 시에만 실행
+    // this.performAnalysis();
 
-    console.log('📈 MetricsAnalyzer started');
+    // console.log('📈 MetricsAnalyzer started');
   }
 
   /**
@@ -77,7 +77,7 @@ export class MetricsAnalyzer extends EventEmitter {
       this.analysisTimer = undefined;
     }
 
-    console.log('📈 MetricsAnalyzer stopped');
+    // console.log('📈 MetricsAnalyzer stopped');
   }
 
   /**
@@ -214,7 +214,7 @@ export class MetricsAnalyzer extends EventEmitter {
     const definition: MetricDefinition = {
       id,
       name,
-      description: `Auto-generated metric: ${name}`,
+      description: `Auto-generated _metric: ${name}`,
       type: this.inferMetricType(id),
       unit,
       aggregationType: this.inferAggregationType(unit),
@@ -447,10 +447,10 @@ export class MetricsAnalyzer extends EventEmitter {
           id: alertId,
           type: alertType,
           severity,
-          metric: id,
+          _metric: id,
           threshold,
           currentValue: current,
-          message: `${metric.definition.name} is ${current} (threshold: ${threshold})`,
+          _message: `${metric.definition.name} is ${current} (threshold: ${threshold})`,
           createdAt: now,
           acknowledged: false,
         };

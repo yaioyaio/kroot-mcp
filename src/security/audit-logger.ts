@@ -4,7 +4,10 @@
  */
 
 import fs from 'fs/promises';
+import { mkdirSync, existsSync } from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, resolve, join } from 'path';
 import { EventEmitter } from 'eventemitter3';
 import Database from 'better-sqlite3';
 import {
@@ -12,6 +15,9 @@ import {
   SecurityEventType,
   SecurityConfig
 } from './types.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export interface AuditLogConfig {
   logDirectory: string;
@@ -33,7 +39,7 @@ export interface AuditEntry {
   resource?: string;
   action?: string;
   success: boolean;
-  message: string;
+  _message: string;
   metadata?: Record<string, any>;
   severity: 'low' | 'medium' | 'high' | 'critical';
   category: string;
@@ -72,6 +78,7 @@ export class AuditLogger extends EventEmitter {
   private logBuffer: AuditEntry[] = [];
   private rotationTimer?: NodeJS.Timeout;
   private flushTimer?: NodeJS.Timeout;
+  private absoluteLogDir: string = '';
 
   private readonly BUFFER_SIZE = 100;
   private readonly FLUSH_INTERVAL = 5000; // 5초마다 플러시
@@ -88,7 +95,26 @@ export class AuditLogger extends EventEmitter {
    * 데이터베이스 초기화
    */
   private initializeDatabase(): void {
-    const dbPath = path.join(this.config.logDirectory, 'audit.db');
+    // Use absolute path for log directory
+    const projectRoot = resolve(__dirname, '..', '..');
+    const absoluteLogDir = path.isAbsolute(this.config.logDirectory) 
+      ? this.config.logDirectory 
+      : join(projectRoot, this.config.logDirectory);
+    
+    // Ensure log directory exists before creating database
+    if (!existsSync(absoluteLogDir)) {
+      try {
+        mkdirSync(absoluteLogDir, { recursive: true });
+      } catch (error) {
+        console.error('Failed to create audit log directory:', absoluteLogDir, error);
+        throw error;
+      }
+    }
+    
+    // Store the absolute log directory for use in other methods
+    this.absoluteLogDir = absoluteLogDir;
+    
+    const dbPath = path.join(absoluteLogDir, 'audit.db');
     this.database = new Database(dbPath);
     
     // 감사 로그 테이블 생성
@@ -134,7 +160,7 @@ export class AuditLogger extends EventEmitter {
    */
   async log(event: SecurityEvent, severity?: 'low' | 'medium' | 'high' | 'critical', category?: string): Promise<void> {
     try {
-      const auditEntry: AuditEntry = {
+      const auditEntry = {
         id: event.id,
         timestamp: event.timestamp,
         eventType: event.type,
@@ -145,7 +171,7 @@ export class AuditLogger extends EventEmitter {
         resource: event.resource,
         action: event.action,
         success: event.success,
-        message: event.message,
+        _message: event._message,
         metadata: event.metadata,
         severity: severity || this.determineSeverity(event),
         category: category || this.determineCategory(event),
@@ -154,7 +180,7 @@ export class AuditLogger extends EventEmitter {
       };
 
       // 버퍼에 추가
-      this.logBuffer.push(auditEntry);
+      this.logBuffer.push(auditEntry as any);
 
       // 버퍼가 가득 차면 즉시 플러시
       if (this.logBuffer.length >= this.BUFFER_SIZE) {
@@ -170,7 +196,7 @@ export class AuditLogger extends EventEmitter {
 
     } catch (error) {
       this.emit('auditError', {
-        message: `Failed to log audit entry: ${(error as Error).message}`,
+        _message: `Failed to log audit entry: ${(error as Error).message}`,
         originalEvent: event,
         error
       });
@@ -278,7 +304,7 @@ export class AuditLogger extends EventEmitter {
             entry.resource || null,
             entry.action || null,
             entry.success ? 1 : 0,
-            entry.message,
+            entry._message,
             entry.metadata ? JSON.stringify(entry.metadata) : null,
             entry.severity,
             entry.category,
@@ -300,7 +326,7 @@ export class AuditLogger extends EventEmitter {
       this.logBuffer.unshift(...entries);
       
       this.emit('auditError', {
-        message: `Failed to flush audit buffer: ${(error as Error).message}`,
+        _message: `Failed to flush audit buffer: ${(error as Error).message}`,
         entriesCount: entries.length,
         error
       });
@@ -330,7 +356,7 @@ export class AuditLogger extends EventEmitter {
 
     } catch (error) {
       this.emit('auditError', {
-        message: `Failed to write to log file: ${(error as Error).message}`,
+        _message: `Failed to write to log file: ${(error as Error).message}`,
         error
       });
     }
@@ -344,7 +370,7 @@ export class AuditLogger extends EventEmitter {
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       this.currentLogFile = path.join(
-        this.config.logDirectory,
+        this.absoluteLogDir,
         `audit-${dateStr}.log`
       );
     }
@@ -379,7 +405,7 @@ export class AuditLogger extends EventEmitter {
 
     } catch (error) {
       this.emit('auditError', {
-        message: `Failed to rotate log file: ${(error as Error).message}`,
+        _message: `Failed to rotate log file: ${(error as Error).message}`,
         error
       });
     }
@@ -400,7 +426,7 @@ export class AuditLogger extends EventEmitter {
    */
   private async cleanupOldLogFiles(): Promise<void> {
     try {
-      const files = await fs.readdir(this.config.logDirectory);
+      const files = await fs.readdir(this.absoluteLogDir);
       const logFiles = files.filter(file => file.startsWith('audit-') && file.endsWith('.log'));
       
       if (logFiles.length > this.config.maxFiles) {
@@ -409,7 +435,7 @@ export class AuditLogger extends EventEmitter {
         const filesToDelete = logFiles.slice(0, logFiles.length - this.config.maxFiles);
 
         for (const file of filesToDelete) {
-          const filePath = path.join(this.config.logDirectory, file);
+          const filePath = path.join(this.absoluteLogDir, file);
           await fs.unlink(filePath);
         }
 
@@ -418,7 +444,7 @@ export class AuditLogger extends EventEmitter {
 
     } catch (error) {
       this.emit('auditError', {
-        message: `Failed to cleanup old log files: ${(error as Error).message}`,
+        _message: `Failed to cleanup old log files: ${(error as Error).message}`,
         error
       });
     }
@@ -500,7 +526,7 @@ export class AuditLogger extends EventEmitter {
         resource: row.resource,
         action: row.action,
         success: row.success === 1,
-        message: row.message,
+        _message: row.message,
         metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
         severity: row.severity,
         category: row.category,
@@ -510,7 +536,7 @@ export class AuditLogger extends EventEmitter {
 
     } catch (error) {
       this.emit('auditError', {
-        message: `Failed to query audit logs: ${(error as Error).message}`,
+        _message: `Failed to query audit logs: ${(error as Error).message}`,
         query,
         error
       });
@@ -598,7 +624,7 @@ export class AuditLogger extends EventEmitter {
 
     } catch (error) {
       this.emit('auditError', {
-        message: `Failed to generate audit summary: ${(error as Error).message}`,
+        _message: `Failed to generate audit summary: ${(error as Error).message}`,
         error
       });
 
@@ -619,14 +645,13 @@ export class AuditLogger extends EventEmitter {
    * 로그 로테이션 초기화
    */
   private initializeLogRotation(): void {
-    // 로그 디렉토리 생성
-    fs.mkdir(this.config.logDirectory, { recursive: true }).catch(() => {});
+    // Directory is already created in initializeDatabase(), so no need to create again
 
     // 로테이션 타이머 설정
     this.rotationTimer = setInterval(() => {
       this.rotateLogFile().catch(error => {
         this.emit('auditError', {
-          message: `Scheduled log rotation failed: ${error.message}`,
+          _message: `Scheduled log rotation failed: ${error.message}`,
           error
         });
       });
@@ -640,7 +665,7 @@ export class AuditLogger extends EventEmitter {
     this.flushTimer = setInterval(() => {
       this.flushBuffer().catch(error => {
         this.emit('auditError', {
-          message: `Periodic flush failed: ${error.message}`,
+          _message: `Periodic flush failed: ${error.message}`,
           error
         });
       });

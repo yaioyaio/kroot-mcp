@@ -99,7 +99,7 @@ export class EventStreamManager extends EventEmitter {
     });
     
     this.initialized = true;
-    console.log('[StreamManager] Initialized with EventEngine');
+    // console.log('[StreamManager] Initialized with EventEngine');
   }
 
   /**
@@ -116,7 +116,7 @@ export class EventStreamManager extends EventEmitter {
     };
 
     this.subscribers.set(id, subscriber);
-    console.log(`[StreamManager] Subscriber added: ${id} (Total: ${this.subscribers.size})`);
+    // console.log(`[StreamManager] Subscriber added: ${id} (Total: ${this.subscribers.size})`);
     
     this.emit('subscriber_added', { id, filter });
   }
@@ -127,7 +127,7 @@ export class EventStreamManager extends EventEmitter {
   unsubscribe(id: string): boolean {
     const removed = this.subscribers.delete(id);
     if (removed) {
-      console.log(`[StreamManager] Subscriber removed: ${id} (Total: ${this.subscribers.size})`);
+      // console.log(`[StreamManager] Subscriber removed: ${id} (Total: ${this.subscribers.size})`);
       this.emit('subscriber_removed', { id });
     }
     return removed;
@@ -140,7 +140,7 @@ export class EventStreamManager extends EventEmitter {
     const subscriber = this.subscribers.get(id);
     if (subscriber) {
       subscriber.filter = filter;
-      console.log(`[StreamManager] Filter updated for subscriber: ${id}`);
+      // console.log(`[StreamManager] Filter updated for subscriber: ${id}`);
       this.emit('filter_updated', { id, filter });
       return true;
     }
@@ -310,7 +310,7 @@ export class EventStreamManager extends EventEmitter {
     
     const removed = originalLength - this.eventBuffer.length;
     if (removed > 0) {
-      console.log(`[StreamManager] Cleaned up ${removed} old buffered events`);
+      // console.log(`[StreamManager] Cleaned up ${removed} old buffered events`);
     }
 
     // 구독자들의 레이트 리미트 버퍼 정리
@@ -379,7 +379,7 @@ export class EventStreamManager extends EventEmitter {
       .filter(be => be.timestamp >= fromTime)
       .map(be => be.event);
 
-    console.log(`[StreamManager] Replaying ${eventsToReplay.length} events for ${subscriberId}`);
+    // console.log(`[StreamManager] Replaying ${eventsToReplay.length} events for ${subscriberId}`);
 
     eventsToReplay.forEach(event => {
       if (this.shouldDeliverEvent(subscriber, event)) {
@@ -398,11 +398,11 @@ export class EventStreamManager extends EventEmitter {
   /**
    * 시스템 이벤트 발행
    */
-  emitSystemEvent(type: string, data: any): void {
+  emitSystemEvent(type: string, _data: any): void {
     const systemEvent = {
       type: `stream:${type}`,
       timestamp: Date.now(),
-      data,
+      data: _data,
     };
 
     this.emit('system_event', systemEvent);
@@ -427,7 +427,7 @@ export class EventStreamManager extends EventEmitter {
     this.removeAllListeners();
     this.initialized = false;
 
-    console.log('[StreamManager] Destroyed');
+    // console.log('[StreamManager] Destroyed');
   }
 }
 

@@ -19,7 +19,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: { message: 'test' },
+        _data: { _message: 'test' },
       };
 
       eventEngine.subscribe('test:event', handler);
@@ -38,7 +38,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       eventEngine.subscribe('*', handler);
@@ -56,7 +56,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       eventEngine.subscribe(/^file:/, handler);
@@ -74,7 +74,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       const subscriberId = eventEngine.subscribe('test:event', handler);
@@ -95,7 +95,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.DEBUG,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       eventEngine.subscribe('test:event', handler, {
@@ -115,7 +115,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.DEBUG,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       eventEngine.addGlobalFilter((e) => e.severity !== EventSeverity.DEBUG);
@@ -131,7 +131,7 @@ describe('EventEngine', () => {
       const handler = vi.fn();
       const transformer = vi.fn((event: BaseEvent) => ({
         ...event,
-        data: { ...event.data, transformed: true },
+        _data: { ...event._data, transformed: true },
       }));
 
       const event: BaseEvent = {
@@ -141,7 +141,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: { original: true },
+        _data: { original: true },
       };
 
       eventEngine.registerTransformer('test:event', transformer);
@@ -151,7 +151,7 @@ describe('EventEngine', () => {
       expect(transformer).toHaveBeenCalledWith(event);
       expect(handler).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { original: true, transformed: true },
+          _data: { original: true, transformed: true },
         }),
       );
     });
@@ -166,7 +166,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       const initialStats = eventEngine.getStatistics();
@@ -201,7 +201,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       eventEngine.subscribe('test:event', handler3, { priority: 0 });
@@ -228,7 +228,7 @@ describe('EventEngine', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        _data: {},
       };
 
       eventEngine.subscribe('system:error', errorHandler);
@@ -241,7 +241,7 @@ describe('EventEngine', () => {
           type: 'system:error',
           category: EventCategory.SYSTEM,
           severity: EventSeverity.ERROR,
-          data: expect.objectContaining({
+          _data: expect.objectContaining({
             error: 'Handler error',
           }),
         }),
@@ -260,7 +260,7 @@ describe('EventEngine', () => {
           timestamp: Date.now(),
           severity: EventSeverity.INFO,
           source: 'test',
-          data: { index: 0 },
+          _data: { index: 0 },
         },
         {
           id: 'batch-2',
@@ -269,7 +269,7 @@ describe('EventEngine', () => {
           timestamp: Date.now(),
           severity: EventSeverity.INFO,
           source: 'test',
-          data: { index: 1 },
+          _data: { index: 1 },
         },
       ];
 

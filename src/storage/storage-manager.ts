@@ -103,7 +103,7 @@ export class StorageManager {
 
       case EventCategory.GIT:
         // Git events might update activity logs
-        if (event.data.action) {
+        if (event._data.action) {
           await this.processActivityEvent(event, eventRecord.id!);
         }
         break;
@@ -114,13 +114,13 @@ export class StorageManager {
    * Process activity event
    */
   private async processActivityEvent(event: BaseEvent, eventId: number): Promise<void> {
-    const { stage, action, details, actor } = event.data;
+    const { stage, action, details, actor } = event._data;
 
     if (stage && action && actor) {
       await this.activityRepo.create({
         stage,
         action,
-        details: details || JSON.stringify(event.data),
+        details: details || JSON.stringify(event._data),
         actor,
         metadata: event.metadata ? JSON.stringify(event.metadata) : null,
         timestamp: event.timestamp,
@@ -133,7 +133,7 @@ export class StorageManager {
    * Process stage transition event
    */
   private async processStageEvent(event: BaseEvent): Promise<void> {
-    const { fromStage, toStage, confidence } = event.data;
+    const { fromStage, toStage, confidence } = event._data;
 
     if (toStage && typeof confidence === 'number') {
       await this.stageTransitionRepo.create({
@@ -150,7 +150,7 @@ export class StorageManager {
    * Process file event for cache updates
    */
   private async processFileEvent(event: BaseEvent): Promise<void> {
-    const { filePath, fileHash, fileSize } = event.data;
+    const { filePath, fileHash, fileSize } = event._data;
 
     if (filePath && fileHash && typeof fileSize === 'number') {
       await this.fileMonitorCacheRepo.upsert({

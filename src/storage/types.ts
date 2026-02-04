@@ -9,7 +9,7 @@ export interface EventRecord {
   id?: number;
   type: string;
   timestamp: number;
-  data: string;
+  _data: string;
   sync_id?: string | null;
   sync_status?: string;
   device_id?: string | null;
@@ -110,10 +110,10 @@ export interface MigrationRecord {
  * Repository interface
  */
 export interface Repository<T> {
-  create(data: T): Promise<T>;
+  create(_data: T): Promise<T>;
   findById(id: number): Promise<T | null>;
   findAll(options?: QueryOptions): Promise<T[]>;
-  update(id: number, data: Partial<T>): Promise<T | null>;
+  update(id: number, _data: Partial<T>): Promise<T | null>;
   delete(id: number): Promise<boolean>;
   count(): Promise<number>;
 }

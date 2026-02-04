@@ -13,10 +13,10 @@ import {
   ReportTemplate,
   ReportType,
   ReportConfig,
-  ReportSection,
+  // ReportSection,
   ReportSectionType,
   ReportFormat,
-  DeliveryChannel
+  // DeliveryChannel
 } from './types.js';
 
 /**

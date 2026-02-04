@@ -51,12 +51,12 @@ export class MetricsCollector extends EventEmitter {
       this.handleEvent(event);
     });
 
-    // 주기적 메트릭 계산
-    this.samplingTimer = setInterval(() => {
-      this.calculateMetrics();
-    }, this.options.samplingInterval || 30000); // 30초
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.samplingTimer = setInterval(() => {
+    //   this._calculateMetrics();
+    // }, this.options.samplingInterval || 30000); // 30초
 
-    console.log('📊 MetricsCollector started');
+    // console.log('📊 MetricsCollector started');
   }
 
   /**
@@ -79,7 +79,7 @@ export class MetricsCollector extends EventEmitter {
       this.samplingTimer = undefined;
     }
 
-    console.log('📊 MetricsCollector stopped');
+    // console.log('📊 MetricsCollector stopped');
   }
 
   /**
@@ -138,7 +138,7 @@ export class MetricsCollector extends EventEmitter {
     if (event.type === 'file:changed') {
       this.updateMetricValue('file_changes_per_hour', 1, MetricUnit.RATE, timestamp);
       
-      if (event.data.path && event.data.path.match(/\.(ts|js|tsx|jsx)$/)) {
+      if (event._data.path && event._data.path.match(/\.(ts|js|tsx|jsx)$/)) {
         this.updateMetricValue('code_file_changes', 1, MetricUnit.COUNT, timestamp);
       }
     }
@@ -152,10 +152,10 @@ export class MetricsCollector extends EventEmitter {
       case 'git:commit':
         this.updateMetricValue('commits_per_day', 1, MetricUnit.RATE, timestamp);
         
-        if (event.data.stats) {
-          this.updateMetricValue('lines_added', event.data.stats.insertions || 0, MetricUnit.LINES, timestamp);
-          this.updateMetricValue('lines_deleted', event.data.stats.deletions || 0, MetricUnit.LINES, timestamp);
-          this.updateMetricValue('files_modified', event.data.stats.files || 0, MetricUnit.COUNT, timestamp);
+        if (event._data._stats) {
+          this.updateMetricValue('lines_added', event._data._stats.insertions || 0, MetricUnit.LINES, timestamp);
+          this.updateMetricValue('lines_deleted', event._data._stats.deletions || 0, MetricUnit.LINES, timestamp);
+          this.updateMetricValue('files_modified', event._data._stats.files || 0, MetricUnit.COUNT, timestamp);
         }
         break;
         
@@ -176,12 +176,12 @@ export class MetricsCollector extends EventEmitter {
     if (event.type === 'test:run') {
       this.updateMetricValue('test_runs', 1, MetricUnit.COUNT, timestamp);
       
-      if (event.data.duration) {
-        this.updateMetricValue('test_execution_time', event.data.duration, MetricUnit.DURATION, timestamp);
+      if (event._data.duration) {
+        this.updateMetricValue('test_execution_time', event._data.duration, MetricUnit.DURATION, timestamp);
       }
       
-      if (event.data.coverage) {
-        this.updateMetricValue('test_coverage', event.data.coverage, MetricUnit.PERCENTAGE, timestamp);
+      if (event._data.coverage) {
+        this.updateMetricValue('test_coverage', event._data.coverage, MetricUnit.PERCENTAGE, timestamp);
       }
     }
   }
@@ -193,11 +193,11 @@ export class MetricsCollector extends EventEmitter {
     if (event.type === 'build:completed') {
       this.updateMetricValue('builds_per_day', 1, MetricUnit.RATE, timestamp);
       
-      if (event.data.duration) {
-        this.updateMetricValue('build_time', event.data.duration, MetricUnit.DURATION, timestamp);
+      if (event._data.duration) {
+        this.updateMetricValue('build_time', event._data.duration, MetricUnit.DURATION, timestamp);
       }
       
-      if (event.data.success) {
+      if (event._data.success) {
         this.updateMetricValue('build_success_rate', 1, MetricUnit.PERCENTAGE, timestamp);
       } else {
         this.updateMetricValue('build_failure_rate', 1, MetricUnit.PERCENTAGE, timestamp);
@@ -212,7 +212,7 @@ export class MetricsCollector extends EventEmitter {
     if (event.type === 'ai:suggestion') {
       this.updateMetricValue('ai_suggestions', 1, MetricUnit.COUNT, timestamp);
       
-      if (event.data.accepted) {
+      if (event._data.accepted) {
         this.updateMetricValue('ai_acceptance_rate', 1, MetricUnit.PERCENTAGE, timestamp);
       }
     }
@@ -262,81 +262,7 @@ export class MetricsCollector extends EventEmitter {
     }
   }
 
-  /**
-   * 주기적 메트릭 계산
-   */
-  private calculateMetrics(): void {
-    for (const [_id, metric] of this.metrics) {
-      this.updateMetricSummary(metric);
-    }
 
-    this.emit('metrics-updated', this.getMetricsSnapshot());
-  }
-
-  /**
-   * 메트릭 요약 업데이트
-   */
-  private updateMetricSummary(metric: MetricData): void {
-    const values = metric.values.map(v => v.value);
-    
-    if (values.length === 0) {
-      return;
-    }
-
-    const current = values[values.length - 1] || 0;
-    const previous = values.length > 1 ? values[values.length - 2] || 0 : current;
-    const change = current - previous;
-    const changePercentage = previous !== 0 ? (change / previous) * 100 : 0;
-
-    metric.summary = {
-      current,
-      previous,
-      change,
-      changePercentage,
-      trend: this.calculateTrend(values.slice(-10)), // 최근 10개 값으로 트렌드 계산
-      min: Math.min(...values),
-      max: Math.max(...values),
-      average: values.reduce((a, b) => a + b, 0) / values.length,
-      median: this.calculateMedian(values),
-    };
-  }
-
-  /**
-   * 트렌드 계산
-   */
-  private calculateTrend(values: number[]): TrendDirection {
-    if (values.length < 3) {
-      return TrendDirection.STABLE;
-    }
-
-    const recent = values.slice(-3);
-    const older = values.slice(-6, -3);
-    
-    const recentAvg = recent.length > 0 ? recent.reduce((a, b) => a + b, 0) / recent.length : 0;
-    const olderAvg = older.length > 0 ? older.reduce((a, b) => a + b, 0) / older.length : recentAvg;
-    
-    const change = ((recentAvg - olderAvg) / olderAvg) * 100;
-    
-    if (Math.abs(change) < 5) {
-      return TrendDirection.STABLE;
-    } else if (change > 0) {
-      return TrendDirection.INCREASING;
-    } else {
-      return TrendDirection.DECREASING;
-    }
-  }
-
-  /**
-   * 중앙값 계산
-   */
-  private calculateMedian(values: number[]): number {
-    const sorted = [...values].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    
-    return sorted.length % 2 !== 0
-      ? sorted[mid] || 0
-      : ((sorted[mid - 1] || 0) + (sorted[mid] || 0)) / 2;
-  }
 
   /**
    * 메트릭 조회

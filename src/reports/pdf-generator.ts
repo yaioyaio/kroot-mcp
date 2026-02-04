@@ -75,7 +75,7 @@ export class PDFGenerator {
   async generatePDF(
     metadata: ReportMetadata,
     config: ReportConfig,
-    data: ReportData,
+    _data: ReportData,
     outputPath: string
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
@@ -108,7 +108,7 @@ export class PDFGenerator {
         
         // 섹션별 콘텐츠 생성
         for (const section of config.sections.filter(s => s.enabled)) {
-          this.generateSection(doc, section, data);
+          this.generateSection(doc, section, _data);
         }
         
         // 페이지 번호 추가
@@ -228,10 +228,8 @@ export class PDFGenerator {
     sections.forEach((section, index) => {
       doc.fontSize(12)
          .fillColor('#0066cc')
-         .text(`${index + 1}. ${section.name}`, {
-           link: pageNumber,
-           underline: true
-         });
+         .text(`${index + 1}. ${section.name}`, 
+           { underline: true } as any);
       
       doc.fillColor('#666666')
          .text(`Page ${pageNumber}`, {
@@ -251,7 +249,7 @@ export class PDFGenerator {
   private generateSection(
     doc: PDFDocumentInstance,
     section: ReportSection,
-    data: ReportData
+    _data: ReportData
   ): void {
     // 섹션 제목
     doc.fontSize(20)
@@ -263,51 +261,51 @@ export class PDFGenerator {
     // 섹션 타입별 콘텐츠 생성
     switch (section.type) {
       case ReportSectionType.EXECUTIVE_SUMMARY:
-        this.generateExecutiveSummary(doc, data);
+        this.generateExecutiveSummary(doc, _data);
         break;
         
       case ReportSectionType.METRICS_OVERVIEW:
-        this.generateMetricsOverview(doc, data);
+        this.generateMetricsOverview(doc, _data);
         break;
         
       case ReportSectionType.ACTIVITY_TIMELINE:
-        this.generateActivityTimeline(doc, data);
+        this.generateActivityTimeline(doc, _data);
         break;
         
       case ReportSectionType.DEVELOPMENT_STAGES:
-        this.generateDevelopmentStages(doc, data);
+        this.generateDevelopmentStages(doc, _data);
         break;
         
       case ReportSectionType.METHODOLOGY_COMPLIANCE:
-        this.generateMethodologyCompliance(doc, data);
+        this.generateMethodologyCompliance(doc, _data);
         break;
         
       case ReportSectionType.AI_COLLABORATION:
-        this.generateAICollaboration(doc, data);
+        this.generateAICollaboration(doc, _data);
         break;
         
       case ReportSectionType.BOTTLENECK_ANALYSIS:
-        this.generateBottleneckAnalysis(doc, data);
+        this.generateBottleneckAnalysis(doc, _data);
         break;
         
       case ReportSectionType.PERFORMANCE_TRENDS:
-        this.generatePerformanceTrends(doc, data);
+        this.generatePerformanceTrends(doc, _data);
         break;
         
       case ReportSectionType.QUALITY_METRICS:
-        this.generateQualityMetrics(doc, data);
+        this.generateQualityMetrics(doc, _data);
         break;
         
       case ReportSectionType.TEAM_PRODUCTIVITY:
-        this.generateTeamProductivity(doc, data);
+        this.generateTeamProductivity(doc, _data);
         break;
         
       case ReportSectionType.RECOMMENDATIONS:
-        this.generateRecommendations(doc, data);
+        this.generateRecommendations(doc, _data);
         break;
         
       case ReportSectionType.CUSTOM:
-        this.generateCustomSection(doc, section, data);
+        this.generateCustomSection(doc, section, _data);
         break;
     }
     
@@ -318,10 +316,10 @@ export class PDFGenerator {
   /**
    * 경영진 요약 생성
    */
-  private generateExecutiveSummary(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.executiveSummary) return;
+  private generateExecutiveSummary(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.executiveSummary) return;
     
-    const summary = data.analysis.executiveSummary;
+    const summary = _data.analysis.executiveSummary;
     
     // 핵심 지표 박스
     this.drawMetricBox(doc, 'Total Events', summary.totalEvents.toLocaleString(), 50, doc.y);
@@ -339,7 +337,7 @@ export class PDFGenerator {
       
       doc.moveDown(0.5);
       
-      summary.keyHighlights.forEach(highlight => {
+      summary.keyHighlights.forEach((highlight: any) => {
         doc.fontSize(11)
            .fillColor('#666666')
            .text(`• ${highlight}`, { indent: 20 });
@@ -350,30 +348,30 @@ export class PDFGenerator {
   /**
    * 메트릭 개요 생성
    */
-  private generateMetricsOverview(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.metrics) return;
+  private generateMetricsOverview(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.metrics) return;
     
     // 메트릭 차트가 있다면 표시
-    const metricsChart = data.charts?.find(c => c.id === 'metrics-timeline');
+    const metricsChart = _data.charts?.find(c => c.id === 'metrics-timeline');
     if (metricsChart) {
       this.drawChart(doc, metricsChart);
     }
     
     // 주요 메트릭 테이블
-    if (data.metrics) {
+    if (_data.metrics) {
       doc.moveDown();
-      this.drawMetricsTable(doc, data.metrics);
+      this.drawMetricsTable(doc, _data.metrics);
     }
   }
 
   /**
    * 활동 타임라인 생성
    */
-  private generateActivityTimeline(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.events || data.events.length === 0) return;
+  private generateActivityTimeline(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.events || _data.events.length === 0) return;
     
     // 활동 히트맵 차트
-    const heatmapChart = data.charts?.find(c => c.id === 'activity-heatmap');
+    const heatmapChart = _data.charts?.find(c => c.id === 'activity-heatmap');
     if (heatmapChart) {
       this.drawChart(doc, heatmapChart);
     }
@@ -386,7 +384,7 @@ export class PDFGenerator {
     
     doc.moveDown(0.5);
     
-    const recentEvents = data.events.slice(0, 10);
+    const recentEvents = _data.events.slice(0, 10);
     recentEvents.forEach(event => {
       doc.fontSize(10)
          .fillColor('#666666')
@@ -397,10 +395,10 @@ export class PDFGenerator {
   /**
    * 개발 단계 생성
    */
-  private generateDevelopmentStages(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.developmentStages) return;
+  private generateDevelopmentStages(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.developmentStages) return;
     
-    const stages = data.analysis.developmentStages;
+    const stages = _data.analysis.developmentStages;
     
     // 현재 단계
     doc.fontSize(14)
@@ -410,7 +408,7 @@ export class PDFGenerator {
     doc.moveDown();
     
     // 단계 진행률 차트
-    const progressChart = data.charts?.find(c => c.id === 'stage-progress');
+    const progressChart = _data.charts?.find(c => c.id === 'stage-progress');
     if (progressChart) {
       this.drawChart(doc, progressChart);
     }
@@ -419,13 +417,13 @@ export class PDFGenerator {
   /**
    * 방법론 준수도 생성
    */
-  private generateMethodologyCompliance(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.methodologyCompliance) return;
+  private generateMethodologyCompliance(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.methodologyCompliance) return;
     
-    const compliance = data.analysis.methodologyCompliance;
+    const compliance = _data.analysis.methodologyCompliance;
     
     // 방법론 점수 차트
-    const scoresChart = data.charts?.find(c => c.id === 'methodology-scores');
+    const scoresChart = _data.charts?.find(c => c.id === 'methodology-scores');
     if (scoresChart) {
       this.drawChart(doc, scoresChart);
     }
@@ -441,13 +439,13 @@ export class PDFGenerator {
   /**
    * AI 협업 생성
    */
-  private generateAICollaboration(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.aiCollaboration) return;
+  private generateAICollaboration(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.aiCollaboration) return;
     
-    const ai = data.analysis.aiCollaboration;
+    const ai = _data.analysis.aiCollaboration;
     
     // AI 사용 차트
-    const usageChart = data.charts?.find(c => c.id === 'ai-usage');
+    const usageChart = _data.charts?.find(c => c.id === 'ai-usage');
     if (usageChart) {
       this.drawChart(doc, usageChart);
     }
@@ -472,11 +470,11 @@ export class PDFGenerator {
   /**
    * 병목 분석 생성
    */
-  private generateBottleneckAnalysis(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.bottlenecks) return;
+  private generateBottleneckAnalysis(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.bottlenecks) return;
     
     // 병목 테이블
-    const bottleneckTable = data.tables?.find(t => t.id === 'bottleneck-list');
+    const bottleneckTable = _data.tables?.find(t => t.id === 'bottleneck-list');
     if (bottleneckTable) {
       this.drawTable(doc, bottleneckTable);
     }
@@ -485,10 +483,10 @@ export class PDFGenerator {
   /**
    * 성능 트렌드 생성
    */
-  private generatePerformanceTrends(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.performanceTrends) return;
+  private generatePerformanceTrends(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.performanceTrends) return;
     
-    const trends = data.analysis.performanceTrends;
+    const trends = _data.analysis.performanceTrends;
     
     // 트렌드 지표
     Object.entries(trends).forEach(([metric, trend]) => {
@@ -502,13 +500,13 @@ export class PDFGenerator {
   /**
    * 품질 메트릭 생성
    */
-  private generateQualityMetrics(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.qualityMetrics) return;
+  private generateQualityMetrics(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.qualityMetrics) return;
     
-    const quality = data.analysis.qualityMetrics;
+    const quality = _data.analysis.qualityMetrics;
     
     // 품질 트렌드 차트
-    const trendsChart = data.charts?.find(c => c.id === 'quality-trends');
+    const trendsChart = _data.charts?.find(c => c.id === 'quality-trends');
     if (trendsChart) {
       this.drawChart(doc, trendsChart);
     }
@@ -527,10 +525,10 @@ export class PDFGenerator {
   /**
    * 팀 생산성 생성
    */
-  private generateTeamProductivity(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.teamProductivity) return;
+  private generateTeamProductivity(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.teamProductivity) return;
     
-    const productivity = data.analysis.teamProductivity;
+    const productivity = _data.analysis.teamProductivity;
     
     // 생산성 지표
     Object.entries(productivity).forEach(([metric, value]) => {
@@ -544,10 +542,10 @@ export class PDFGenerator {
   /**
    * 권장사항 생성
    */
-  private generateRecommendations(doc: PDFDocumentInstance, data: ReportData): void {
-    if (!data.analysis?.recommendations || data.analysis.recommendations.length === 0) return;
+  private generateRecommendations(doc: PDFDocumentInstance, _data: ReportData): void {
+    if (!_data.analysis?.recommendations || _data.analysis.recommendations.length === 0) return;
     
-    const recommendations = data.analysis.recommendations;
+    const recommendations = _data.analysis.recommendations;
     
     doc.fontSize(12)
        .fillColor('#333333')
@@ -555,7 +553,7 @@ export class PDFGenerator {
     
     doc.moveDown(0.5);
     
-    recommendations.forEach((rec, index) => {
+    recommendations.forEach((rec: any, index: number) => {
       doc.fontSize(10)
          .fillColor('#666666')
          .text(`${index + 1}. ${rec}`, { indent: 20 });
@@ -569,10 +567,10 @@ export class PDFGenerator {
   private generateCustomSection(
     doc: PDFDocumentInstance,
     section: ReportSection,
-    data: ReportData
+    _data: ReportData
   ): void {
-    if (data.custom && data.custom[section.id]) {
-      const customData = data.custom[section.id];
+    if (_data.custom && _data.custom[section.id]) {
+      const customData = _data.custom[section.id];
       
       // 커스텀 데이터를 JSON으로 표시 (실제 구현에서는 더 나은 렌더링 필요)
       doc.fontSize(10)

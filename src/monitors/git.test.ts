@@ -26,7 +26,7 @@ describe('GitMonitor', () => {
       log: vi.fn().mockResolvedValue({
         latest: {
           hash: 'abc123',
-          message: 'Initial commit',
+          _message: 'Initial commit',
           author_name: 'Test User',
           author_email: 'test@example.com',
           date: '2025-08-03',
@@ -49,7 +49,7 @@ describe('GitMonitor', () => {
     (simpleGit as any).mockReturnValue(mockGit);
 
     gitMonitor = new GitMonitor(eventEngine, {
-      repositoryPath: '/test/repo',
+      repositoryPath: process.cwd(),
       pollInterval: 100, // 빠른 테스트를 위해 짧게 설정
     });
   });
@@ -66,7 +66,7 @@ describe('GitMonitor', () => {
 
       expect(config.name).toBe('GitMonitor');
       expect(config.enabled).toBe(true);
-      expect(config.repositoryPath).toBe('/test/repo');
+      expect(config.repositoryPath).toBe(process.cwd());
       expect(config.trackBranches).toBe(true);
       expect(config.trackCommits).toBe(true);
     });
@@ -222,7 +222,7 @@ describe('GitMonitor', () => {
     it('단일 커밋에 대해 fast-forward를 반환해야 함', () => {
       const monitor = gitMonitor as any;
 
-      const type = monitor.determineMergeType([{ message: 'feat: add feature' }]);
+      const type = monitor.determineMergeType([{ _message: 'feat: add feature' }]);
 
       expect(type).toBe('fast-forward');
     });
@@ -231,8 +231,8 @@ describe('GitMonitor', () => {
       const monitor = gitMonitor as any;
 
       const commits = [
-        { message: 'feat: add feature' },
-        { message: 'Merge branch feature into main' },
+        { _message: 'feat: add feature' },
+        { _message: 'Merge branch feature into main' },
       ];
       const type = monitor.determineMergeType(commits);
 
@@ -242,7 +242,7 @@ describe('GitMonitor', () => {
     it('머지 커밋이 없으면 squash를 반환해야 함', () => {
       const monitor = gitMonitor as any;
 
-      const commits = [{ message: 'feat: add feature' }, { message: 'fix: bug fix' }];
+      const commits = [{ _message: 'feat: add feature' }, { _message: 'fix: bug fix' }];
       const type = monitor.determineMergeType(commits);
 
       expect(type).toBe('squash');

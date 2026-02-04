@@ -15,7 +15,7 @@ export interface QueueEvents {
   process: (events: BaseEvent[]) => void;
   error: (error: Error) => void;
   overflow: (droppedEvents: BaseEvent[]) => void;
-  stats: (stats: QueueStatistics) => void;
+  _stats: (_stats: QueueStatistics) => void;
 }
 
 /**
@@ -46,7 +46,7 @@ export interface QueueStatistics {
   processingTime: number;
   throughput: number;
   priorityDistribution: Map<number, number>;
-  oldestEventAge?: number;
+  oldestEventAge?: number | undefined;
 }
 
 /**
@@ -66,7 +66,7 @@ interface QueueItem {
 export class EventQueue extends EventEmitter<QueueEvents> {
   private readonly options: Required<QueueOptions>;
   private readonly queues: Map<number, QueueItem[]>;
-  private stats: QueueStatistics;
+  private _stats?: QueueStatistics;
   private flushTimer?: NodeJS.Timeout;
   private memoryUsage: number = 0;
   private isProcessing: boolean = false;
@@ -94,7 +94,7 @@ export class EventQueue extends EventEmitter<QueueEvents> {
     }
 
     // 통계 초기화
-    this.stats = {
+    this._stats = {
       size: 0,
       memoryUsage: 0,
       enqueuedCount: 0,
@@ -214,8 +214,8 @@ export class EventQueue extends EventEmitter<QueueEvents> {
         
         // 처리 시간 및 처리량 업데이트
         const processingTime = Date.now() - startTime;
-        this.stats.processingTime = processingTime;
-        this.stats.throughput = events.length / (processingTime / 1000);
+        this._stats!.processingTime = processingTime;
+        this._stats!.throughput = events.length / (processingTime / 1000);
       }
     } catch (error) {
       this.emit('error', error as Error);
@@ -244,7 +244,7 @@ export class EventQueue extends EventEmitter<QueueEvents> {
     
     if (currentRetryCount >= this.options.retryAttempts) {
       // 최대 재시도 횟수 초과
-      this.stats.failedCount++;
+      this._stats!.failedCount++;
       this.emit('error', new Error(`Event ${event.id} failed after ${currentRetryCount} retries`));
       return false;
     }
@@ -279,8 +279,8 @@ export class EventQueue extends EventEmitter<QueueEvents> {
     }
     
     this.memoryUsage = 0;
-    this.stats.size = 0;
-    this.stats.priorityDistribution.clear();
+    this._stats!.size = 0;
+    this._stats!.priorityDistribution.clear();
   }
 
   /**
@@ -288,13 +288,13 @@ export class EventQueue extends EventEmitter<QueueEvents> {
    */
   getStats(): QueueStatistics {
     // 현재 큐 상태 업데이트
-    this.stats.size = this.getTotalSize();
-    this.stats.memoryUsage = this.memoryUsage;
+    this._stats!.size = this.getTotalSize();
+    this._stats!.memoryUsage = this.memoryUsage;
 
     // 우선순위 분포 업데이트
-    this.stats.priorityDistribution.clear();
+    this._stats!.priorityDistribution.clear();
     for (const [priority, queue] of this.queues) {
-      this.stats.priorityDistribution.set(priority, queue.length);
+      this._stats!.priorityDistribution.set(priority, queue.length);
     }
 
     // 가장 오래된 이벤트 나이 계산
@@ -309,16 +309,29 @@ export class EventQueue extends EventEmitter<QueueEvents> {
     }
     
     if (oldestTimestamp !== null) {
-      this.stats.oldestEventAge = Date.now() - oldestTimestamp;
+      this._stats!.oldestEventAge = Date.now() - oldestTimestamp;
     } else {
-      delete this.stats.oldestEventAge;
+      this._stats!.oldestEventAge = undefined;
     }
+
+    const statsResult: QueueStatistics = {
+      size: this._stats!.size,
+      memoryUsage: this._stats!.memoryUsage,
+      enqueuedCount: this._stats!.enqueuedCount,
+      dequeuedCount: this._stats!.dequeuedCount,
+      droppedCount: this._stats!.droppedCount,
+      failedCount: this._stats!.failedCount,
+      processingTime: this._stats!.processingTime,
+      throughput: this._stats!.throughput,
+      priorityDistribution: this._stats!.priorityDistribution,
+      ...(this._stats!.oldestEventAge !== undefined && { oldestEventAge: this._stats!.oldestEventAge })
+    };
 
     if (this.options.enableMetrics) {
-      this.emit('stats', { ...this.stats });
+      this.emit('_stats', statsResult);
     }
 
-    return { ...this.stats };
+    return statsResult;
   }
 
   /**
@@ -402,7 +415,7 @@ export class EventQueue extends EventEmitter<QueueEvents> {
       for (const item of items) {
         evicted.push(item.event);
         this.memoryUsage -= item.size;
-        this.stats.droppedCount++;
+        this._stats!.droppedCount++;
       }
 
       remaining -= toEvict;
@@ -426,7 +439,7 @@ export class EventQueue extends EventEmitter<QueueEvents> {
         evicted.push(item.event);
         freedMemory += item.size;
         this.memoryUsage -= item.size;
-        this.stats.droppedCount++;
+        this._stats!.droppedCount++;
       }
     }
 
@@ -444,11 +457,11 @@ export class EventQueue extends EventEmitter<QueueEvents> {
   private updateStats(operation: 'enqueue' | 'dequeue' | 'retry', item: QueueItem): void {
     switch (operation) {
       case 'enqueue':
-        this.stats.enqueuedCount++;
+        this._stats!.enqueuedCount++;
         this.memoryUsage += item.size;
         break;
       case 'dequeue':
-        this.stats.dequeuedCount++;
+        this._stats!.dequeuedCount++;
         this.memoryUsage -= item.size;
         break;
       case 'retry':

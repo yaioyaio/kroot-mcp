@@ -323,7 +323,7 @@ export class PluginAPIProvider {
         registeredTools.set(toolName, handler);
         
         // 실제 MCP 서버에 도구 등록 (나중에 구현)
-        console.log(`[PluginAPI] Tool registered: ${toolName}`);
+        // console.log(`[PluginAPI] Tool registered: ${toolName}`);
       },
 
       unregisterTool: (name: string): void => {
@@ -335,7 +335,7 @@ export class PluginAPIProvider {
         registeredTools.delete(toolName);
         
         // 실제 MCP 서버에서 도구 제거 (나중에 구현)
-        console.log(`[PluginAPI] Tool unregistered: ${toolName}`);
+        // console.log(`[PluginAPI] Tool unregistered: ${toolName}`);
       },
 
       callTool: async (name: string, args: any): Promise<any> => {
@@ -366,7 +366,7 @@ export class PluginAPIProvider {
         }
         
         // 실제 알림 시스템에 전달 (나중에 구현)
-        console.log(`[Plugin:${pluginId}] Notification [${level.toUpperCase()}]: ${message}`);
+        // console.log(`[Plugin:${pluginId}] Notification [${level.toUpperCase()}]: ${message}`);
         
         this.eventBus.emit('plugin.notification', {
           pluginId,
@@ -384,17 +384,17 @@ export class PluginAPIProvider {
         
         // 알림 규칙 생성 (나중에 구현)
         const ruleId = `plugin_${pluginId}_${Date.now()}`;
-        console.log(`[Plugin:${pluginId}] Notification rule created: ${ruleId}`);
+        // console.log(`[Plugin:${pluginId}] Notification rule created: ${ruleId}`);
         return ruleId;
       },
 
-      removeRule: async (ruleId: string): Promise<void> => {
+      removeRule: async (_ruleId: string): Promise<void> => {
         if (!canSendNotifications) {
           throw new Error('Plugin does not have notification permission');
         }
         
         // 알림 규칙 제거 (나중에 구현)
-        console.log(`[Plugin:${pluginId}] Notification rule removed: ${ruleId}`);
+        // console.log(`[Plugin:${pluginId}] Notification rule removed: ${ruleId}`);
       }
     };
   }
@@ -504,7 +504,7 @@ export class PluginAPIProvider {
     // 모든 스토리지 정리
     this.storages.clear();
     
-    console.log('[PluginAPIProvider] Disposed');
+    // console.log('[PluginAPIProvider] Disposed');
   }
 
   /**

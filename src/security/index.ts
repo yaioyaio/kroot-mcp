@@ -167,9 +167,9 @@ export class SecurityManager extends EventEmitter {
   /**
    * 데이터 암호화
    */
-  async encrypt(data: string | Buffer) {
+  async encrypt(_data: string | Buffer) {
     this.ensureInitialized();
-    return this.encryptionManager.encrypt(data);
+    return this.encryptionManager.encrypt(_data);
   }
 
   /**
@@ -183,17 +183,17 @@ export class SecurityManager extends EventEmitter {
   /**
    * 해시 생성
    */
-  async createHash(data: string | Buffer, algorithm?: string, salt?: string) {
+  async createHash(_data: string | Buffer, algorithm?: string, salt?: string) {
     this.ensureInitialized();
-    return this.encryptionManager.createHash(data, algorithm, salt);
+    return this.encryptionManager.createHash(_data, algorithm, salt);
   }
 
   /**
    * HMAC 생성
    */
-  async createHMAC(data: string | Buffer, secret?: string, algorithm?: string) {
+  async createHMAC(_data: string | Buffer, secret?: string, algorithm?: string) {
     this.ensureInitialized();
-    return this.encryptionManager.createHMAC(data, secret, algorithm);
+    return this.encryptionManager.createHMAC(_data, secret, algorithm);
   }
 
   /**

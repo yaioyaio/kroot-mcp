@@ -87,11 +87,11 @@ export class ActivityRepository extends BaseRepository<ActivityRecord> {
     );
 
     // Build statistics object
-    const stats: Record<string, { count: number; actions: Record<string, number> }> = {};
+    const _stats: Record<string, { count: number; actions: Record<string, number> }> = {};
 
     // Initialize stages
     for (const row of stageResults) {
-      stats[row.stage] = {
+      _stats[row.stage] = {
         count: row.count,
         actions: {},
       };
@@ -99,13 +99,13 @@ export class ActivityRepository extends BaseRepository<ActivityRecord> {
 
     // Add action counts
     for (const row of actionResults) {
-      const stageStat = stats[row.stage];
+      const stageStat = _stats[row.stage];
       if (stageStat) {
         stageStat.actions[row.action] = row.count;
       }
     }
 
-    return stats;
+    return _stats;
   }
 
   /**

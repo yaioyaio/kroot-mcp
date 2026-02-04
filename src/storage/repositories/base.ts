@@ -21,9 +21,9 @@ export abstract class BaseRepository<T> implements Repository<T> {
   /**
    * Create a new record
    */
-  async create(data: T): Promise<T> {
-    const keys = Object.keys(data as any).filter((k) => k !== 'id');
-    const values = keys.map((k) => (data as any)[k]);
+  async create(_data: T): Promise<T> {
+    const keys = Object.keys(_data as any).filter((k) => k !== 'id');
+    const values = keys.map((k) => (_data as any)[k]);
     const placeholders = keys.map(() => '?').join(', ');
 
     const sql = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
@@ -75,14 +75,14 @@ export abstract class BaseRepository<T> implements Repository<T> {
   /**
    * Update a record
    */
-  async update(id: number, data: Partial<T>): Promise<T | null> {
-    const keys = Object.keys(data).filter((k) => k !== 'id');
+  async update(id: number, _data: Partial<T>): Promise<T | null> {
+    const keys = Object.keys(_data).filter((k) => k !== 'id');
     if (keys.length === 0) {
       return this.findById(id);
     }
 
     const setClause = keys.map((k) => `${k} = ?`).join(', ');
-    const values = keys.map((k) => (data as any)[k]);
+    const values = keys.map((k) => (_data as any)[k]);
     values.push(id);
 
     const sql = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;

@@ -135,7 +135,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:health_check_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -153,7 +153,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:connection_validated',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           user: response.data.name,
           userId: response.data.id,
           type: response.data.type,
@@ -168,7 +168,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:connection_validation_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -200,7 +200,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:pages_searched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           query,
           pageCount: pages.length,
           totalResults: response.data.results.length,
@@ -215,7 +215,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:pages_search_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           query,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -248,7 +248,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:databases_searched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           query,
           databaseCount: databases.length,
         },
@@ -262,7 +262,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:databases_search_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           query,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -281,7 +281,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_fetched',
         category: EventCategory.API,
         severity: EventSeverity.DEBUG,
-        data: {
+        _data: {
           pageId,
           title: this.extractPageTitle(response.data),
           lastEdited: response.data.last_edited_time,
@@ -296,7 +296,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           pageId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -315,7 +315,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:database_fetched',
         category: EventCategory.API,
         severity: EventSeverity.DEBUG,
-        data: {
+        _data: {
           databaseId,
           title: this.extractDatabaseTitle(response.data),
           lastEdited: response.data.last_edited_time,
@@ -330,7 +330,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:database_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           databaseId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -361,7 +361,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:database_queried',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           databaseId,
           resultCount: response.data.results.length,
           hasFilter: !!filter,
@@ -377,7 +377,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:database_query_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           databaseId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -400,7 +400,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_blocks_fetched',
         category: EventCategory.API,
         severity: EventSeverity.DEBUG,
-        data: {
+        _data: {
           pageId,
           blockCount: response.data.results.length,
         },
@@ -414,7 +414,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_blocks_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           pageId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -446,7 +446,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_created',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           pageId: response.data.id,
           parentType: parent.database_id ? 'database' : 'page',
           parentId: parent.database_id || parent.page_id,
@@ -462,7 +462,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_creation_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           parentType: parent.database_id ? 'database' : 'page',
           parentId: parent.database_id || parent.page_id,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -482,7 +482,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_updated',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           pageId,
           title: this.extractPageTitle(response.data),
           lastEdited: response.data.last_edited_time,
@@ -497,7 +497,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:page_update_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           pageId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -540,7 +540,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:recent_pages_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           days,
           recentPageCount: recentPages.length,
           totalPages: response.data.results.length,
@@ -555,7 +555,7 @@ export class NotionClient extends BaseAPIClient {
         type: 'notion:recent_pages_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           days,
           error: error instanceof Error ? error.message : 'Unknown error',
         },

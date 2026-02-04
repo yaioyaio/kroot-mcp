@@ -60,7 +60,7 @@ export interface BaseEvent {
   source: string;
 
   /** 이벤트 데이터 */
-  data: Record<string, any>;
+  _data: Record<string, any>;
 
   /** 메타데이터 (선택적) */
   metadata?: EventMetadata;

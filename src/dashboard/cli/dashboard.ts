@@ -159,7 +159,7 @@ export class CLIDashboard extends EventEmitter {
     const stats = eventEngine.getStats();
     const uptime = this.getUptime();
     
-    console.log(chalk.bold.blue('\n🔧 System Status'));
+    console.log(chalk.bold.blue('\nSystem Status'));
     
     const statusTable = new Table({
       chars: { 'mid': '', 'left-mid': '', 'mid-mid': '', 'right-mid': '' },
@@ -178,7 +178,7 @@ export class CLIDashboard extends EventEmitter {
    * Show recent activity
    */
   private showRecentActivity(): void {
-    console.log(chalk.bold.yellow('\n📋 Recent Activity'));
+    console.log(chalk.bold.yellow('\nRecent Activity'));
     
     if (this.events.length === 0) {
       console.log(chalk.gray('  No recent events'));
@@ -209,7 +209,7 @@ export class CLIDashboard extends EventEmitter {
    * Show metrics
    */
   private showMetrics(): void {
-    console.log(chalk.bold.green('\n📈 Metrics'));
+    console.log(chalk.bold.green('\nMetrics'));
     
     const stats = eventEngine.getStats();
     
@@ -343,7 +343,7 @@ export class CLIDashboard extends EventEmitter {
    * Show summary report
    */
   showSummary(): void {
-    console.log(chalk.bold.cyan('\n📊 Dashboard Summary'));
+    console.log(chalk.bold.cyan('\nDashboard Summary'));
     console.log(chalk.gray('─'.repeat(40)));
     
     const stats = eventEngine.getStats();

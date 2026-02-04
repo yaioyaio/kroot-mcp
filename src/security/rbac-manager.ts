@@ -254,7 +254,7 @@ export class RBACManager extends EventEmitter {
         resource: check.resource,
         action: check.action,
         success: allowed,
-        message: allowed 
+        _message: allowed 
           ? `Permission granted for ${check.resource}:${check.action}`
           : `Permission denied for ${check.resource}:${check.action}`,
         metadata: { check, matchedPermissions: matchedPermissions.length }
@@ -275,7 +275,7 @@ export class RBACManager extends EventEmitter {
         resource: check.resource,
         action: check.action,
         success: false,
-        message: `Permission check failed: ${(error as Error).message}`
+        _message: `Permission check failed: ${(error as Error).message}`
       });
 
       return {
@@ -407,7 +407,7 @@ export class RBACManager extends EventEmitter {
       resource: 'roles',
       action: 'create',
       success: true,
-      message: `Role '${name}' created with ${permissions.length} permissions`,
+      _message: `Role '${name}' created with ${permissions.length} permissions`,
       metadata: { roleId: role.id, permissionCount: permissions.length }
     });
 
@@ -455,7 +455,7 @@ export class RBACManager extends EventEmitter {
       resource: 'roles',
       action: 'update',
       success: true,
-      message: `Role '${role.name}' updated`,
+      _message: `Role '${role.name}' updated`,
       metadata: { 
         roleId, 
         changes: Object.keys(updates),
@@ -484,7 +484,7 @@ export class RBACManager extends EventEmitter {
         resource: 'roles',
         action: 'delete',
         success: false,
-        message: `Cannot delete reserved role '${role.name}'`
+        _message: `Cannot delete reserved role '${role.name}'`
       });
       return false;
     }
@@ -505,7 +505,7 @@ export class RBACManager extends EventEmitter {
       resource: 'roles',
       action: 'delete',
       success: true,
-      message: `Role '${role.name}' deleted`,
+      _message: `Role '${role.name}' deleted`,
       metadata: { roleId, roleName: role.name }
     });
 
@@ -535,7 +535,7 @@ export class RBACManager extends EventEmitter {
       resource: 'users',
       action: 'update',
       success: true,
-      message: `Role '${role.name}' assigned to user ${userId}`,
+      _message: `Role '${role.name}' assigned to user ${userId}`,
       metadata: { 
         targetUserId: userId,
         roleId,
@@ -570,7 +570,7 @@ export class RBACManager extends EventEmitter {
       resource: 'users',
       action: 'update',
       success: true,
-      message: `Role '${role.name}' revoked from user ${userId}`,
+      _message: `Role '${role.name}' revoked from user ${userId}`,
       metadata: { 
         targetUserId: userId,
         roleId,

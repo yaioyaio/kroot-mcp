@@ -12,7 +12,7 @@ import {
   TemplateExample,
   WorkflowStage
 } from './types';
-import { StorageManager } from '../storage/index.js';
+// import { StorageManager } from '../storage/index.js';
 import { StageBuilder } from './stage-builder';
 
 export interface TemplateDefinition {
@@ -71,7 +71,6 @@ export class TemplateSystem extends EventEmitter {
   private instantiatedWorkflows: Map<string, string> = new Map(); // templateId -> workflowId
 
   constructor(
-    private _storageManager: StorageManager,
     private stageBuilder: StageBuilder
   ) {
     super();
@@ -177,7 +176,7 @@ export class TemplateSystem extends EventEmitter {
           definitionId: 'notification',
           configuration: {
             title: 'Deployment Successful',
-            message: 'Successfully deployed to {{deploymentTarget}}',
+            _message: 'Successfully deployed to {{deploymentTarget}}',
             priority: 'high',
             channels: '{{notificationChannel}}'
           }
@@ -316,7 +315,7 @@ export class TemplateSystem extends EventEmitter {
           definitionId: 'notification',
           configuration: {
             title: 'Code Quality Alert',
-            message: 'Quality score below threshold: {{qualityScore}}%',
+            _message: 'Quality score below threshold: {{qualityScore}}%',
             priority: 'medium',
             channels: 'dashboard'
           }
@@ -514,7 +513,7 @@ export class TemplateSystem extends EventEmitter {
           definitionId: 'notification',
           configuration: {
             title: 'New Bug Detected',
-            message: 'Bug ticket created: {{ticketId}}',
+            _message: 'Bug ticket created: {{ticketId}}',
             priority: 'high'
           }
         }
@@ -603,7 +602,7 @@ export class TemplateSystem extends EventEmitter {
           definitionId: 'notification',
           configuration: {
             title: 'Performance Alert',
-            message: 'Performance threshold exceeded: {{metric}}',
+            _message: 'Performance threshold exceeded: {{metric}}',
             priority: 'urgent'
           }
         }
@@ -628,7 +627,7 @@ export class TemplateSystem extends EventEmitter {
   registerTemplate(template: TemplateDefinition): void {
     this.templates.set(template.id, template);
     this.emit('template-registered', template);
-    console.log(`📋 Template registered: ${template.name}`);
+    // console.log(`📋 Template registered: ${template.name}`);
   }
 
   /**
@@ -726,7 +725,7 @@ export class TemplateSystem extends EventEmitter {
     this.instantiatedWorkflows.set(templateId, workflow.id);
 
     this.emit('workflow-instantiated', { template, workflow, options });
-    console.log(`✨ Workflow instantiated: ${workflow.name} from template ${template.name}`);
+    // console.log(`✨ Workflow instantiated: ${workflow.name} from template ${template.name}`);
 
     return workflow;
   }

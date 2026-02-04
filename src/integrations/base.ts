@@ -109,7 +109,7 @@ export abstract class BaseAPIClient {
           type: 'api:request_start',
           category: EventCategory.API,
           severity: EventSeverity.DEBUG,
-          data: {
+          _data: {
             url: config.url,
             method: config.method?.toUpperCase(),
             baseURL: config.baseURL,
@@ -124,7 +124,7 @@ export abstract class BaseAPIClient {
           type: 'api:request_error',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             error: error.message,
             config: error.config,
           },
@@ -141,7 +141,7 @@ export abstract class BaseAPIClient {
           type: 'api:response_success',
           category: EventCategory.API,
           severity: EventSeverity.DEBUG,
-          data: {
+          _data: {
             url: response.config.url,
             status: response.status,
             statusText: response.statusText,
@@ -157,11 +157,11 @@ export abstract class BaseAPIClient {
           type: 'api:response_error',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             url: error.config?.url,
             status: error.response?.status,
             statusText: error.response?.statusText,
-            message: error.message,
+            _message: error.message,
           },
           timestamp: Date.now(),
           source: this.constructor.name,
@@ -220,7 +220,7 @@ export abstract class BaseAPIClient {
             type: 'api:retry_success',
             category: EventCategory.API,
             severity: EventSeverity.INFO,
-            data: {
+            _data: {
               url: config.url,
               attempt,
               totalAttempts: attempt + 1,
@@ -244,7 +244,7 @@ export abstract class BaseAPIClient {
             type: 'api:retry_attempt',
             category: EventCategory.API,
             severity: EventSeverity.WARNING,
-            data: {
+            _data: {
               url: config.url,
               attempt: attempt + 1,
               maxRetries: retryConfig.maxRetries,
@@ -266,7 +266,7 @@ export abstract class BaseAPIClient {
       type: 'api:max_retries_exceeded',
       category: EventCategory.API,
       severity: EventSeverity.ERROR,
-      data: {
+      _data: {
         url: config.url,
         maxRetries: retryConfig.maxRetries,
         finalError: lastError instanceof Error ? lastError.message : 'Unknown error',
@@ -341,7 +341,7 @@ export abstract class BaseAPIClient {
       type: 'api:auth_updated',
       category: EventCategory.API,
       severity: EventSeverity.INFO,
-      data: {
+      _data: {
         authType: auth?.type,
         hasToken: !!auth?.token,
         hasCredentials: !!(auth?.username && auth?.password),

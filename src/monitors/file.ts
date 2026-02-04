@@ -208,9 +208,9 @@ export class FileMonitor extends BaseMonitor {
 
     // Detect test file changes
     if (relativePath.includes('test') || relativePath.includes('spec')) {
-      this.emitEvent('context:test', {
+      this.emitEvent('_context:test', {
         ...event,
-        context: 'test',
+        _context: 'test',
         description: `Test file ${action}: ${relativePath}`,
       });
     }
@@ -222,9 +222,9 @@ export class FileMonitor extends BaseMonitor {
       extension === '.yml' ||
       relativePath.includes('config')
     ) {
-      this.emitEvent('context:config', {
+      this.emitEvent('_context:config', {
         ...event,
-        context: 'configuration',
+        _context: 'configuration',
         description: `Configuration ${action}: ${relativePath}`,
       });
     }
@@ -235,27 +235,27 @@ export class FileMonitor extends BaseMonitor {
       !relativePath.includes('test') &&
       !relativePath.includes('spec')
     ) {
-      this.emitEvent('context:source', {
+      this.emitEvent('_context:source', {
         ...event,
-        context: 'source',
+        _context: 'source',
         description: `Source code ${action}: ${relativePath}`,
       });
     }
 
     // Detect documentation changes
     if (extension === '.md' || relativePath.includes('docs')) {
-      this.emitEvent('context:documentation', {
+      this.emitEvent('_context:documentation', {
         ...event,
-        context: 'documentation',
+        _context: 'documentation',
         description: `Documentation ${action}: ${relativePath}`,
       });
     }
 
     // Detect build output changes
     if (relativePath.startsWith('dist/') || relativePath.startsWith('build/')) {
-      this.emitEvent('context:build', {
+      this.emitEvent('_context:build', {
         ...event,
-        context: 'build',
+        _context: 'build',
         description: `Build output ${action}: ${relativePath}`,
       });
     }

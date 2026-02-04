@@ -184,16 +184,16 @@ export class AIMonitor extends EventEmitter<AIMonitorEvents> {
    * 파일 이벤트 분석
    */
   private async analyzeFileEvent(event: FileEvent): Promise<void> {
-    if (event.data.action !== FileChangeAction.ADD && 
-        event.data.action !== FileChangeAction.CHANGE) {
+    if (event._data.action !== FileChangeAction.ADD && 
+        event._data.action !== FileChangeAction.CHANGE) {
       return;
     }
 
-    const filePath = event.data.newFile?.path || event.data.oldFile?.path;
+    const filePath = event._data.newFile?.path || event._data.oldFile?.path;
     if (!filePath) return;
 
-    const content = (event.data.newFile as any)?.content || '';
-    const oldContent = (event.data.oldFile as any)?.content || '';
+    const content = (event._data.newFile as any)?.content || '';
+    const oldContent = (event._data.oldFile as any)?.content || '';
 
     // 각 AI 도구별 감지
     for (const [tool, rule] of this.detectionRules) {
@@ -226,8 +226,8 @@ export class AIMonitor extends EventEmitter<AIMonitorEvents> {
    */
   private async analyzeGitEvent(event: GitEvent): Promise<void> {
     if (event.type === GitEventType.COMMIT_CREATED) {
-      const commitData = event.data as any;
-      const message = commitData.message || '';
+      const commitData = event._data as any;
+      const message = commitData._message || '';
       
       // AI 관련 커밋 메시지 패턴 확인
       for (const [tool, rule] of this.detectionRules) {
@@ -249,7 +249,7 @@ export class AIMonitor extends EventEmitter<AIMonitorEvents> {
    * 프로세스 이벤트 분석
    */
   private async analyzeProcessEvent(event: BaseEvent): Promise<void> {
-    const processData = event.data as any;
+    const processData = event._data as any;
     const processName = processData.name || '';
     
     // 실행 중인 AI 도구 프로세스 감지
@@ -759,7 +759,7 @@ export class AIMonitor extends EventEmitter<AIMonitorEvents> {
    */
   private updateMetrics(): void {
     for (const tool of Object.values(AITool)) {
-      const metrics = this.calculateMetrics(tool as AITool);
+      const metrics = this._calculateMetrics(tool as AITool);
       this.emit('metricsUpdated', metrics);
     }
   }
@@ -767,7 +767,7 @@ export class AIMonitor extends EventEmitter<AIMonitorEvents> {
   /**
    * 메트릭 계산
    */
-  private calculateMetrics(tool: AITool): AIEffectivenessMetrics {
+  private _calculateMetrics(tool: AITool): AIEffectivenessMetrics {
     const recentSuggestions = Array.from(this.suggestions.values())
       .filter(s => s.tool === tool && s.timestamp > Date.now() - this.DETECTION_WINDOW);
     
@@ -957,7 +957,7 @@ export class AIMonitor extends EventEmitter<AIMonitorEvents> {
     
     // 도구별 분석
     for (const [tool, pattern] of patterns) {
-      const metrics = this.calculateMetrics(tool);
+      const metrics = this._calculateMetrics(tool);
       tools[tool] = {
         sessions: Array.from(this.sessions.values()).filter(s => s.tool === tool).length,
         interactions: metrics.totalInteractions,

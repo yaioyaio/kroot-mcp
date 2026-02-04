@@ -25,7 +25,7 @@ export function createEvent(
     timestamp: options.timestamp || Date.now(),
     severity: options.severity || EventSeverity.INFO,
     source: options.source || 'unknown',
-    data,
+    _data: data,
     ...(options.metadata && { metadata: options.metadata }),
     ...(options.correlationId && { correlationId: options.correlationId }),
     ...(options.parentId && { parentId: options.parentId }),

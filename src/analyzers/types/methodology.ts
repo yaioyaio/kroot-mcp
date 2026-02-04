@@ -234,7 +234,7 @@ export interface EventFlowEdge {
 export interface MethodologyAnalyzerEvents {
   methodologyDetected: (detection: MethodologyDetection) => void;
   tddCycleChanged: (state: TDDCycleState) => void;
-  dddPatternFound: (pattern: DDDPattern, context: DDDContextMap) => void;
+  dddPatternFound: (pattern: DDDPattern, _context: DDDContextMap) => void;
   bddScenarioUpdated: (scenario: BDDScenario) => void;
   edaEventFlowChanged: (flow: EDAEventFlow) => void;
   scoreUpdated: (scores: Record<DevelopmentMethodology, MethodologyScore>) => void;

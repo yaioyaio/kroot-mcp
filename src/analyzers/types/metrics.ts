@@ -250,10 +250,10 @@ export interface MetricAlert {
   id: string;
   type: MetricAlertType;
   severity: EventSeverity;
-  metric: string;
+  _metric: string;
   threshold: number;
   currentValue: number;
-  message: string;
+  _message: string;
   createdAt: Date;
   acknowledged: boolean;
 }

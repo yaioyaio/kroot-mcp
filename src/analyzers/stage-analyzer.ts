@@ -35,10 +35,10 @@ interface StageAnalyzerConfig {
  * 단계 분석기 이벤트
  */
 interface StageAnalyzerEvents {
-  'stage:transition': (transition: StageTransition) => void;
+  'stage:transition': (_transition: StageTransition) => void;
   'stage:detected': (stage: DevelopmentStage, confidence: number) => void;
   'substage:detected': (subStage: CodingSubStage) => void;
-  'analysis:complete': (result: StageAnalysisResult) => void;
+  '_analysis:complete': (result: StageAnalysisResult) => void;
 }
 
 /**
@@ -247,7 +247,7 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
       for (const pattern of rule.patterns) {
         if (pattern.type === 'file') {
           const regex = pattern.pattern instanceof RegExp ? pattern.pattern : new RegExp(pattern.pattern);
-          const filePath = event.data.newFile.path;
+          const filePath = event._data.newFile.path;
           if (regex.test(filePath)) {
             confidence += pattern.weight;
             indicators.push({
@@ -283,13 +283,13 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
           const regex = pattern.pattern instanceof RegExp ? pattern.pattern : new RegExp(pattern.pattern);
           
           // 커밋 메시지 확인
-          if (event.type.includes('commit') && 'commit' in event.data) {
-            const commitData = event.data as GitCommitEventData;
-            if (regex.test(commitData.commit.message)) {
+          if (event.type.includes('commit') && 'commit' in event._data) {
+            const commitData = event._data as GitCommitEventData;
+            if (regex.test(commitData.commit._message)) {
               confidence += pattern.weight;
               indicators.push({
                 type: 'git_commit',
-                value: commitData.commit.message,
+                value: commitData.commit._message,
                 timestamp: event.timestamp,
                 source: 'git_event'
               });
@@ -329,7 +329,7 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
 
     // 단계 전환 처리
     if (this.currentStage !== stage) {
-      const transition: StageTransition = {
+      const _transition: StageTransition = {
         fromStage: this.currentStage,
         toStage: stage,
         timestamp: now,
@@ -339,7 +339,7 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
 
       this.currentStage = stage;
       this.lastTransitionTime = now;
-      this.recentTransitions.push(transition);
+      this.recentTransitions.push(_transition);
 
       // 히스토리 크기 제한
       if (this.recentTransitions.length > this.config.historySize) {
@@ -347,12 +347,12 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
       }
 
       // 이벤트 발행
-      this.emit('stage:transition', transition);
+      this.emit('stage:transition', _transition);
       this.emit('stage:detected', stage, confidence);
 
       // 저장소에 기록
       if (this.config.storageManager) {
-        this.saveTransition(transition);
+        this.saveTransition(_transition);
       }
     }
 
@@ -389,17 +389,17 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
   /**
    * 전환 저장
    */
-  private async saveTransition(transition: StageTransition): Promise<void> {
+  private async saveTransition(_transition: StageTransition): Promise<void> {
     if (!this.config.storageManager) return;
 
     // TODO: StorageManager에 StageTransitionRepository 추가 필요
     // 현재는 로깅만 수행
-    console.log('Stage transition:', {
-      from: transition.fromStage || 'start',
-      to: transition.toStage,
-      confidence: transition.confidence,
-      reason: transition.reason,
-    });
+    // console.log('Stage _transition:', {
+    //   from: transition.fromStage || 'start',
+    //   to: transition.toStage,
+    //   confidence: transition.confidence,
+    //   reason: transition.reason,
+    // });
   }
 
   /**
@@ -418,7 +418,7 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
       suggestions
     };
 
-    this.emit('analysis:complete', result);
+    this.emit('_analysis:complete', result);
     return result;
   }
 
@@ -663,23 +663,23 @@ export class StageAnalyzer extends EventEmitter<StageAnalyzerEvents> {
   private getEventContent(event: BaseEvent): string | null {
     if (event.category === EventCategory.FILE) {
       const fileEvent = event as FileEvent;
-      return `${fileEvent.data.newFile.path} ${fileEvent.data.context?.type || ''}`;
+      return `${fileEvent._data.newFile.path} ${fileEvent._data.context?.type || ''}`;
     }
     
     if (event.category === EventCategory.GIT) {
       const gitEvent = event as GitEvent;
-      if ('commit' in gitEvent.data) {
-        const commitData = gitEvent.data as GitCommitEventData;
-        return commitData.commit.message;
-      } else if ('branch' in gitEvent.data) {
-        const branchData = gitEvent.data as GitBranchEventData;
+      if ('commit' in gitEvent._data) {
+        const commitData = gitEvent._data as GitCommitEventData;
+        return commitData.commit._message;
+      } else if ('branch' in gitEvent._data) {
+        const branchData = gitEvent._data as GitBranchEventData;
         return branchData.branch.name;
       }
       return '';
     }
 
     if (event.category === EventCategory.SYSTEM) {
-      return JSON.stringify(event.data);
+      return JSON.stringify(event._data);
     }
 
     return null;

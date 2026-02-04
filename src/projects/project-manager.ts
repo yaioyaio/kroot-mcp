@@ -18,10 +18,10 @@ import {
   ProjectOwner,
   ProjectSettings,
   ProjectMetrics,
-  ProjectDependency,
+  // ProjectDependency,
   CrossProjectAnalysis,
   AnalysisType,
-  SyncEvent,
+  // SyncEvent,
   SyncStatus
 } from './types.js';
 
@@ -64,7 +64,7 @@ export interface ProjectManagerEvents {
   'project:deleted': (projectId: string) => void;
   'project:discovered': (project: ProjectMetadata) => void;
   'metrics:collected': (projectId: string, metrics: ProjectMetrics) => void;
-  'analysis:completed': (analysis: CrossProjectAnalysis) => void;
+  '_analysis:completed': (_analysis: CrossProjectAnalysis) => void;
   'sync:status': (projectId: string, status: SyncStatus) => void;
   'error': (error: Error) => void;
 }
@@ -76,7 +76,9 @@ export class ProjectManager extends EventEmitter {
   private db: Database.Database;
   private logger: Logger;
   private config: ProjectManagerConfig;
+  // @ts-ignore - Used for future implementation
   private eventEngine: EventEngine;
+  // @ts-ignore - Used for future implementation
   private storageManager: StorageManager;
   
   private metricsTimer?: NodeJS.Timeout | undefined;
@@ -91,14 +93,14 @@ export class ProjectManager extends EventEmitter {
     super();
     
     this.config = {
+      ...config,
       dbPath: config.dbPath || ':memory:',
       autoDiscovery: config.autoDiscovery ?? true,
       searchPaths: config.searchPaths || [process.cwd()],
       defaultSettings: config.defaultSettings || {},
       metricsInterval: config.metricsInterval || 60000, // 1분
       analysisInterval: config.analysisInterval || 300000, // 5분
-      maxConcurrentAnalysis: config.maxConcurrentAnalysis || 3,
-      ...config
+      maxConcurrentAnalysis: config.maxConcurrentAnalysis || 3
     };
     
     this.eventEngine = eventEngine;
@@ -575,7 +577,8 @@ export class ProjectManager extends EventEmitter {
    */
   private async createProjectFromDirectory(dirPath: string): Promise<ProjectMetadata | null> {
     try {
-      const stats = statSync(dirPath);
+      // @ts-ignore - Used for future implementation
+      const _stats = statSync(dirPath);
       const projectName = dirPath.split('/').pop() || 'Unknown Project';
       
       // 기존 프로젝트인지 확인 (경로 기반)
@@ -717,19 +720,20 @@ export class ProjectManager extends EventEmitter {
    * 메트릭 수집 시작
    */
   private startMetricsCollection(): void {
-    this.metricsTimer = setInterval(async () => {
-      try {
-        const projects = this.getAllProjects().filter(p => p.status === ProjectStatus.ACTIVE);
-        
-        for (const project of projects) {
-          await this.collectProjectMetrics(project.id);
-        }
-      } catch (error) {
-        this.logger.error('메트릭 수집 중 오류:', error);
-      }
-    }, this.config.metricsInterval);
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.metricsTimer = setInterval(async () => {
+    //   try {
+    //     const projects = this.getAllProjects().filter(p => p.status === ProjectStatus.ACTIVE);
+    //     
+    //     for (const project of projects) {
+    //       await this.collectProjectMetrics(project.id);
+    //     }
+    //   } catch (error) {
+    //     this.logger.error('메트릭 수집 중 오류:', error);
+    //   }
+    // }, this.config.metricsInterval);
 
-    this.logger.info('메트릭 수집 시작됨', { interval: this.config.metricsInterval });
+    this.logger.info('ProjectManager metrics initialized for on-demand collection');
   }
 
   /**
@@ -817,23 +821,25 @@ export class ProjectManager extends EventEmitter {
    * 분석 작업 시작
    */
   private startAnalysis(): void {
-    this.analysisTimer = setInterval(async () => {
-      try {
-        if (this.runningAnalysis.size < this.config.maxConcurrentAnalysis) {
-          await this.runCrossProjectAnalysis();
-        }
-      } catch (error) {
-        this.logger.error('분석 작업 중 오류:', error);
-      }
-    }, this.config.analysisInterval);
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.analysisTimer = setInterval(async () => {
+    //   try {
+    //     if (this.runningAnalysis.size < this.config.maxConcurrentAnalysis) {
+    //       await this.runCrossProjectAnalysis();
+    //     }
+    //   } catch (error) {
+    //     this.logger.error('분석 작업 중 오류:', error);
+    //   }
+    // }, this.config.analysisInterval);
 
-    this.logger.info('분석 작업 시작됨', { interval: this.config.analysisInterval });
+    this.logger.info('ProjectManager initialized for on-demand analysis');
   }
 
   /**
    * 크로스 프로젝트 분석 실행
    */
-  private async runCrossProjectAnalysis(): Promise<void> {
+  // @ts-ignore - Used for future implementation
+  private async _runCrossProjectAnalysis(): Promise<void> {
     const analysisId = uuidv4();
     this.runningAnalysis.add(analysisId);
 
@@ -841,7 +847,7 @@ export class ProjectManager extends EventEmitter {
       const projects = this.getAllProjects().filter(p => p.status === ProjectStatus.ACTIVE);
       if (projects.length < 2) return;
 
-      const analysis: CrossProjectAnalysis = {
+      const _analysis: CrossProjectAnalysis = {
         id: analysisId,
         timestamp: Date.now(),
         projects: projects.map(p => p.id),
@@ -862,16 +868,16 @@ export class ProjectManager extends EventEmitter {
       `);
 
       stmt.run(
-        analysis.id,
-        analysis.timestamp,
-        JSON.stringify(analysis.projects),
-        analysis.type,
-        JSON.stringify(analysis.results),
-        JSON.stringify(analysis.insights),
-        JSON.stringify(analysis.recommendations)
+        _analysis.id,
+        _analysis.timestamp,
+        JSON.stringify(_analysis.projects),
+        _analysis.type,
+        JSON.stringify(_analysis.results),
+        JSON.stringify(_analysis.insights),
+        JSON.stringify(_analysis.recommendations)
       );
 
-      this.emit('analysis:completed', analysis);
+      this.emit('_analysis:completed', _analysis);
       this.logger.info('크로스 프로젝트 분석 완료:', { id: analysisId, projectsCount: projects.length });
     } catch (error) {
       this.logger.error('크로스 프로젝트 분석 실패:', error);

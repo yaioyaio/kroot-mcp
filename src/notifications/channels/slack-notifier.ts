@@ -24,8 +24,8 @@ export class SlackNotifier {
   /**
    * Slack 메시지 전송
    */
-  async send(message: NotificationMessage, config: SlackConfig): Promise<any> {
-    const slackMessage = this.formatMessage(message, config);
+  async send(_message: NotificationMessage, config: SlackConfig): Promise<any> {
+    const slackMessage = this.formatMessage(_message, config);
     
     try {
       const response = await this.axios.post(config.webhookUrl, slackMessage);
@@ -41,47 +41,47 @@ export class SlackNotifier {
   /**
    * 메시지 포맷팅
    */
-  private formatMessage(message: NotificationMessage, config: SlackConfig): any {
-    const color = this.getColorBySeverity(message.severity);
-    const emoji = this.getEmojiByPriority(message.priority);
+  private formatMessage(_message: NotificationMessage, config: SlackConfig): any {
+    const color = this.getColorBySeverity(_message.severity);
+    const emoji = this.getEmojiByPriority(_message.priority);
     
     const slackMessage: any = {
       channel: config.channel,
       username: config.username || 'DevFlow Monitor',
       icon_emoji: config.iconEmoji || ':robot_face:',
-      text: `${emoji} ${message.title}`,
+      text: `${emoji} ${_message.title}`,
       attachments: [],
     };
 
     // 기본 첨부 파일
     const mainAttachment: any = {
       color,
-      text: message.content,
-      ts: Math.floor(message.createdAt.getTime() / 1000),
+      text: _message.content,
+      ts: Math.floor(_message.createdAt.getTime() / 1000),
       footer: 'DevFlow Monitor MCP',
       footer_icon: 'https://platform.slack-edge.com/img/default_application_icon.png',
     };
 
     // 메타데이터 필드
-    if (message.data) {
-      mainAttachment.fields = this.formatFields(message.data);
+    if (_message.data) {
+      mainAttachment.fields = this.formatFields(_message.data);
     }
 
     slackMessage.attachments.push(mainAttachment);
 
     // 추가 첨부 파일
-    if (message.attachments) {
-      slackMessage.attachments.push(...this.formatAttachments(message.attachments));
+    if (_message.attachments) {
+      slackMessage.attachments.push(...this.formatAttachments(_message.attachments));
     }
 
     // 액션 버튼
-    if (message.actions && message.actions.length > 0) {
+    if (_message.actions && _message.actions.length > 0) {
       const actionAttachment: any = {
         fallback: 'Actions are not supported',
-        callback_id: message.id,
+        callback_id: _message.id,
         color,
         attachment_type: 'default',
-        actions: this.formatActions(message.actions),
+        actions: this.formatActions(_message.actions),
       };
       slackMessage.attachments.push(actionAttachment);
     }
@@ -130,11 +130,11 @@ export class SlackNotifier {
   /**
    * 데이터 필드 포맷팅
    */
-  private formatFields(data: Record<string, any>): any[] {
+  private formatFields(_data: Record<string, any>): any[] {
     const fields: any[] = [];
     
     // 주요 필드만 표시 (최대 10개)
-    const entries = Object.entries(data).slice(0, 10);
+    const entries = Object.entries(_data).slice(0, 10);
     
     for (const [key, value] of entries) {
       if (value === null || value === undefined) continue;

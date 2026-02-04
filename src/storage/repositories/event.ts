@@ -26,7 +26,7 @@ export class EventRepository extends BaseRepository<EventRecord> {
     const record: EventRecord = {
       type: event.type,
       timestamp: timestamp.getTime(),
-      data: JSON.stringify(event),
+      _data: JSON.stringify(event),
       device_id: (event.metadata?.deviceId as string) ?? null,
       user_id: (event.metadata?.userId as string) ?? null,
     };

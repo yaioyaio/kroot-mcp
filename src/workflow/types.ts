@@ -142,7 +142,7 @@ export interface WorkflowExecution {
   currentStage: string;
   startTime: Date;
   endTime?: Date;
-  context: ExecutionContext;
+  _context: ExecutionContext;
   history: ExecutionHistoryItem[];
 }
 

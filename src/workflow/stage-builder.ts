@@ -69,7 +69,7 @@ export interface FieldValidation {
 export interface ValidationRule {
   field: string;
   rule: string;
-  message: string;
+  _message: string;
 }
 
 export class StageBuilder extends EventEmitter {
@@ -148,7 +148,7 @@ export class StageBuilder extends EventEmitter {
       defaultActions: [
         {
           type: ActionType.LOG,
-          parameters: { level: 'info', message: 'File change detected: {{changedFiles}}' },
+          parameters: { _level: 'info', _message: 'File change detected: {{changedFiles}}' },
           async: false
         }
       ],
@@ -156,7 +156,7 @@ export class StageBuilder extends EventEmitter {
         {
           field: 'path',
           rule: 'required',
-          message: 'Monitor path is required'
+          _message: 'Monitor path is required'
         }
       ]
     });
@@ -217,7 +217,7 @@ export class StageBuilder extends EventEmitter {
           type: ActionType.NOTIFY,
           parameters: { 
             channel: 'git', 
-            message: 'Git activity detected: {{commits.length}} new commits',
+            _message: 'Git activity detected: {{commits.length}} new commits',
             priority: 'medium'
           },
           async: false
@@ -294,7 +294,7 @@ export class StageBuilder extends EventEmitter {
         {
           field: 'testCommand',
           rule: 'required',
-          message: 'Test command is required'
+          _message: 'Test command is required'
         }
       ]
     });
@@ -370,7 +370,7 @@ export class StageBuilder extends EventEmitter {
           type: ActionType.NOTIFY,
           parameters: {
             title: '{{title}}',
-            message: '{{message}}',
+            _message: '{{message}}',
             priority: '{{priority}}',
             channels: '{{channels}}'
           },
@@ -381,7 +381,7 @@ export class StageBuilder extends EventEmitter {
         {
           field: 'message',
           rule: 'required',
-          message: 'Notification message is required'
+          _message: 'Notification message is required'
         }
       ]
     });
@@ -447,7 +447,7 @@ export class StageBuilder extends EventEmitter {
       defaultActions: [
         {
           type: ActionType.LOG,
-          parameters: { level: 'info', message: 'Decision result: {{result}}' },
+          parameters: { _level: 'info', _message: 'Decision result: {{result}}' },
           async: false
         }
       ],
@@ -455,12 +455,12 @@ export class StageBuilder extends EventEmitter {
         {
           field: 'field',
           rule: 'required',
-          message: 'Field to check is required'
+          _message: 'Field to check is required'
         },
         {
           field: 'operator',
           rule: 'required',
-          message: 'Operator is required'
+          _message: 'Operator is required'
         }
       ]
     });
@@ -472,7 +472,7 @@ export class StageBuilder extends EventEmitter {
   registerCustomStage(definition: CustomStageDefinition): void {
     this.customStages.set(definition.id, definition);
     this.emit('custom-stage-registered', definition);
-    console.log(`📋 Custom stage registered: ${definition.name}`);
+    // console.log(`📋 Custom stage registered: ${definition.name}`);
   }
 
   /**
@@ -599,20 +599,20 @@ export class StageBuilder extends EventEmitter {
     switch (rule.rule) {
       case 'required':
         if (value === undefined || value === null || value === '') {
-          throw new Error(rule.message);
+          throw new Error(rule._message);
         }
         break;
 
       case 'numeric':
         if (isNaN(Number(value))) {
-          throw new Error(rule.message);
+          throw new Error(rule._message);
         }
         break;
 
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(value)) {
-          throw new Error(rule.message);
+          throw new Error(rule._message);
         }
         break;
 
@@ -676,7 +676,7 @@ export class StageBuilder extends EventEmitter {
       conditions: [],
       actions: [{
         type: ActionType.LOG,
-        parameters: { level: 'info', message: `Template ${name} executed` },
+        parameters: { _level: 'info', _message: `Template ${name} executed` },
         async: false
       }],
       transitions: [],

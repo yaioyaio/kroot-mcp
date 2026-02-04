@@ -12,9 +12,9 @@ import Database from 'better-sqlite3';
 import {
   SyncEvent,
   SyncStatus as SyncStatusEnum,
-  ProjectMetadata,
+  // ProjectMetadata,
   ConflictResolutionStrategy
-} from './types.js';
+, SyncStatus} from './types.js';
 
 import { Logger } from '../utils/logger.js';
 import { BaseEvent } from '../events/types/base.js';
@@ -97,7 +97,7 @@ export interface SyncError {
   type: 'network' | 'auth' | 'validation' | 'conflict' | 'server' | 'unknown';
   
   /** 오류 메시지 */
-  message: string;
+  _message: string;
   
   /** 오류 코드 */
   code?: string;
@@ -347,7 +347,7 @@ export class SyncClient extends EventEmitter {
             id: uuidv4(),
             eventId: 'batch',
             type: 'network',
-            message: error instanceof Error ? error.message : '알 수 없는 오류',
+            _message: error instanceof Error ? error.message : '알 수 없는 오류',
             retryable: true,
             timestamp: Date.now()
           });
@@ -380,7 +380,7 @@ export class SyncClient extends EventEmitter {
         id: uuidv4(),
         eventId: 'sync',
         type: 'unknown',
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        _message: error instanceof Error ? error.message : '알 수 없는 오류',
         retryable: true,
         timestamp: Date.now()
       };
@@ -497,8 +497,8 @@ export class SyncClient extends EventEmitter {
         category: 'sync' as const,
         severity: 'info' as const,
         source: 'sync-client',
-        data: {}
-      } as SyncEvent));
+        _data: {}
+      }) as unknown as SyncEvent);
 
     } catch (error) {
       this.logger.error('동기화 대기 이벤트 조회 실패:', error);
@@ -632,7 +632,7 @@ export class SyncClient extends EventEmitter {
       id: uuidv4(),
       eventId,
       type,
-      message: error.message || '알 수 없는 오류',
+      _message: error._message || '알 수 없는 오류',
       code: error.code,
       retryable,
       timestamp: Date.now()
@@ -692,7 +692,7 @@ export class SyncClient extends EventEmitter {
       'SELECT COUNT(*) as count FROM sync_events WHERE sync_status = "failed"'
     ).get() as any;
 
-    return {
+    return ({
       lastSyncTime: this.syncStats.totalSyncs > 0 ? Date.now() : 0,
       pendingEvents,
       failedEvents: failedEvents?.count || 0,
@@ -702,7 +702,7 @@ export class SyncClient extends EventEmitter {
         this.syncStats.totalLatency / this.syncStats.totalSyncs : 0,
       successRate: this.syncStats.totalSyncs > 0 ? 
         this.syncStats.successfulSyncs / this.syncStats.totalSyncs : 0
-    } as SyncStatus;
+    }) as unknown as any;
   }
 
   /**
@@ -759,7 +759,7 @@ export class SyncClient extends EventEmitter {
         syncEvent.deviceId,
         syncEvent.userId,
         syncEvent.type,
-        JSON.stringify(syncEvent.data),
+        JSON.stringify(syncEvent._data),
         syncEvent.syncStatus,
         syncEvent.syncAttempts,
         syncEvent.timestamp

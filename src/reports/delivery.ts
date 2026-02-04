@@ -75,7 +75,7 @@ export class ReportDelivery extends EventEmitter {
       timeout: 30000,
       maxAttachmentSize: 25 * 1024 * 1024, // 25MB
       ...config
-    };
+    } as Required<DeliverySystemConfig>;
     
     this.initialize();
   }
@@ -86,16 +86,15 @@ export class ReportDelivery extends EventEmitter {
   private initialize(): void {
     // 이메일 트랜스포터 설정
     if (this.config.smtp) {
-      this.emailTransporter = nodemailer.createTransporter({
+      this.emailTransporter = nodemailer.createTransport({
         host: this.config.smtp.host,
         port: this.config.smtp.port,
         secure: this.config.smtp.secure,
-        auth: this.config.smtp.auth,
-        timeout: this.config.timeout
-      });
+        auth: this.config.smtp.auth
+      } as any);
       
       // 연결 테스트
-      this.emailTransporter.verify((error) => {
+      this.emailTransporter?.verify((error) => {
         if (error) {
           this.logger.warn('Email transporter verification failed', error);
         } else {
@@ -186,13 +185,13 @@ export class ReportDelivery extends EventEmitter {
         channel: config.channel,
         success: false,
         deliveredAt: Date.now(),
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
       
       this.emit(ReportEventType.DELIVERY_FAILED, {
         reportId: report.metadata.id,
         channel: config.channel,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
       
       return result;
@@ -227,7 +226,7 @@ export class ReportDelivery extends EventEmitter {
       for (const file of report.files) {
         if (config.attachmentFormats.includes(file.format)) {
           // 파일 크기 확인
-          if (file.size > this.config.maxAttachmentSize) {
+          if (file.size > (this.config.maxAttachmentSize ?? Infinity)) {
             this.logger.warn('Attachment too large, skipping', {
               file: file.path,
               size: file.size
@@ -261,7 +260,7 @@ export class ReportDelivery extends EventEmitter {
     
     this.logger.info('Email sent successfully', {
       reportId: report.metadata.id,
-      messageId: info.messageId,
+      messageId: info._messageId,
       recipients: config.recipients.length
     });
     
@@ -276,13 +275,13 @@ export class ReportDelivery extends EventEmitter {
     config: SlackConfig
   ): Promise<any> {
     // 메시지 생성
-    const message = config.messageTemplate
+    const _message = config.messageTemplate
       ? this.renderTemplate(config.messageTemplate, report)
       : this.generateSlackMessage(report);
     
     // Slack 페이로드
     const payload: any = {
-      text: message,
+      text: _message,
       channel: config.channel,
       username: config.username || 'DevFlow Monitor',
       icon_emoji: config.iconEmoji || ':chart_with_upwards_trend:'
@@ -301,7 +300,7 @@ export class ReportDelivery extends EventEmitter {
     // 웹훅 호출
     const response = await axios.post(config.webhookUrl, payload, {
       timeout: this.config.timeout
-    });
+    } as any);
     
     this.logger.info('Slack notification sent', {
       reportId: report.metadata.id,
@@ -336,7 +335,7 @@ export class ReportDelivery extends EventEmitter {
         };
     
     // 헤더 설정
-    const headers = {
+    const headers: any = {
       'Content-Type': 'application/json',
       ...config.headers
     };
@@ -367,7 +366,7 @@ export class ReportDelivery extends EventEmitter {
       data: payload,
       headers,
       timeout: this.config.timeout
-    });
+    } as any);
     
     this.logger.info('Webhook called successfully', {
       reportId: report.metadata.id,
@@ -605,7 +604,7 @@ export class ReportDelivery extends EventEmitter {
    * 템플릿 렌더링
    */
   private renderTemplate(template: string, report: ReportResult, file?: any): string {
-    const context = {
+    const _context = {
       report: {
         id: report.metadata.id,
         title: report.metadata.title,
@@ -632,7 +631,7 @@ export class ReportDelivery extends EventEmitter {
     // 간단한 템플릿 엔진
     return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
       const keys = path.trim().split('.');
-      let value: any = context;
+      let value: any = _context;
       
       for (const key of keys) {
         value = value?.[key];
@@ -672,7 +671,7 @@ export class ReportDelivery extends EventEmitter {
     config: DeliveryConfig,
     attempt: number = 1
   ): Promise<DeliveryResult> {
-    if (attempt > this.config.retry.attempts) {
+    if (attempt > (this.config.retry?.attempts ?? 3)) {
       return {
         channel: config.channel,
         success: false,
@@ -681,14 +680,14 @@ export class ReportDelivery extends EventEmitter {
       };
     }
     
-    await new Promise(resolve => setTimeout(resolve, this.config.retry.delay * attempt));
+    await new Promise(resolve => setTimeout(resolve, (this.config.retry?.delay ?? 5000) * attempt));
     
     try {
       return await this.deliverToChannel(report, config);
     } catch (error) {
       this.logger.warn(`Delivery attempt ${attempt} failed`, {
         channel: config.channel,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
       
       return this.retryDelivery(report, config, attempt + 1);

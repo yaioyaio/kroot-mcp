@@ -23,25 +23,27 @@ interface VelocityDataPoint {
 
 export class VelocityPredictor extends EventEmitter {
   private dataPoints: VelocityDataPoint[] = [];
-  private readonly maxDataPoints = 1000;
   private currentVelocity: number = 0;
   private predictionInterval: NodeJS.Timeout | null = null;
 
   constructor(
+    // @ts-ignore - Reserved for future predictive analytics implementation
     private metricsCollector: MetricsCollector,
+    // @ts-ignore - Reserved for pattern-based velocity prediction
     private patternRecognizer: PatternRecognizer
   ) {
     super();
   }
 
   async start() {
-    // Calculate velocity every hour
-    this.predictionInterval = setInterval(() => {
-      this.calculateAndPredict();
-    }, 60 * 60 * 1000);
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.predictionInterval = setInterval(() => {
+    //   this.calculateAndPredict();
+    // }, 60 * 60 * 1000);
 
-    // Initial calculation
-    await this.calculateAndPredict();
+    // 초기 계산 제거 - 사용자 요청 시에만 실행
+    // await this.calculateAndPredict();
+    // console.log('VelocityPredictor initialized for on-demand velocity prediction');
   }
 
   stop() {
@@ -51,157 +53,7 @@ export class VelocityPredictor extends EventEmitter {
     }
   }
 
-  /**
-   * Calculate current velocity and make predictions
-   */
-  private async calculateAndPredict() {
-    console.log('📈 Calculating development velocity...');
 
-    const velocity = await this.calculateCurrentVelocity();
-    const factors = await this.identifyVelocityFactors();
-    
-    // Store data point
-    this.dataPoints.push({
-      timestamp: new Date(),
-      velocity,
-      factors
-    });
-
-    // Maintain data point limit
-    if (this.dataPoints.length > this.maxDataPoints) {
-      this.dataPoints.shift();
-    }
-
-    // Make prediction
-    const prediction = this.predictFutureVelocity();
-    
-    const result: DevelopmentVelocity = {
-      current: velocity,
-      average: this.calculateAverageVelocity(),
-      trend: this.calculateTrend(),
-      prediction
-    };
-
-    this.emit('velocity-calculated', result);
-    
-    return result;
-  }
-
-  /**
-   * Calculate current development velocity
-   */
-  private async calculateCurrentVelocity(): Promise<number> {
-    const metrics = await (this.metricsCollector as any).getMetrics();
-    const recentMetrics = metrics.filter((m: any) => 
-      new Date(m.timestamp).getTime() > Date.now() - 24 * 60 * 60 * 1000
-    );
-
-    if (recentMetrics.length === 0) return 0;
-
-    // Calculate velocity based on multiple factors
-    const commitCount = recentMetrics.filter((m: any) => m.category === 'git' && m.name === 'commits').length;
-    const filesChanged = recentMetrics.filter((m: any) => m.category === 'file' && m.name === 'changes').length;
-    const testsWritten = recentMetrics.filter((m: any) => m.category === 'test' && m.name === 'created').length;
-    const bugsFixed = recentMetrics.filter((m: any) => m.category === 'git' && m.metadata?.type === 'fix').length;
-    
-    // Weighted velocity calculation
-    const velocity = (
-      commitCount * 10 +
-      filesChanged * 2 +
-      testsWritten * 5 +
-      bugsFixed * 8
-    ) / 24; // Per hour
-
-    this.currentVelocity = velocity;
-    return velocity;
-  }
-
-  /**
-   * Identify factors affecting velocity
-   */
-  private async identifyVelocityFactors(): Promise<VelocityFactor[]> {
-    const factors: VelocityFactor[] = [];
-    const patterns = this.patternRecognizer.getPatterns();
-
-    // Time of day factor
-    const hour = new Date().getHours();
-    const productivityPattern = patterns.find(p => p.id === 'productivity-cycles');
-    if (productivityPattern) {
-      const productiveHours = productivityPattern.indicators
-        .filter(i => i.type === 'productive_hour')
-        .map(i => i.value);
-      
-      if (productiveHours.includes(hour)) {
-        factors.push({
-          name: 'Peak Productivity Hour',
-          impact: 0.3,
-          description: 'Currently in identified peak productivity time'
-        });
-      }
-    }
-
-    // Day of week factor
-    const dayOfWeek = new Date().getDay();
-    const commitPattern = patterns.find(p => p.id === 'commit-frequency');
-    if (commitPattern) {
-      const peakDay = commitPattern.indicators.find(i => i.type === 'peak_day')?.value;
-      if (peakDay === dayOfWeek) {
-        factors.push({
-          name: 'Peak Activity Day',
-          impact: 0.2,
-          description: 'Currently on most productive day of week'
-        });
-      }
-    }
-
-    // Technical debt factor
-    const recentEvents = await this.getRecentEvents();
-    const debuggingEvents = recentEvents.filter(e => 
-      e.metadata?.action === 'debug' || e.category === 'system'
-    );
-    
-    if (debuggingEvents.length > 10) {
-      factors.push({
-        name: 'High Debugging Activity',
-        impact: -0.4,
-        description: 'Significant time spent on debugging'
-      });
-    }
-
-    // AI assistance factor
-    const aiEvents = recentEvents.filter(e => e.category === 'ai');
-    if (aiEvents.length > 5) {
-      factors.push({
-        name: 'AI Tool Usage',
-        impact: 0.25,
-        description: 'Active AI collaboration improving productivity'
-      });
-    }
-
-    // Testing factor
-    const testPattern = patterns.find(p => p.id === 'testing-pattern');
-    if (testPattern?.indicators.find(i => i.type === 'test_first')?.value === 1) {
-      factors.push({
-        name: 'Test-First Development',
-        impact: 0.15,
-        description: 'Following TDD practices'
-      });
-    }
-
-    // Workflow efficiency
-    const workflowPatterns = this.patternRecognizer.getWorkflowPatterns();
-    const efficientWorkflows = workflowPatterns.filter(w => w.successRate > 0.8);
-    
-    if (efficientWorkflows.length > 0) {
-      factors.push({
-        name: 'Efficient Workflow',
-        impact: 0.2,
-        description: 'Using proven efficient workflows'
-      });
-    }
-
-    return factors;
-  }
 
   /**
    * Predict future velocity
@@ -298,6 +150,7 @@ export class VelocityPredictor extends EventEmitter {
   /**
    * Get recent development events
    */
+  // @ts-ignore - Reserved for future event analysis implementation
   private async getRecentEvents(): Promise<DevelopmentEvent[]> {
     // This would typically fetch from event storage
     // For now, return empty array

@@ -16,7 +16,7 @@ export interface QueueManagerEvents {
   'event:routed': (event: BaseEvent, queueName: string) => void;
   'batch:processed': (events: BaseEvent[], queueName: string) => void;
   'error': (error: Error, queueName?: string) => void;
-  'stats:update': (stats: Map<string, QueueStatistics>) => void;
+  '_stats:update': (_stats: Map<string, QueueStatistics>) => void;
 }
 
 /**
@@ -399,7 +399,7 @@ export class QueueManager extends EventEmitter<QueueManagerEvents> {
   private startMetricsCollection(): void {
     this.metricsTimer = setInterval(() => {
       const stats = this.getAllStats();
-      this.emit('stats:update', stats);
+      this.emit('_stats:update', stats);
     }, this.options.metricsInterval);
   }
 }

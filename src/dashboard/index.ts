@@ -21,8 +21,8 @@ export async function launchDashboard(options: {
 } = {}): Promise<void> {
   const { mode = 'tui', refreshInterval = 1000, maxEvents = 100, compact = false } = options;
 
-  console.log(chalk.cyan('🚀 Starting DevFlow Monitor Dashboard...'));
-  console.log(chalk.gray(`Mode: ${mode.toUpperCase()}`));
+  // console.log(chalk.cyan('🚀 Starting DevFlow Monitor Dashboard...'));
+  // console.log(chalk.gray(`Mode: ${mode.toUpperCase()}`));
 
   try {
     if (mode === 'tui') {
