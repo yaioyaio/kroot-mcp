@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "devflow-monitor-mcp"
+version = "1.0.0"
+description = "AI-powered development process monitoring MCP server"
+authors = ["yaio"]
+readme = "README.md"
+packages = [{include = "devflow_monitor", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mcp = "^1.7.1"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+aiosqlite = "^0.19.0"
+watchfiles = "^0.21.0"
+gitpython = "^3.1.40"
+httpx = "^0.27.0"
+tenacity = "^8.2.3"
+pyjwt = "^2.8.0"
+cryptography = "^41.0.0"
+cachetools = "^5.3.0"
+apscheduler = "^3.10.0"
+rich = "^13.7.0"
+textual = "^0.47.0"
+typer = "^0.9.0"
+python-dotenv = "^1.0.0"
+bcrypt = "^5.0.0"
+watchdog = "^6.0.0"
+aiofiles = "^25.1.0"
+aiosmtplib = "^5.1.0"
+reportlab = "^4.4.9"
+pyee = "^13.0.0"
+aiohttp = "^3.13.3"
+psutil = "^7.2.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.23.0"
+pytest-cov = "^4.1.0"
+mypy = "^1.8.0"
+ruff = "^0.1.0"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+    "performance: marks tests as performance tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

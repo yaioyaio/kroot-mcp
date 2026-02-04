@@ -2,7 +2,6 @@
 
 **작성일**: 2026-02-04
 **프로젝트**: DevFlow Monitor MCP (TypeScript → Python)
-**브랜치**: feature/python-mcp-20260204
 **예상 기간**: 17-26주 (4-6개월)
 **총 코드량**: ~55,000줄 TypeScript → Python 변환
 
@@ -26,14 +25,14 @@
 
 ### 1.1 기술 스택 변환 매핑
 
-| 구분          | TypeScript                | Python            |
-| ------------- | ------------------------- | ----------------- |
-| 런타임        | Node.js 20+               | Python 3.11+      |
-| MCP SDK       | @modelcontextprotocol/sdk | mcp>=1.7.1        |
-| 웹 프레임워크 | -                         | FastAPI           |
-| 비동기        | Promise/async-await       | asyncio           |
-| 타입 시스템   | TypeScript strict         | Pydantic + typing |
-| 패키지 관리   | npm                       | pip + poetry      |
+| 구분 | TypeScript | Python |
+|------|------------|--------|
+| 런타임 | Node.js 20+ | Python 3.11+ |
+| MCP SDK | @modelcontextprotocol/sdk | mcp>=1.7.1 |
+| 웹 프레임워크 | - | FastAPI |
+| 비동기 | Promise/async-await | asyncio |
+| 타입 시스템 | TypeScript strict | Pydantic + typing |
+| 패키지 관리 | npm | pip + poetry |
 
 ### 1.2 프로젝트 구조 (Python)
 
@@ -79,7 +78,6 @@ devflow-monitor-mcp-python/
 ### 2.1 프로젝트 초기 설정
 
 - [ ] **Python 프로젝트 생성**
-
   ```bash
   mkdir devflow-monitor-mcp-python
   cd devflow-monitor-mcp-python
@@ -87,7 +85,6 @@ devflow-monitor-mcp-python/
   ```
 
 - [ ] **pyproject.toml 설정**
-
   ```toml
   [tool.poetry]
   name = "devflow-monitor-mcp"
@@ -119,7 +116,6 @@ devflow-monitor-mcp-python/
 - [ ] **types.ts → types.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/server/types.ts
   export interface McpTool {
@@ -139,7 +135,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/server/types.py
   from typing import Any, Optional
@@ -167,7 +162,6 @@ devflow-monitor-mcp-python/
 - [ ] **config.ts → config.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/server/config.ts
   export const config = {
@@ -186,7 +180,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/server/config.py
   from pydantic_settings import BaseSettings
@@ -220,7 +213,6 @@ devflow-monitor-mcp-python/
 - [ ] **MCP 서버 초기화 코드 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/server/index.ts
   import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -228,7 +220,7 @@ devflow-monitor-mcp-python/
 
   const server = new Server(
     { name: config.server.name, version: config.server.version },
-    { capabilities: { tools: {} } },
+    { capabilities: { tools: {} } }
   );
 
   const transport = new StdioServerTransport();
@@ -236,7 +228,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/server/main.py
   from mcp.server import Server
@@ -262,7 +253,6 @@ devflow-monitor-mcp-python/
 - [ ] **도구 등록 시스템 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
@@ -285,7 +275,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/server/tools.py
   from mcp.server import Server
@@ -339,7 +328,6 @@ devflow-monitor-mcp-python/
 - [ ] **base.ts → base.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/events/types/base.ts
   export enum EventCategory {
@@ -371,7 +359,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/events/types/base.py
   from enum import Enum
@@ -413,7 +400,6 @@ devflow-monitor-mcp-python/
 - [ ] **engine.ts → engine.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/events/engine.ts
   import EventEmitter from 'eventemitter3';
@@ -425,7 +411,7 @@ devflow-monitor-mcp-python/
 
     subscribe<T extends BaseEvent>(
       pattern: string | RegExp,
-      handler: (event: T) => void | Promise<void>,
+      handler: (event: T) => void | Promise<void>
     ): string {
       const id = crypto.randomUUID();
       // ... 구독 로직
@@ -455,7 +441,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/events/engine.py
   import asyncio
@@ -558,7 +543,6 @@ devflow-monitor-mcp-python/
 - [ ] **queue.ts → queue.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/events/queue.ts
   export class EventQueue {
@@ -592,7 +576,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/events/queue.py
   import asyncio
@@ -682,7 +665,6 @@ devflow-monitor-mcp-python/
 - [ ] **database.ts → database.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/storage/database.ts
   import Database from 'better-sqlite3';
@@ -716,7 +698,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/storage/database.py
   import aiosqlite
@@ -816,7 +797,6 @@ devflow-monitor-mcp-python/
 - [ ] **base.ts → base.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/storage/repositories/base.ts
   export abstract class BaseRepository<T> {
@@ -837,7 +817,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/storage/repositories/base.py
   from abc import ABC, abstractmethod
@@ -918,7 +897,6 @@ devflow-monitor-mcp-python/
 - [ ] **storage-manager.ts → storage_manager.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/storage/storage_manager.py
   from .database import DatabaseManager, get_database_manager
@@ -1007,7 +985,6 @@ devflow-monitor-mcp-python/
 - [ ] **base.ts → base.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/monitors/base.ts
   import EventEmitter from 'eventemitter3';
@@ -1035,7 +1012,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/monitors/base.py
   from abc import ABC, abstractmethod
@@ -1131,7 +1107,6 @@ devflow-monitor-mcp-python/
 - [ ] **file.ts → file.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/monitors/file.ts
   import chokidar, { FSWatcher } from 'chokidar';
@@ -1165,19 +1140,16 @@ devflow-monitor-mcp-python/
         clearTimeout(this.changeBuffer.get(path)!);
       }
 
-      this.changeBuffer.set(
-        path,
-        setTimeout(() => {
-          this.changeBuffer.delete(path);
-          const context = this.analyzeFileContext(path);
-          this.emitEvent({
-            type: `file:${type}`,
-            path,
-            timestamp: new Date(),
-            metadata: { context, extension: extname(path) },
-          });
-        }, this.debounceMs),
-      );
+      this.changeBuffer.set(path, setTimeout(() => {
+        this.changeBuffer.delete(path);
+        const context = this.analyzeFileContext(path);
+        this.emitEvent({
+          type: `file:${type}`,
+          path,
+          timestamp: new Date(),
+          metadata: { context, extension: extname(path) },
+        });
+      }, this.debounceMs));
     }
 
     private analyzeFileContext(path: string): string {
@@ -1190,7 +1162,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/monitors/file.py
   import asyncio
@@ -1348,7 +1319,6 @@ devflow-monitor-mcp-python/
 - [ ] **git.ts → git.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/monitors/git.ts
   import simpleGit, { SimpleGit } from 'simple-git';
@@ -1396,7 +1366,7 @@ devflow-monitor-mcp-python/
     private analyzeCommit(commit: LogResult): CommitAnalysis {
       const message = commit.message;
       const conventionalMatch = message.match(
-        /^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?:\s(.+)/,
+        /^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?:\s(.+)/
       );
 
       return {
@@ -1412,7 +1382,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/monitors/git.py
   import asyncio
@@ -1684,7 +1653,6 @@ devflow-monitor-mcp-python/
 - [ ] **types/stage.ts → types/stage.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/analyzers/types/stage.py
   from enum import Enum
@@ -1742,7 +1710,6 @@ devflow-monitor-mcp-python/
 - [ ] **stage-analyzer.ts → stage_analyzer.py 변환**
 
   **Python (변환 - 핵심 부분)**:
-
   ```python
   # src/devflow_monitor/analyzers/stage_analyzer.py
   import re
@@ -1980,7 +1947,6 @@ devflow-monitor-mcp-python/
 - [ ] **types/methodology.ts → types/methodology.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/analyzers/types/methodology.py
   from enum import Enum
@@ -2017,7 +1983,6 @@ devflow-monitor-mcp-python/
 - [ ] **methodology-analyzer.ts → methodology_analyzer.py 변환**
 
   **Python (변환 - 핵심 부분)**:
-
   ```python
   # src/devflow_monitor/analyzers/methodology_analyzer.py
   import re
@@ -2273,7 +2238,6 @@ devflow-monitor-mcp-python/
 - [ ] **base.ts → base.py 변환**
 
   **TypeScript (원본)**:
-
   ```typescript
   // src/integrations/base.ts
   import axios, { AxiosInstance } from 'axios';
@@ -2292,7 +2256,7 @@ devflow-monitor-mcp-python/
 
     protected async executeWithRetry<T>(
       fn: () => Promise<T>,
-      maxRetries: number = this.maxRetries,
+      maxRetries: number = this.maxRetries
     ): Promise<T> {
       let lastError: Error | null = null;
 
@@ -2302,7 +2266,7 @@ devflow-monitor-mcp-python/
         } catch (error) {
           lastError = error as Error;
           const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-          await new Promise((resolve) => setTimeout(resolve, delay));
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
 
@@ -2312,7 +2276,6 @@ devflow-monitor-mcp-python/
   ```
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/integrations/base.py
   from abc import ABC, abstractmethod
@@ -2452,7 +2415,6 @@ devflow-monitor-mcp-python/
 - [ ] **jira.ts → jira.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/integrations/jira.py
   from dataclasses import dataclass
@@ -2577,7 +2539,6 @@ devflow-monitor-mcp-python/
 - [ ] **auth-manager.ts → auth_manager.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/security/auth_manager.py
   import jwt
@@ -2710,7 +2671,6 @@ devflow-monitor-mcp-python/
 - [ ] **rbac-manager.ts → rbac_manager.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/security/rbac_manager.py
   from dataclasses import dataclass, field
@@ -2810,7 +2770,6 @@ devflow-monitor-mcp-python/
 - [ ] **encryption-manager.ts → encryption_manager.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/security/encryption_manager.py
   import os
@@ -2891,7 +2850,7 @@ devflow-monitor-mcp-python/
 
 - [ ] **audit-logger.ts → audit_logger.py 변환**
 - [ ] **types.ts → types.py 변환**
-- [ ] **index.ts → **init**.py 변환** (SecurityManager)
+- [ ] **index.ts → __init__.py 변환** (SecurityManager)
 
 ### 6.2 성능 모듈 마이그레이션
 
@@ -2903,7 +2862,6 @@ devflow-monitor-mcp-python/
 - [ ] **cache-manager.ts → cache_manager.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/performance/cache_manager.py
   import asyncio
@@ -3130,7 +3088,7 @@ devflow-monitor-mcp-python/
 - [ ] **memory-optimizer.ts → memory_optimizer.py 변환**
 - [ ] **async-optimizer.ts → async_optimizer.py 변환**
 - [ ] **scaling-manager.ts → scaling_manager.py 변환**
-- [ ] **index.ts → **init**.py 변환** (PerformanceManager)
+- [ ] **index.ts → __init__.py 변환** (PerformanceManager)
 
 ### 6.3 검증 체크리스트
 
@@ -3154,18 +3112,17 @@ devflow-monitor-mcp-python/
 
 - [ ] **격리 수준 결정**
 
-  | 옵션                         | 장점                   | 단점                      | 권장                    |
-  | ---------------------------- | ---------------------- | ------------------------- | ----------------------- |
-  | `multiprocessing.Process`    | 진정한 프로세스 격리   | 메모리 오버헤드, IPC 비용 | 엄격한 격리 필요시      |
-  | `subprocess`                 | 완전한 격리, 언어 무관 | 통신 복잡, 성능 저하      | 외부 플러그인           |
-  | `asyncio` + 제한된 namespace | 가벼움, 빠름           | 진정한 격리 아님          | 신뢰할 수 있는 플러그인 |
+  | 옵션 | 장점 | 단점 | 권장 |
+  |------|------|------|------|
+  | `multiprocessing.Process` | 진정한 프로세스 격리 | 메모리 오버헤드, IPC 비용 | 엄격한 격리 필요시 |
+  | `subprocess` | 완전한 격리, 언어 무관 | 통신 복잡, 성능 저하 | 외부 플러그인 |
+  | `asyncio` + 제한된 namespace | 가벼움, 빠름 | 진정한 격리 아님 | 신뢰할 수 있는 플러그인 |
 
 #### 7.1.2 플러그인 타입 정의
 
 - [ ] **types.ts → types.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/plugins/types.py
   from enum import Enum, auto
@@ -3229,7 +3186,6 @@ devflow-monitor-mcp-python/
 - [ ] **loader.ts → loader.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/plugins/loader.py
   import asyncio
@@ -3375,7 +3331,6 @@ devflow-monitor-mcp-python/
 - [ ] **sandbox.ts → sandbox.py 변환** (multiprocessing 기반)
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/plugins/sandbox.py
   import asyncio
@@ -3568,7 +3523,6 @@ devflow-monitor-mcp-python/
 - [ ] **pdf-generator.ts → pdf_generator.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/reports/pdf_generator.py
   from reportlab.lib import colors
@@ -3758,7 +3712,6 @@ devflow-monitor-mcp-python/
 - [ ] **scheduler.ts → scheduler.py 변환**
 
   **Python (변환)**:
-
   ```python
   # src/devflow_monitor/reports/scheduler.py
   from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -4379,26 +4332,26 @@ devflow-monitor-mcp-python/
 
 ## 부록 A: 라이브러리 매핑 전체 목록
 
-| TypeScript 패키지         | Python 대체  | 버전     | 비고                   |
-| ------------------------- | ------------ | -------- | ---------------------- |
-| @modelcontextprotocol/sdk | mcp          | >=1.7.1  | 공식 SDK               |
-| ws                        | websockets   | >=12.0   | 또는 FastAPI WebSocket |
-| chokidar                  | watchdog     | >=3.0.0  |                        |
-| simple-git                | GitPython    | >=3.1.40 |                        |
-| better-sqlite3            | aiosqlite    | >=0.19.0 |                        |
-| axios                     | httpx        | >=0.25.2 | 비동기 지원            |
-| eventemitter3             | (커스텀)     | -        | asyncio 기반 구현      |
-| pdfkit                    | reportlab    | >=4.0.7  | 또는 weasyprint        |
-| nodemailer                | smtplib      | (stdlib) |                        |
-| node-cron                 | APScheduler  | >=3.10.4 |                        |
-| jsonwebtoken              | PyJWT        | >=2.8.1  |                        |
-| bcryptjs                  | bcrypt       | >=4.1.1  |                        |
-| crypto                    | cryptography | >=41.0.7 |                        |
-| zod                       | pydantic     | >=2.5.0  |                        |
-| uuid                      | uuid         | (stdlib) |                        |
-| chalk                     | rich         | >=13.7.0 | CLI 출력               |
-| commander                 | typer        | >=0.9.0  | CLI 프레임워크         |
-| blessed                   | rich         | >=13.7.0 | TUI                    |
+| TypeScript 패키지 | Python 대체 | 버전 | 비고 |
+|------------------|-------------|------|------|
+| @modelcontextprotocol/sdk | mcp | >=1.7.1 | 공식 SDK |
+| ws | websockets | >=12.0 | 또는 FastAPI WebSocket |
+| chokidar | watchdog | >=3.0.0 | |
+| simple-git | GitPython | >=3.1.40 | |
+| better-sqlite3 | aiosqlite | >=0.19.0 | |
+| axios | httpx | >=0.25.2 | 비동기 지원 |
+| eventemitter3 | (커스텀) | - | asyncio 기반 구현 |
+| pdfkit | reportlab | >=4.0.7 | 또는 weasyprint |
+| nodemailer | smtplib | (stdlib) | |
+| node-cron | APScheduler | >=3.10.4 | |
+| jsonwebtoken | PyJWT | >=2.8.1 | |
+| bcryptjs | bcrypt | >=4.1.1 | |
+| crypto | cryptography | >=41.0.7 | |
+| zod | pydantic | >=2.5.0 | |
+| uuid | uuid | (stdlib) | |
+| chalk | rich | >=13.7.0 | CLI 출력 |
+| commander | typer | >=0.9.0 | CLI 프레임워크 |
+| blessed | rich | >=13.7.0 | TUI |
 
 ---
 
@@ -4507,46 +4460,45 @@ src/workflow/
 
 ### 전체 진행률 추적
 
-| Phase | 항목                  | 상태 | 완료일 |
-| ----- | --------------------- | ---- | ------ |
-| 1     | 프로젝트 초기 설정    | [ ]  |        |
-| 1     | MCP 서버 코어         | [ ]  |        |
-| 1     | 이벤트 시스템         | [ ]  |        |
-| 1     | 스토리지 계층         | [ ]  |        |
-| 2     | 파일 모니터           | [ ]  |        |
-| 2     | Git 모니터            | [ ]  |        |
-| 3     | Stage Analyzer        | [ ]  |        |
-| 3     | Methodology Analyzer  | [ ]  |        |
-| 3     | AI Monitor            | [ ]  |        |
-| 3     | Metrics Analyzer      | [ ]  |        |
-| 4     | API 클라이언트 베이스 | [ ]  |        |
-| 4     | Jira 클라이언트       | [ ]  |        |
-| 4     | Notion 클라이언트     | [ ]  |        |
-| 4     | Figma 클라이언트      | [ ]  |        |
-| 5     | 인증 매니저           | [ ]  |        |
-| 5     | RBAC 매니저           | [ ]  |        |
-| 5     | 암호화 매니저         | [ ]  |        |
-| 5     | 캐시 매니저           | [ ]  |        |
-| 5     | 성능 프로파일러       | [ ]  |        |
-| 6     | 플러그인 타입         | [ ]  |        |
-| 6     | 플러그인 로더         | [ ]  |        |
-| 6     | 플러그인 샌드박스     | [ ]  |        |
-| 6     | 플러그인 매니저       | [ ]  |        |
-| 7     | PDF 생성기            | [ ]  |        |
-| 7     | 보고서 스케줄러       | [ ]  |        |
-| 7     | 알림 엔진             | [ ]  |        |
-| 7     | Slack 알림            | [ ]  |        |
-| 8     | 단위 테스트           | [ ]  |        |
-| 8     | 통합 테스트           | [ ]  |        |
-| 8     | E2E 테스트            | [ ]  |        |
-| 8     | 성능 테스트           | [ ]  |        |
+| Phase | 항목 | 상태 | 완료일 |
+|-------|------|------|--------|
+| 1 | 프로젝트 초기 설정 | [ ] | |
+| 1 | MCP 서버 코어 | [ ] | |
+| 1 | 이벤트 시스템 | [ ] | |
+| 1 | 스토리지 계층 | [ ] | |
+| 2 | 파일 모니터 | [ ] | |
+| 2 | Git 모니터 | [ ] | |
+| 3 | Stage Analyzer | [ ] | |
+| 3 | Methodology Analyzer | [ ] | |
+| 3 | AI Monitor | [ ] | |
+| 3 | Metrics Analyzer | [ ] | |
+| 4 | API 클라이언트 베이스 | [ ] | |
+| 4 | Jira 클라이언트 | [ ] | |
+| 4 | Notion 클라이언트 | [ ] | |
+| 4 | Figma 클라이언트 | [ ] | |
+| 5 | 인증 매니저 | [ ] | |
+| 5 | RBAC 매니저 | [ ] | |
+| 5 | 암호화 매니저 | [ ] | |
+| 5 | 캐시 매니저 | [ ] | |
+| 5 | 성능 프로파일러 | [ ] | |
+| 6 | 플러그인 타입 | [ ] | |
+| 6 | 플러그인 로더 | [ ] | |
+| 6 | 플러그인 샌드박스 | [ ] | |
+| 6 | 플러그인 매니저 | [ ] | |
+| 7 | PDF 생성기 | [ ] | |
+| 7 | 보고서 스케줄러 | [ ] | |
+| 7 | 알림 엔진 | [ ] | |
+| 7 | Slack 알림 | [ ] | |
+| 8 | 단위 테스트 | [ ] | |
+| 8 | 통합 테스트 | [ ] | |
+| 8 | E2E 테스트 | [ ] | |
+| 8 | 성능 테스트 | [ ] | |
 
 ---
 
 ## 부록 D: 참고 자료
 
 ### 공식 문서
-
 - [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
 - [MCP Python SDK Documentation](https://modelcontextprotocol.github.io/python-sdk/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
@@ -4554,7 +4506,6 @@ src/workflow/
 - [asyncio Documentation](https://docs.python.org/3/library/asyncio.html)
 
 ### 마이그레이션 가이드
-
 - [TypeScript to Python Migration Patterns](https://docs.python.org/3/library/typing.html)
 - [Node.js to Python Async Patterns](https://docs.python.org/3/library/asyncio-task.html)
 
