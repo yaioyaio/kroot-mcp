@@ -35,6 +35,9 @@ import { EventEngine } from '../events/engine.js';
 import { StorageManager } from '../storage/storage-manager.js';
 import Database from 'better-sqlite3';
 import { Logger } from '../utils/logger.js';
+import { fileURLToPath } from 'url';
+import { dirname, resolve, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
 /**
  * 다중 프로젝트 시스템 설정
@@ -56,11 +59,15 @@ export interface MultiProjectSystemConfig {
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
 }
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 /**
  * 다중 프로젝트 시스템
  * 
  * 프로젝트 관리, 동기화, 분석을 통합 관리하는 메인 클래스입니다.
  */
+
 export class MultiProjectSystem {
   private projectManager: ProjectManager;
   private syncClient?: SyncClient;
@@ -77,8 +84,18 @@ export class MultiProjectSystem {
   ) {
     this.logger = new Logger('MultiProjectSystem');
     
-    // 데이터베이스 초기화
-    this.db = new Database(config.dbPath || ':memory:');
+    // 데이터베이스 초기화 - 절대 경로 사용
+    const projectRoot = resolve(__dirname, '..', '..');
+    const dbPath = config.dbPath || './data/multi-projects.db';
+    const absoluteDbPath = dbPath.startsWith('/') ? dbPath : join(projectRoot, dbPath);
+    
+    // 데이터베이스 디렉토리 생성
+    const dbDir = dirname(absoluteDbPath);
+    if (!existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
+    }
+    
+    this.db = new Database(absoluteDbPath);
     
     // 프로젝트 관리자 초기화
     this.projectManager = new ProjectManager(
@@ -121,7 +138,7 @@ export class MultiProjectSystem {
       this.logger.debug('메트릭 수집됨:', { projectId, timestamp: metrics.timestamp });
     });
 
-    this.projectManager.on('analysis:completed', (analysis) => {
+    this.projectManager.on('_analysis:completed', (analysis) => {
       this.logger.info('크로스 프로젝트 분석 완료:', {
         id: analysis.id,
         type: analysis.type,
@@ -391,7 +408,7 @@ export class MultiProjectSystem {
   getSystemStats(): {
     projects: ReturnType<ProjectManager['getProjectStats']>;
     sync?: any;
-    analysis: {
+    _analysis: {
       running: number;
       total: number;
     };
@@ -400,7 +417,7 @@ export class MultiProjectSystem {
     return {
       projects: this.projectManager.getProjectStats(),
       sync: this.syncClient?.getSyncStatus(),
-      analysis: {
+      _analysis: {
         running: this.crossAnalyzer.getRunningAnalysis().length,
         total: 0 // 실제로는 완료된 분석 수를 추적해야 함
       },
@@ -467,7 +484,7 @@ export function createDefaultConfig(overrides: Partial<MultiProjectSystemConfig>
             excludeTypes: [],
             minSeverity: 'info' as any
           },
-          analysis: {
+          _analysis: {
             timeWindow: 30,
             minConfidence: 0.7,
             patterns: []

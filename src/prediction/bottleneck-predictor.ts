@@ -11,7 +11,6 @@ import {
   PredictionResult
 } from './types';
 import { MetricsCollector } from '../analyzers/metrics-collector';
-import { BottleneckDetector } from '../analyzers/bottleneck-detector';
 import { PatternRecognizer } from './pattern-recognizer';
 
 interface BottleneckIndicator {
@@ -29,8 +28,7 @@ export class BottleneckPredictor extends EventEmitter {
 
   constructor(
     private metricsCollector: MetricsCollector,
-    private _bottleneckDetector: BottleneckDetector,
-    private patternRecognizer: PatternRecognizer
+    private patternRecognizer: PatternRecognizer,
   ) {
     super();
     this.initializeIndicators();
@@ -142,13 +140,14 @@ export class BottleneckPredictor extends EventEmitter {
   }
 
   async start() {
-    // Run predictions every 30 minutes
-    this.predictionInterval = setInterval(() => {
-      this.runPredictions();
-    }, 30 * 60 * 1000);
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.predictionInterval = setInterval(() => {
+    //   this.runPredictions();
+    // }, 30 * 60 * 1000);
 
-    // Initial prediction
-    await this.runPredictions();
+    // 초기 예측 제거 - 사용자 요청 시에만 실행
+    // await this.runPredictions();
+    // console.log('BottleneckPredictor initialized for on-demand bottleneck prediction');
   }
 
   stop() {
@@ -162,7 +161,7 @@ export class BottleneckPredictor extends EventEmitter {
    * Run bottleneck predictions
    */
   private async runPredictions() {
-    console.log('🔮 Running bottleneck predictions...');
+    // console.log('🔮 Running bottleneck predictions...');
 
     // Update indicator values
     await this.updateIndicatorValues();

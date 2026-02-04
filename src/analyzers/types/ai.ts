@@ -206,7 +206,7 @@ export interface AIMonitorEvents {
   sessionEnded: (session: AISession) => void;
   metricsUpdated: (metrics: AIEffectivenessMetrics) => void;
   patternIdentified: (pattern: AIUsagePattern) => void;
-  qualityAnalyzed: (analysis: AICodeQualityAnalysis) => void;
+  qualityAnalyzed: (_analysis: AICodeQualityAnalysis) => void;
 }
 
 /**

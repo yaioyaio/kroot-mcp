@@ -156,31 +156,31 @@ export class PerformanceManager {
   /**
    * 성능 개선 권장사항 생성
    */
-  private generateRecommendations(data: any): string[] {
+  private generateRecommendations(_data: any): string[] {
     const recommendations: string[] = [];
 
     // 메모리 관련 권장사항
-    if (data.memoryStats.memoryPressure === 'high') {
+    if (_data.memoryStats.memoryPressure === 'high') {
       recommendations.push('메모리 사용량이 높습니다. 캐시 정리를 고려하세요.');
     }
 
     // 응답시간 관련 권장사항
-    if (data.profilerReport.summary.averageResponseTime > 2000) {
+    if (_data.profilerReport.summary.averageResponseTime > 2000) {
       recommendations.push('평균 응답시간이 2초를 초과합니다. 비동기 처리 최적화가 필요합니다.');
     }
 
     // 캐시 관련 권장사항
-    if (data.cacheStats.hitRatio < 50) {
+    if (_data.cacheStats.hitRatio < 50) {
       recommendations.push('캐시 적중률이 낮습니다. 캐시 전략을 재검토하세요.');
     }
 
     // 동시성 관련 권장사항
-    if (data.asyncStats.queueLength > 100) {
+    if (_data.asyncStats.queueLength > 100) {
       recommendations.push('비동기 작업 대기열이 길어졌습니다. 동시성 제한을 늘리거나 스케일링을 고려하세요.');
     }
 
     // 스케일링 관련 권장사항
-    if (data.scalingStatus.metrics.cpuUsage > 90) {
+    if (_data.scalingStatus.metrics.cpuUsage > 90) {
       recommendations.push('CPU 사용률이 매우 높습니다. 즉시 스케일 업이 필요합니다.');
     }
 

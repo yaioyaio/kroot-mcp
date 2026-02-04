@@ -29,7 +29,7 @@ export interface SandboxConfig {
  */
 export interface SandboxEnvironment {
   id: string;
-  pluginId: string;
+  _pluginId: string;
   worker?: Worker;
   isolationLevel: 'none' | 'basic' | 'strict';
   resourceLimits: {
@@ -66,7 +66,7 @@ export class PluginSandbox extends EventEmitter {
     const pluginId = descriptor.id;
     const permissions = descriptor.manifest.permissions || [];
     
-    console.log(`[PluginSandbox] Creating environment for plugin: ${pluginId}`);
+    // console.log(`[PluginSandbox] Creating environment for plugin: ${pluginId}`);
 
     // 격리 레벨 결정
     const isolationLevel = this.determineIsolationLevel(permissions);
@@ -83,7 +83,7 @@ export class PluginSandbox extends EventEmitter {
 
     const environment: SandboxEnvironment = {
       id: this.generateEnvironmentId(pluginId),
-      pluginId,
+      _pluginId: pluginId,
       isolationLevel,
       resourceLimits,
       allowedAPIs,
@@ -106,7 +106,7 @@ export class PluginSandbox extends EventEmitter {
     };
 
     this.emit('environment.created', { pluginId, environment: sandboxInfo });
-    console.log(`[PluginSandbox] Environment created for ${pluginId} with ${isolationLevel} isolation`);
+    // console.log(`[PluginSandbox] Environment created for ${pluginId} with ${isolationLevel} isolation`);
 
     return sandboxInfo;
   }
@@ -120,7 +120,7 @@ export class PluginSandbox extends EventEmitter {
       return;
     }
 
-    console.log(`[PluginSandbox] Destroying environment for plugin: ${pluginId}`);
+    // console.log(`[PluginSandbox] Destroying environment for plugin: ${pluginId}`);
 
     // 워커 스레드 종료
     if (environment.worker) {
@@ -130,7 +130,7 @@ export class PluginSandbox extends EventEmitter {
     this.environments.delete(pluginId);
     this.emit('environment.destroyed', { pluginId });
 
-    console.log(`[PluginSandbox] Environment destroyed for plugin: ${pluginId}`);
+    // console.log(`[PluginSandbox] Environment destroyed for plugin: ${pluginId}`);
   }
 
   /**
@@ -275,7 +275,7 @@ export class PluginSandbox extends EventEmitter {
         break;
       
       case 'log':
-        console.log(`[Plugin:${pluginId}] ${message.level}: ${message.message}`);
+    // console.log(`[Plugin:${pluginId}] ${message.level}: ${message.message}`);
         break;
       
       case 'metric':
@@ -354,9 +354,9 @@ export class PluginSandbox extends EventEmitter {
   /**
    * 로거 API 처리
    */
-  private async handleLoggerAPI(pluginId: string, _method: string, args: any[]): Promise<any> {
-    const [level, message, meta] = args;
-    console.log(`[Plugin:${pluginId}] [${level.toUpperCase()}] ${message}`, meta || '');
+  private async handleLoggerAPI(_pluginId: string, _method: string, args: any[]): Promise<any> {
+    const [_level, _message, _meta] = args;
+    // console.log(`[Plugin:${pluginId}] [${level.toUpperCase()}] ${message}`, meta || '');
     return true;
   }
 
@@ -473,7 +473,7 @@ export class PluginSandbox extends EventEmitter {
    * 정리
    */
   async dispose(): Promise<void> {
-    console.log('[PluginSandbox] Disposing...');
+    // console.log('[PluginSandbox] Disposing...');
 
     // 리소스 모니터링 중지
     if (this.resourceMonitor) {
@@ -486,6 +486,6 @@ export class PluginSandbox extends EventEmitter {
       await this.destroyEnvironment(pluginId);
     }
 
-    console.log('[PluginSandbox] Disposed');
+    // console.log('[PluginSandbox] Disposed');
   }
 }

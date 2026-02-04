@@ -51,12 +51,12 @@ export class AuthManager extends EventEmitter {
           ipAddress,
           userAgent,
           success: false,
-          message: 'Rate limit exceeded'
+          _message: 'Rate limit exceeded'
         });
 
         return {
           success: false,
-          message: '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.'
+          _message: '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.'
         };
       }
 
@@ -70,12 +70,12 @@ export class AuthManager extends EventEmitter {
           ipAddress,
           userAgent,
           success: false,
-          message: 'Invalid credentials'
+          _message: 'Invalid credentials'
         });
 
         return {
           success: false,
-          message: '잘못된 사용자명 또는 비밀번호입니다.'
+          _message: '잘못된 사용자명 또는 비밀번호입니다.'
         };
       }
 
@@ -87,12 +87,12 @@ export class AuthManager extends EventEmitter {
           ipAddress,
           userAgent,
           success: false,
-          message: 'Account disabled'
+          _message: 'Account disabled'
         });
 
         return {
           success: false,
-          message: '비활성화된 계정입니다.'
+          _message: '비활성화된 계정입니다.'
         };
       }
 
@@ -111,7 +111,7 @@ export class AuthManager extends EventEmitter {
         ipAddress,
         userAgent,
         success: true,
-        message: 'Login successful'
+        _message: 'Login successful'
       });
 
       // 사용자 정보에서 비밀번호 해시 제거
@@ -121,7 +121,7 @@ export class AuthManager extends EventEmitter {
         success: true,
         token,
         user: userInfo,
-        message: '로그인에 성공했습니다.'
+        _message: '로그인에 성공했습니다.'
       };
 
     } catch (error) {
@@ -131,12 +131,12 @@ export class AuthManager extends EventEmitter {
         ipAddress,
         userAgent,
         success: false,
-        message: `Login error: ${(error as Error).message}`
+        _message: `Login error: ${(error as Error).message}`
       });
 
       return {
         success: false,
-        message: '로그인 중 오류가 발생했습니다.'
+        _message: '로그인 중 오류가 발생했습니다.'
       };
     }
   }
@@ -233,7 +233,7 @@ export class AuthManager extends EventEmitter {
           ipAddress: 'unknown',
           userAgent: 'unknown',
           success: false,
-          message: `Invalid JWT: ${error.message}`
+          _message: `Invalid JWT: ${error.message}`
         });
       }
       return null;
@@ -270,7 +270,7 @@ export class AuthManager extends EventEmitter {
       ipAddress: 'unknown',
       userAgent: 'unknown',
       success: true,
-      message: 'Token refreshed successfully'
+      _message: 'Token refreshed successfully'
     });
 
     return newToken;
@@ -303,7 +303,7 @@ export class AuthManager extends EventEmitter {
         ipAddress: session?.ipAddress || 'unknown',
         userAgent: session?.userAgent || 'unknown',
         success: true,
-        message: 'Logout successful'
+        _message: 'Logout successful'
       });
 
       return true;
@@ -319,7 +319,7 @@ export class AuthManager extends EventEmitter {
     const apiKey = `devflow_${crypto.randomBytes(32).toString('hex')}`;
     const keyHash = await bcrypt.hash(apiKey, 12);
 
-    const apiKeyInfo: APIKey = {
+    const apiKeyInfo = {
       id: uuidv4(),
       name,
       keyHash,
@@ -339,7 +339,7 @@ export class AuthManager extends EventEmitter {
       updatedAt: new Date()
     };
 
-    this.apiKeys.set(apiKey, apiKeyInfo);
+    this.apiKeys.set(apiKey, apiKeyInfo as any);
     return apiKey;
   }
 

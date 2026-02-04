@@ -25,7 +25,7 @@ const BaseEventSchema = z
     timestamp: z.date(),
     severity: z.nativeEnum(EventSeverity),
     source: z.string().min(1),
-    data: z.record(z.string(), z.any()),
+    _data: z.record(z.string(), z.any()),
     metadata: z.record(z.string(), z.any()).optional(),
     correlationId: z.string().optional(),
     parentId: z.string().optional(),
@@ -38,7 +38,7 @@ const BaseEventSchema = z
 const FileEventSchema = BaseEventSchema.extend({
   type: z.nativeEnum(FileEventType),
   category: z.literal(EventCategory.FILE),
-  data: z
+  _data: z
     .object({
       action: z.string(),
       oldFile: z
@@ -58,7 +58,7 @@ const FileEventSchema = BaseEventSchema.extend({
         isDirectory: z.boolean(),
       }),
       description: z.string().optional(),
-      context: z
+      _context: z
         .object({
           type: z.enum(['test', 'config', 'documentation', 'source', 'build', 'unknown']),
           confidence: z.number().min(0).max(1),
@@ -78,7 +78,7 @@ const FileEventSchema = BaseEventSchema.extend({
 const GitEventSchema = BaseEventSchema.extend({
   type: z.nativeEnum(GitEventType),
   category: z.literal(EventCategory.GIT),
-  data: z.any(),
+  _data: z.any(),
 }).passthrough();
 
 /**
@@ -126,13 +126,13 @@ export class EventDeduplicator {
   private generateEventHash(event: BaseEvent): string {
     // 파일 이벤트의 경우
     if (event.category === EventCategory.FILE) {
-      const fileData = event.data as any;
+      const fileData = event._data as any;
       return `${event.type}-${fileData.newFile?.path || ''}-${fileData.action || ''}`;
     }
 
     // Git 이벤트의 경우
     if (event.category === EventCategory.GIT) {
-      const gitData = event.data as any;
+      const gitData = event._data as any;
       if (gitData.commit) {
         return `${event.type}-${gitData.commit.hash}`;
       }
@@ -142,7 +142,7 @@ export class EventDeduplicator {
     }
 
     // 기본 해시
-    return `${event.type}-${event.source}-${JSON.stringify(event.data)}`;
+    return `${event.type}-${event.source}-${JSON.stringify(event._data)}`;
   }
 
   /**
@@ -238,7 +238,7 @@ export class EventValidator {
     FileEventSchema.parse(event);
 
     // 추가 비즈니스 로직 검증
-    const data = event.data;
+    const data = event._data;
 
     // 파일 경로 검증
     if (data.newFile.path.includes('..')) {
@@ -259,7 +259,7 @@ export class EventValidator {
     GitEventSchema.parse(event);
 
     // 추가 비즈니스 로직 검증
-    const data = event.data as any;
+    const data = event._data as any;
 
     // 커밋 해시 검증
     if (data.commit && !/^[a-f0-9]{40}$/.test(data.commit.hash)) {

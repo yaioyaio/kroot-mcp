@@ -210,12 +210,12 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
    * 파일 이벤트 분석
    */
   private async analyzeFileEvent(event: FileEvent): Promise<void> {
-    if (event.data.action !== FileChangeAction.ADD && 
-        event.data.action !== FileChangeAction.CHANGE) {
+    if (event._data.action !== FileChangeAction.ADD && 
+        event._data.action !== FileChangeAction.CHANGE) {
       return;
     }
 
-    const filePath = event.data.newFile?.path || event.data.oldFile?.path;
+    const filePath = event._data.newFile?.path || event._data.oldFile?.path;
     if (!filePath) return;
 
     const content = ''; // Content would need to be read from file system
@@ -251,20 +251,20 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
    */
   private async analyzeGitEvent(event: GitEvent): Promise<void> {
     if (event.type === GitEventType.COMMIT_CREATED) {
-      const commitData = event.data as any;
-      const message = commitData.message || '';
+      const commitData = event._data as any;
+      const _message = commitData._message || '';
       
       // TDD 커밋 패턴 검사
-      if (message.match(/test|spec|failing|passing|refactor/i)) {
-        this.updateTDDCycle(message);
+      if (_message.match(/test|spec|failing|passing|refactor/i)) {
+        this.updateTDDCycle(_message);
       }
 
       // BDD 커밋 패턴 검사
-      if (message.match(/feature|scenario|given|when|then/i)) {
+      if (_message.match(/feature|scenario|given|when|then/i)) {
         const detection: MethodologyDetection = {
           methodology: DevelopmentMethodology.BDD,
           confidence: 0.6,
-          evidence: [`Commit message: ${message}`],
+          evidence: [`Commit _message: ${_message}`],
           timestamp: Date.now()
         };
         this.addDetection(detection);
@@ -277,7 +277,7 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
    */
   private async analyzeTestEvent(event: BaseEvent): Promise<void> {
     // 테스트 실행 결과에 따른 TDD 사이클 업데이트
-    const testData = event.data as any;
+    const testData = event._data as any;
     if (testData.passed !== undefined && testData.failed !== undefined) {
       this.tddState.passingTests = testData.passed;
       this.tddState.failingTests = testData.failed;
@@ -539,21 +539,21 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
       });
     }
 
-    const context = this.dddContext.boundedContexts.get(contextName)!;
+    const _context = this.dddContext.boundedContexts.get(contextName)!;
     switch (type) {
       case 'entity':
-        if (!context.entities.includes(name)) {
-          context.entities.push(name);
+        if (!_context.entities.includes(name)) {
+          _context.entities.push(name);
         }
         break;
       case 'repository':
-        if (!context.repositories.includes(name)) {
-          context.repositories.push(name);
+        if (!_context.repositories.includes(name)) {
+          _context.repositories.push(name);
         }
         break;
       case 'service':
-        if (!context.services.includes(name)) {
-          context.services.push(name);
+        if (!_context.services.includes(name)) {
+          _context.services.push(name);
         }
         break;
     }
@@ -600,12 +600,12 @@ export class MethodologyAnalyzer extends EventEmitter<MethodologyAnalyzerEvents>
   /**
    * TDD 사이클 업데이트 (커밋 메시지 기반)
    */
-  private updateTDDCycle(message: string): void {
-    if (message.match(/failing test|red/i)) {
+  private updateTDDCycle(_message: string): void {
+    if (_message.match(/failing test|red/i)) {
       this.transitionTDDPhase(TDDCycle.RED);
-    } else if (message.match(/passing test|green/i)) {
+    } else if (_message.match(/passing test|green/i)) {
       this.transitionTDDPhase(TDDCycle.GREEN);
-    } else if (message.match(/refactor/i)) {
+    } else if (_message.match(/refactor/i)) {
       this.transitionTDDPhase(TDDCycle.REFACTOR);
     }
   }

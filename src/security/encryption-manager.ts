@@ -70,7 +70,7 @@ export class EncryptionManager extends EventEmitter {
       resource: 'encryption',
       action: 'create',
       success: true,
-      message: 'Encryption system initialized with master key'
+      _message: 'Encryption system initialized with master key'
     });
   }
 
@@ -99,7 +99,7 @@ export class EncryptionManager extends EventEmitter {
    * 데이터 암호화
    */
   async encrypt(
-    data: string | Buffer,
+    _data: string | Buffer,
     options?: EncryptionOptions
   ): Promise<EncryptionResult> {
     try {
@@ -121,7 +121,7 @@ export class EncryptionManager extends EventEmitter {
         (cipher as any).setAAD(Buffer.from(activeKey.id)); // Additional Authenticated Data
       }
       
-      const inputBuffer = typeof data === 'string' ? Buffer.from(data, 'utf8') : data;
+      const inputBuffer = typeof _data === 'string' ? Buffer.from(_data, 'utf8') : _data;
       const encrypted = Buffer.concat([
         cipher.update(inputBuffer),
         cipher.final()
@@ -147,7 +147,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: true,
-        message: `Data encrypted using key ${activeKey.id}`,
+        _message: `Data encrypted using key ${activeKey.id}`,
         metadata: { 
           keyId: activeKey.id,
           algorithm,
@@ -163,7 +163,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: false,
-        message: `Encryption failed: ${(error as Error).message}`
+        _message: `Encryption failed: ${(error as Error).message}`
       });
 
       throw new Error(`Encryption failed: ${(error as Error).message}`);
@@ -212,7 +212,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'read',
         success: true,
-        message: `Data decrypted using key ${key.id}`,
+        _message: `Data decrypted using key ${key.id}`,
         metadata: { 
           keyId: key.id,
           algorithm,
@@ -228,7 +228,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'read',
         success: false,
-        message: `Decryption failed: ${(error as Error).message}`
+        _message: `Decryption failed: ${(error as Error).message}`
       });
 
       throw new Error(`Decryption failed: ${(error as Error).message}`);
@@ -239,12 +239,12 @@ export class EncryptionManager extends EventEmitter {
    * 해시 생성 (비밀번호, 체크섬 등)
    */
   async createHash(
-    data: string | Buffer,
+    _data: string | Buffer,
     algorithm: string = 'sha256',
     salt?: string
   ): Promise<string> {
     try {
-      const inputData = typeof data === 'string' ? data : data.toString('utf8');
+      const inputData = typeof _data === 'string' ? _data : _data.toString('utf8');
       const saltedData = salt ? `${inputData}${salt}` : inputData;
       
       const hash = crypto.createHash(algorithm);
@@ -256,7 +256,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: true,
-        message: `Hash created using ${algorithm}`,
+        _message: `Hash created using ${algorithm}`,
         metadata: { 
           algorithm,
           hasSalt: !!salt,
@@ -272,7 +272,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: false,
-        message: `Hash creation failed: ${(error as Error).message}`
+        _message: `Hash creation failed: ${(error as Error).message}`
       });
 
       throw new Error(`Hash creation failed: ${(error as Error).message}`);
@@ -283,7 +283,7 @@ export class EncryptionManager extends EventEmitter {
    * HMAC 생성 (메시지 인증 코드)
    */
   async createHMAC(
-    data: string | Buffer,
+    _data: string | Buffer,
     secret?: string,
     algorithm: string = 'sha256'
   ): Promise<string> {
@@ -295,7 +295,7 @@ export class EncryptionManager extends EventEmitter {
         throw new Error('No secret key available for HMAC');
       }
 
-      const inputData = typeof data === 'string' ? data : data.toString('utf8');
+      const inputData = typeof _data === 'string' ? _data : _data.toString('utf8');
       const hmac = crypto.createHmac(algorithm, secretKey);
       hmac.update(inputData, 'utf8');
       const result = hmac.digest('hex');
@@ -305,7 +305,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: true,
-        message: `HMAC created using ${algorithm}`,
+        _message: `HMAC created using ${algorithm}`,
         metadata: { 
           algorithm,
           inputSize: inputData.length
@@ -320,7 +320,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: false,
-        message: `HMAC creation failed: ${(error as Error).message}`
+        _message: `HMAC creation failed: ${(error as Error).message}`
       });
 
       throw new Error(`HMAC creation failed: ${(error as Error).message}`);
@@ -360,7 +360,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: true,
-        message: 'Secure token generated',
+        _message: 'Secure token generated',
         metadata: { 
           tokenId: tokenData.id,
           expiresIn,
@@ -376,7 +376,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'create',
         success: false,
-        message: `Token creation failed: ${(error as Error).message}`
+        _message: `Token creation failed: ${(error as Error).message}`
       });
 
       throw new Error(`Token creation failed: ${(error as Error).message}`);
@@ -416,7 +416,7 @@ export class EncryptionManager extends EventEmitter {
           resource: 'encryption',
           action: 'read',
           success: false,
-          message: 'Token verification failed: expired',
+          _message: 'Token verification failed: expired',
           metadata: { tokenId: tokenData.id }
         });
         return null;
@@ -427,7 +427,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'read',
         success: true,
-        message: 'Token verified successfully',
+        _message: 'Token verified successfully',
         metadata: { tokenId: tokenData.id }
       });
 
@@ -439,7 +439,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'read',
         success: false,
-        message: `Token verification failed: ${(error as Error).message}`
+        _message: `Token verification failed: ${(error as Error).message}`
       });
 
       return null;
@@ -466,7 +466,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'update',
         success: true,
-        message: 'Encryption keys rotated',
+        _message: 'Encryption keys rotated',
         metadata: { 
           oldKeyId: oldKey?.id,
           newKeyId: newKey.id,
@@ -482,7 +482,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'update',
         success: false,
-        message: `Key rotation failed: ${(error as Error).message}`
+        _message: `Key rotation failed: ${(error as Error).message}`
       });
 
       throw new Error(`Key rotation failed: ${(error as Error).message}`);
@@ -512,7 +512,7 @@ export class EncryptionManager extends EventEmitter {
         resource: 'encryption',
         action: 'delete',
         success: true,
-        message: `Cleaned up ${deletedCount} old encryption keys`,
+        _message: `Cleaned up ${deletedCount} old encryption keys`,
         metadata: { deletedCount, keepCount }
       });
     }
@@ -544,7 +544,7 @@ export class EncryptionManager extends EventEmitter {
           resource: 'encryption',
           action: 'update',
           success: false,
-          message: `Automatic key rotation failed: ${(error as Error).message}`
+          _message: `Automatic key rotation failed: ${(error as Error).message}`
         });
       }
     }, intervalMs);
@@ -554,7 +554,7 @@ export class EncryptionManager extends EventEmitter {
       resource: 'encryption',
       action: 'create',
       success: true,
-      message: `Key rotation scheduled every ${config.intervalDays} days`
+      _message: `Key rotation scheduled every ${config.intervalDays} days`
     });
   }
 

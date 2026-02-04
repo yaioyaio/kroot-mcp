@@ -27,6 +27,7 @@ interface EventSubscriber<T extends BaseEvent = BaseEvent> {
   handler: EventHandler<T>;
   options: EventSubscriptionOptions;
   createdAt: Date;
+  emitterHandler?: (event: T) => void;
 }
 
 /**
@@ -46,7 +47,7 @@ interface EventStats {
 export class EventEngine extends EventEmitter {
   private subscribers: Map<string, EventSubscriber[]> = new Map();
   private eventQueue: BaseEvent[] = [];
-  private stats: EventStats;
+  private _stats?: EventStats;
   private transformers: Map<string, EventTransformer[]> = new Map();
   private globalFilters: EventFilter[] = [];
   private useQueueManager: boolean = true;
@@ -56,7 +57,7 @@ export class EventEngine extends EventEmitter {
     super();
 
     // 통계 초기화
-    this.stats = {
+    this._stats = {
       totalEvents: 0,
       eventsByCategory: new Map(),
       eventsBySeverity: new Map(),
@@ -66,12 +67,12 @@ export class EventEngine extends EventEmitter {
 
     // 카테고리별 통계 초기화
     Object.values(EventCategory).forEach((category) => {
-      this.stats.eventsByCategory.set(category, 0);
+      this._stats!.eventsByCategory.set(category, 0);
     });
 
     // 심각도별 통계 초기화
     Object.values(EventSeverity).forEach((severity) => {
-      this.stats.eventsBySeverity.set(severity, 0);
+      this._stats!.eventsBySeverity.set(severity, 0);
     });
 
     // QueueManager 이벤트 처리기 설정
@@ -100,7 +101,7 @@ export class EventEngine extends EventEmitter {
     const key = pattern instanceof RegExp ? pattern.source : pattern;
     const subscribers = this.subscribers.get(key) || [];
 
-    // 우선순위에 따라 정렬하여 추가
+    // 우선순위에 따라 정렬하여 추가 (높은 우선순위가 먼저)
     const priority = options.priority || 0;
     const insertIndex = subscribers.findIndex((s) => (s.options.priority || 0) < priority);
 
@@ -115,14 +116,17 @@ export class EventEngine extends EventEmitter {
     // EventEmitter3 이벤트 등록
     if (pattern instanceof RegExp) {
       // 정규식 패턴은 와일드카드로 처리
-      this.on('*', (event: T) => {
+      const regexHandler = (event: T) => {
         if (pattern.test(event.type)) {
           this.handleEvent(event, subscriber as EventSubscriber);
         }
-      });
+      };
+      subscriber.emitterHandler = regexHandler;
+      this.on('*', regexHandler);
     } else {
       // 일반 문자열 패턴
       const eventHandler = (event: T) => this.handleEvent(event, subscriber as EventSubscriber);
+      subscriber.emitterHandler = eventHandler;
 
       if (options.once) {
         this.once(pattern, eventHandler);
@@ -141,7 +145,14 @@ export class EventEngine extends EventEmitter {
     for (const [key, subscribers] of this.subscribers.entries()) {
       const index = subscribers.findIndex((s) => s.id === subscriberId);
       if (index !== -1) {
+        const subscriber = subscribers[index];
         subscribers.splice(index, 1);
+        
+        // EventEmitter3에서도 리스너 제거
+        if (subscriber?.emitterHandler) {
+          this.off(subscriber.pattern instanceof RegExp ? '*' : subscriber.pattern, subscriber.emitterHandler);
+        }
+        
         if (subscribers.length === 0) {
           this.subscribers.delete(key);
         }
@@ -182,10 +193,69 @@ export class EventEngine extends EventEmitter {
     // 이벤트 큐에 추가
     this.eventQueue.push(transformedEvent);
 
-    // EventEmitter3로 이벤트 발행 (processEvent에서 구독자 처리는 별도)
-    this.emit(transformedEvent.type, transformedEvent);
-    this.emit('*', transformedEvent);
+    // 구독자들을 우선순위에 따라 직접 처리
+    await this.processEventSubscribers(transformedEvent);
+
+    // EventEmitter3로 이벤트 발행 
     this.emit('event:published', transformedEvent);
+  }
+
+  /**
+   * 구독자들을 우선순위에 따라 처리
+   */
+  private async processEventSubscribers<T extends BaseEvent = BaseEvent>(event: T): Promise<void> {
+    const allSubscribers: EventSubscriber[] = [];
+    
+    // 정확한 매치
+    const exactSubscribers = this.subscribers.get(event.type) || [];
+    allSubscribers.push(...exactSubscribers);
+    
+    // 와일드카드 매치
+    const wildcardSubscribers = this.subscribers.get('*') || [];
+    allSubscribers.push(...wildcardSubscribers);
+    
+    // 정규식 매치
+    for (const [key, subscribers] of this.subscribers.entries()) {
+      if (key !== event.type && key !== '*') {
+        const pattern = new RegExp(key);
+        if (pattern.test(event.type)) {
+          allSubscribers.push(...subscribers);
+        }
+      }
+    }
+    
+    // 우선순위에 따라 정렬 (높은 우선순위 먼저)
+    allSubscribers.sort((a, b) => (b.options.priority || 0) - (a.options.priority || 0));
+    
+    // 구독자 핸들러 실행
+    for (const subscriber of allSubscribers) {
+      try {
+        // 구독자별 필터 적용
+        if (subscriber.options.filter && !subscriber.options.filter(event)) {
+          continue;
+        }
+        
+        await subscriber.handler(event);
+      } catch (error) {
+        // 시스템 에러 이벤트 생성 및 발행
+        const errorEvent: BaseEvent = {
+          id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          type: 'system:error',
+          category: EventCategory.SYSTEM,
+          timestamp: Date.now(),
+          severity: EventSeverity.ERROR,
+          source: 'EventEngine',
+          _data: {
+            originalEvent: event,
+            subscriber: subscriber.id,
+            error: error instanceof Error ? error.message : String(error)
+          }
+        };
+        
+        this.emit(errorEvent.type, errorEvent);
+        this.emit('event:error', { event, subscriber, error });
+      }
+    }
   }
 
   /**
@@ -237,17 +307,17 @@ export class EventEngine extends EventEmitter {
    */
   getStatistics(): EventStatistics {
     return {
-      totalEvents: this.stats.totalEvents,
-      eventsByCategory: Object.fromEntries(this.stats.eventsByCategory) as Record<
+      totalEvents: this._stats!.totalEvents,
+      eventsByCategory: Object.fromEntries(this._stats!.eventsByCategory) as Record<
         EventCategory,
         number
       >,
-      eventsBySeverity: Object.fromEntries(this.stats.eventsBySeverity) as Record<
+      eventsBySeverity: Object.fromEntries(this._stats!.eventsBySeverity) as Record<
         EventSeverity,
         number
       >,
       eventsPerHour: this.calculateEventsPerHour(),
-      ...(this.stats.lastEventTime && { lastEventTime: this.stats.lastEventTime }),
+      ...(this._stats!.lastEventTime && { lastEventTime: this._stats!.lastEventTime }),
     };
   }
 
@@ -311,7 +381,7 @@ export class EventEngine extends EventEmitter {
         timestamp: Date.now(),
         severity: EventSeverity.ERROR,
         source: 'EventEngine',
-        data: {
+        _data: {
           originalEvent: event,
           subscriberId: subscriber.id,
           error: error instanceof Error ? error.message : String(error),
@@ -328,21 +398,21 @@ export class EventEngine extends EventEmitter {
    * 통계 업데이트
    */
   private updateStatistics(event: BaseEvent): void {
-    this.stats.totalEvents++;
-    this.stats.lastEventTime = new Date();
+    this._stats!.totalEvents++;
+    this._stats!.lastEventTime = new Date();
 
     // 카테고리별 통계
-    const categoryCount = this.stats.eventsByCategory.get(event.category) || 0;
-    this.stats.eventsByCategory.set(event.category, categoryCount + 1);
+    const categoryCount = this._stats!.eventsByCategory.get(event.category) || 0;
+    this._stats!.eventsByCategory.set(event.category, categoryCount + 1);
 
     // 심각도별 통계
-    const severityCount = this.stats.eventsBySeverity.get(event.severity) || 0;
-    this.stats.eventsBySeverity.set(event.severity, severityCount + 1);
+    const severityCount = this._stats!.eventsBySeverity.get(event.severity) || 0;
+    this._stats!.eventsBySeverity.set(event.severity, severityCount + 1);
 
     // 시간대별 통계
     const hour = new Date().getHours();
-    if (this.stats.eventsPerHour[hour] !== undefined) {
-      this.stats.eventsPerHour[hour]++;
+    if (this._stats!.eventsPerHour[hour] !== undefined) {
+      this._stats!.eventsPerHour[hour]++;
     }
   }
 
@@ -389,7 +459,7 @@ export class EventEngine extends EventEmitter {
    * 시간당 이벤트 수 계산
    */
   private calculateEventsPerHour(): number {
-    const total = this.stats.eventsPerHour.reduce((sum, count) => sum + count, 0);
+    const total = this._stats!.eventsPerHour.reduce((sum, count) => sum + count, 0);
     return total / 24;
   }
 
@@ -444,8 +514,8 @@ export class EventEngine extends EventEmitter {
         this.emit('queue:error', { error, queueName });
       });
 
-      queueManager.on('stats:update', (stats: any) => {
-        this.emit('queue:stats', stats);
+      queueManager.on('_stats:update', (_stats: any) => {
+        this.emit('queue:stats', _stats);
       });
     } catch (error) {
       console.error('Failed to setup queue manager integration:', error);
@@ -575,11 +645,11 @@ export class EventEngine extends EventEmitter {
    */
   getStats() {
     return {
-      totalEvents: this.stats.totalEvents,
-      lastEventTime: this.stats.lastEventTime,
-      eventsByCategory: Object.fromEntries(this.stats.eventsByCategory),
-      eventsBySeverity: Object.fromEntries(this.stats.eventsBySeverity),
-      eventsPerHour: this.stats.eventsPerHour,
+      totalEvents: this._stats!.totalEvents,
+      lastEventTime: this._stats!.lastEventTime,
+      eventsByCategory: Object.fromEntries(this._stats!.eventsByCategory),
+      eventsBySeverity: Object.fromEntries(this._stats!.eventsBySeverity),
+      eventsPerHour: this._stats!.eventsPerHour,
       subscriberCount: this.subscribers.size,
       transformerCount: Array.from(this.transformers.values()).flat().length,
       globalFilterCount: this.globalFilters.length

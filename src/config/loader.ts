@@ -75,7 +75,7 @@ export interface AppConfig {
     };
   };
   logging: {
-    level: string;
+    _level: string;
     format: string;
     console: {
       enabled: boolean;

@@ -9,7 +9,7 @@ import { config } from '../server/config.js';
 export interface MonitorEvent {
   type: string;
   timestamp: number;
-  data: unknown;
+  _data: unknown;
   source: string;
   metadata?: Record<string, unknown>;
 }
@@ -102,38 +102,38 @@ export abstract class BaseMonitor extends EventEmitter {
   /**
    * Emit a monitor event
    */
-  protected emitEvent(type: string, data: unknown, metadata?: Record<string, unknown>): void {
+  protected emitEvent(type: string, _data: unknown, metadata?: Record<string, unknown>): void {
     const event: MonitorEvent = {
       type,
       timestamp: Date.now(),
-      data,
+      _data: _data,
       source: this.name,
       ...(metadata && { metadata }),
     };
 
     this.emit('event', event);
-    this.logDebug('Event emitted:', type, data);
+    this.logDebug('Event emitted:', type, _data);
   }
 
   /**
    * Logging utilities
    */
-  protected logDebug(message: string, ...args: unknown[]): void {
+  protected logDebug(_message: string, ...args: unknown[]): void {
     if (this.debug) {
-      console.error(`[DEBUG][${this.name}] ${message}`, ...args);
+      console.error(`[DEBUG][${this.name}] ${_message}`, ...args);
     }
   }
 
-  protected logInfo(message: string, ...args: unknown[]): void {
-    console.error(`[INFO][${this.name}] ${message}`, ...args);
+  protected logInfo(_message: string, ...args: unknown[]): void {
+    console.error(`[INFO][${this.name}] ${_message}`, ...args);
   }
 
-  protected logWarn(message: string, ...args: unknown[]): void {
-    console.error(`[WARN][${this.name}] ${message}`, ...args);
+  protected logWarn(_message: string, ...args: unknown[]): void {
+    console.error(`[WARN][${this.name}] ${_message}`, ...args);
   }
 
-  protected logError(message: string, ...args: unknown[]): void {
-    console.error(`[ERROR][${this.name}] ${message}`, ...args);
+  protected logError(_message: string, ...args: unknown[]): void {
+    console.error(`[ERROR][${this.name}] ${_message}`, ...args);
   }
 
   /**

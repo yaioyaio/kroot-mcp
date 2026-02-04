@@ -437,7 +437,7 @@ export class MemoryOptimizer extends EventEmitter {
       
       if (pressureLevel === 'critical' || pressureLevel === 'high') {
         this.emit('memoryPressure', {
-          level: pressureLevel,
+          _level: pressureLevel,
           heapUsed: process.memoryUsage().heapUsed,
           threshold: this.config.maxHeapUsage
         });

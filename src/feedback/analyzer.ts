@@ -142,7 +142,7 @@ export class FeedbackAnalyzer extends EventEmitter {
       const keywords = this.extractKeywords(feedback);
       
       // 분석 결과 생성
-      const analysis: FeedbackAnalysis = {
+      const _analysis: FeedbackAnalysis = {
         id: uuidv4(),
         feedbackId: feedback.id,
         sentiment,
@@ -154,7 +154,7 @@ export class FeedbackAnalyzer extends EventEmitter {
       };
       
       // 분석 결과 저장
-      this.saveAnalysis(analysis);
+      this.saveAnalysis(_analysis);
       
       // 유사 피드백 저장
       if (similarFeedback.length > 0) {
@@ -162,7 +162,7 @@ export class FeedbackAnalyzer extends EventEmitter {
       }
       
       // 개선 제안 생성 체크
-      await this.checkForImprovementSuggestions(feedback, analysis);
+      await this.checkForImprovementSuggestions(feedback, _analysis);
       
       // 이벤트 발생
       const event: FeedbackEvent = {
@@ -173,7 +173,7 @@ export class FeedbackAnalyzer extends EventEmitter {
       };
       this.emit('feedbackAnalyzed', event);
       
-      return analysis;
+      return _analysis;
       
     } catch (error) {
       logger.error('Failed to analyze feedback', { feedbackId: feedback.id, error });
@@ -456,10 +456,10 @@ export class FeedbackAnalyzer extends EventEmitter {
    */
   private async checkForImprovementSuggestions(
     feedback: FeedbackMetadata,
-    analysis: FeedbackAnalysis
+    _analysis: FeedbackAnalysis
   ): Promise<void> {
     // 유사한 피드백이 충분히 있는지 확인
-    if (analysis.similarFeedback.length < this.config.minFeedbackForSuggestion - 1) {
+    if (_analysis.similarFeedback.length < this.config.minFeedbackForSuggestion - 1) {
       return;
     }
     
@@ -474,7 +474,7 @@ export class FeedbackAnalyzer extends EventEmitter {
     }
     
     // 유사 피드백들의 정보 수집
-    const similarIds = [feedback.id, ...analysis.similarFeedback.map(f => f.id)];
+    const similarIds = [feedback.id, ..._analysis.similarFeedback.map((f: any) => f.id)];
     const placeholders = similarIds.map(() => '?').join(',');
     
     const similarFeedbacks = this.db.prepare(`
@@ -601,7 +601,7 @@ export class FeedbackAnalyzer extends EventEmitter {
   /**
    * 분석 결과 저장
    */
-  private saveAnalysis(analysis: FeedbackAnalysis): void {
+  private saveAnalysis(_analysis: FeedbackAnalysis): void {
     const stmt = this.db.prepare(`
       INSERT INTO feedback_analysis (
         id, feedback_id, sentiment_score, sentiment_label, sentiment_confidence,
@@ -610,15 +610,15 @@ export class FeedbackAnalyzer extends EventEmitter {
     `);
     
     stmt.run(
-      analysis.id,
-      analysis.feedbackId,
-      analysis.sentiment.score,
-      analysis.sentiment.label,
-      analysis.sentiment.confidence,
-      analysis.suggestedPriority.priority,
-      analysis.suggestedPriority.confidence,
-      JSON.stringify(analysis.keywords),
-      analysis.analyzedAt
+      _analysis.id,
+      _analysis.feedbackId,
+      _analysis.sentiment.score,
+      _analysis.sentiment.label,
+      _analysis.sentiment.confidence,
+      _analysis.suggestedPriority.priority,
+      _analysis.suggestedPriority.confidence,
+      JSON.stringify(_analysis.keywords),
+      _analysis.analyzedAt
     );
   }
   

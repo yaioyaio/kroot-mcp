@@ -160,7 +160,7 @@ export interface FeedbackContext {
   
   /** 오류 정보 (버그 리포트인 경우) */
   error?: {
-    message: string;
+    _message: string;
     stack?: string;
     code?: string;
   };

@@ -58,7 +58,7 @@ export interface GitCommitInfo {
   shortHash: string;
 
   /** 커밋 메시지 */
-  message: string;
+  _message: string;
 
   /** 작성자 */
   author: {
@@ -277,7 +277,7 @@ export interface GitSyncEventData {
 export interface GitEvent extends BaseEvent {
   type: GitEventType;
   category: EventCategory.GIT;
-  data: GitCommitEventData | GitBranchEventData | GitSyncEventData | GitConflictInfo;
+  _data: GitCommitEventData | GitBranchEventData | GitSyncEventData | GitConflictInfo;
 }
 
 /**
@@ -286,7 +286,7 @@ export interface GitEvent extends BaseEvent {
 export class GitEventBuilder {
   static createCommitEvent(
     type: GitEventType,
-    data: GitCommitEventData,
+    _data: GitCommitEventData,
     options?: {
       severity?: EventSeverity;
       correlationId?: string;
@@ -300,7 +300,7 @@ export class GitEventBuilder {
       timestamp: Date.now(),
       severity: options?.severity || EventSeverity.INFO,
       source: 'GitMonitor',
-      data,
+      _data,
       ...(options?.correlationId && { correlationId: options.correlationId }),
       ...(options?.metadata && { metadata: options.metadata as EventMetadata }),
     };
@@ -308,7 +308,7 @@ export class GitEventBuilder {
 
   static createBranchEvent(
     type: GitEventType,
-    data: GitBranchEventData,
+    _data: GitBranchEventData,
     options?: {
       severity?: EventSeverity;
       correlationId?: string;
@@ -322,7 +322,7 @@ export class GitEventBuilder {
       timestamp: Date.now(),
       severity: options?.severity || EventSeverity.INFO,
       source: 'GitMonitor',
-      data,
+      _data,
       ...(options?.correlationId && { correlationId: options.correlationId }),
       ...(options?.metadata && { metadata: options.metadata as EventMetadata }),
     };
@@ -330,7 +330,7 @@ export class GitEventBuilder {
 
   static createSyncEvent(
     type: GitEventType,
-    data: GitSyncEventData,
+    _data: GitSyncEventData,
     options?: {
       severity?: EventSeverity;
       correlationId?: string;
@@ -342,9 +342,9 @@ export class GitEventBuilder {
       type,
       category: EventCategory.GIT,
       timestamp: Date.now(),
-      severity: data.success ? EventSeverity.INFO : EventSeverity.ERROR,
+      severity: _data.success ? EventSeverity.INFO : EventSeverity.ERROR,
       source: 'GitMonitor',
-      data,
+      _data,
       ...(options?.correlationId && { correlationId: options.correlationId }),
       ...(options?.metadata && { metadata: options.metadata as EventMetadata }),
     };
@@ -352,7 +352,7 @@ export class GitEventBuilder {
 
   static createConflictEvent(
     type: GitEventType,
-    data: GitConflictInfo,
+    _data: GitConflictInfo,
     options?: {
       correlationId?: string;
       metadata?: Record<string, any>;
@@ -365,7 +365,7 @@ export class GitEventBuilder {
       timestamp: Date.now(),
       severity: EventSeverity.WARNING,
       source: 'GitMonitor',
-      data,
+      _data,
       ...(options?.correlationId && { correlationId: options.correlationId }),
       ...(options?.metadata && { metadata: options.metadata as EventMetadata }),
     };

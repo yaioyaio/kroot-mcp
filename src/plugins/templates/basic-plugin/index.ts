@@ -59,7 +59,7 @@ export class BasicPlugin implements Plugin {
     }
   };
 
-  private context: PluginAPIContext | undefined;
+  private _context: PluginAPIContext | undefined;
   private config: BasicPluginConfig = {
     enabled: true,
     logLevel: 'info'
@@ -70,13 +70,13 @@ export class BasicPlugin implements Plugin {
   /**
    * 플러그인 초기화
    */
-  async initialize(context: PluginAPIContext): Promise<void> {
-    this.context = context;
+  async initialize(_context: PluginAPIContext): Promise<void> {
+    this._context = _context;
     
     // 설정 로드
     this.config = {
       ...this.config,
-      ...context.config
+      ..._context.config
     };
 
     this.log('info', 'Plugin initialized', { config: this.config });
@@ -91,7 +91,7 @@ export class BasicPlugin implements Plugin {
    * 플러그인 활성화
    */
   async activate(): Promise<void> {
-    if (!this.context) {
+    if (!this._context) {
       throw new Error('Plugin not initialized');
     }
 
@@ -142,7 +142,7 @@ export class BasicPlugin implements Plugin {
     
     // 리소스 정리
     this.eventListeners.clear();
-    this.context = undefined;
+    this._context = undefined;
   }
 
   /**
@@ -179,7 +179,7 @@ export class BasicPlugin implements Plugin {
   async healthCheck(): Promise<PluginHealthStatus> {
     try {
       // 플러그인 상태 체크
-      if (!this.context) {
+      if (!this._context) {
         return {
           status: 'error',
           message: 'Plugin context not available',
@@ -229,16 +229,16 @@ export class BasicPlugin implements Plugin {
    * 이벤트 리스너 설정
    */
   private setupEventListeners(): void {
-    if (!this.context) return;
+    if (!this._context) return;
 
     // 파일 이벤트 리스너
     const fileEventListener = this.handleFileEvent.bind(this);
-    this.context.events.on('file.*', fileEventListener);
+    this._context.events.on('file.*', fileEventListener);
     this.eventListeners.set('file.*', fileEventListener);
 
     // Git 이벤트 리스너
     const gitEventListener = this.handleGitEvent.bind(this);
-    this.context.events.on('git.*', gitEventListener);
+    this._context.events.on('git.*', gitEventListener);
     this.eventListeners.set('git.*', gitEventListener);
 
     this.log('debug', 'Event listeners registered');
@@ -248,10 +248,10 @@ export class BasicPlugin implements Plugin {
    * 이벤트 리스너 제거
    */
   private removeEventListeners(): void {
-    if (!this.context) return;
+    if (!this._context) return;
 
     for (const [event, listener] of this.eventListeners) {
-      this.context.events.off(event, listener);
+      this._context.events.off(event, listener);
     }
 
     this.eventListeners.clear();
@@ -283,7 +283,7 @@ export class BasicPlugin implements Plugin {
   private handleGitEvent(event: any): void {
     this.log('debug', 'Git event received', { 
       type: event.type, 
-      data: event.data 
+      _data: event.data 
     });
 
     // Git 이벤트 처리 로직
@@ -355,20 +355,20 @@ export class BasicPlugin implements Plugin {
    */
   private async analyzeCodeFile(filePath: string): Promise<void> {
     try {
-      if (!this.context?.fs) return;
+      if (!this._context?.fs) return;
 
-      const content = await this.context.fs.readFile(filePath);
+      const content = await this._context.fs.readFile(filePath);
       const lineCount = content.split('\n').length;
 
-      this.log('info', `Code file analysis: ${filePath}`, {
+      this.log('info', `Code file _analysis: ${filePath}`, {
         lineCount,
         hasExports: content.includes('export'),
         hasImports: content.includes('import')
       });
 
       // 커스텀 이벤트 발생
-      this.context.events.emit('plugin.analysis', {
-        pluginId: this.metadata.id,
+      this._context.events.emit('plugin.analysis', {
+        _pluginId: this.metadata.id,
         type: 'code_analysis',
         file: filePath,
         metrics: {
@@ -404,12 +404,12 @@ export class BasicPlugin implements Plugin {
    * 상태 리포트 전송
    */
   private sendStatusReport(): void {
-    if (!this.context || !this.isActive) return;
+    if (!this._context || !this.isActive) return;
 
     this.log('debug', 'Sending status report');
 
-    this.context.events.emit('plugin.status', {
-      pluginId: this.metadata.id,
+    this._context.events.emit('plugin.status', {
+      _pluginId: this.metadata.id,
       status: 'active',
       config: this.config,
       timestamp: new Date()
@@ -437,21 +437,21 @@ export class BasicPlugin implements Plugin {
   /**
    * 로깅 헬퍼
    */
-  private log(level: 'debug' | 'info' | 'warn' | 'error', message: string, meta?: any): void {
-    if (!this.context?.logger) {
+  private log(_level: 'debug' | 'info' | 'warn' | 'error', message: string, meta?: any): void {
+    if (!this._context?.logger) {
       return;
     }
 
     // 로그 레벨 체크
     const levels = ['debug', 'info', 'warn', 'error'];
     const currentLevelIndex = levels.indexOf(this.config.logLevel);
-    const messageLevelIndex = levels.indexOf(level);
+    const messageLevelIndex = levels.indexOf(_level);
 
     if (messageLevelIndex < currentLevelIndex) {
       return;
     }
 
-    this.context.logger[level](message, meta);
+    (this._context.logger as any)[_level](message, meta);
   }
 }
 

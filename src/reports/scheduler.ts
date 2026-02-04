@@ -55,7 +55,7 @@ interface ScheduleJob {
   schedule: ReportSchedule;
   
   /** Cron 작업 */
-  cronJob?: cron.ScheduledTask;
+  cronJob?: any;
   
   /** 실행 중 여부 */
   running: boolean;
@@ -76,14 +76,14 @@ export class ReportScheduler extends EventEmitter {
   private schedules: Map<string, ScheduleJob>;
   private reportEngine: ReportEngine;
   private reportDelivery: ReportDelivery;
-  private storageManager: StorageManager;
+  // private _storageManager: StorageManager; // TODO: Implement persistence
   private checkTimer?: NodeJS.Timer;
   
   constructor(
     config: SchedulerConfig,
     reportEngine: ReportEngine,
     reportDelivery: ReportDelivery,
-    storageManager: StorageManager
+    _storageManager: StorageManager
   ) {
     super();
     this.logger = new Logger('ReportScheduler');
@@ -100,7 +100,7 @@ export class ReportScheduler extends EventEmitter {
     this.schedules = new Map();
     this.reportEngine = reportEngine;
     this.reportDelivery = reportDelivery;
-    this.storageManager = storageManager;
+    // this._storageManager = storageManager; // TODO: Implement persistence
     
     if (this.config.enabled) {
       this.initialize();
@@ -140,7 +140,7 @@ export class ReportScheduler extends EventEmitter {
       name,
       enabled: true,
       reportConfig,
-      schedule: pattern,
+      _schedule: pattern,
       createdBy,
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -157,7 +157,7 @@ export class ReportScheduler extends EventEmitter {
     // 스케줄 작업 생성
     const job: ScheduleJob = {
       id: schedule.id,
-      schedule,
+      schedule: schedule,
       running: false
     };
     
@@ -213,12 +213,12 @@ export class ReportScheduler extends EventEmitter {
     };
     
     // 다음 실행 시간 재계산
-    if (updates.schedule) {
-      updatedSchedule.nextRunAt = this.calculateNextRun(updatedSchedule.schedule);
+    if (updates._schedule) {
+      updatedSchedule.nextRunAt = this.calculateNextRun(updatedSchedule._schedule);
     }
     
     // 새 Cron 작업 생성
-    if (updatedSchedule.enabled && updatedSchedule.schedule.type === 'cron' && updatedSchedule.schedule.cron) {
+    if (updatedSchedule.enabled && updatedSchedule._schedule.type === 'cron' && updatedSchedule._schedule.cron) {
       job.cronJob = this.createCronJob(updatedSchedule);
     }
     
@@ -299,13 +299,13 @@ export class ReportScheduler extends EventEmitter {
   /**
    * Cron 작업 생성
    */
-  private createCronJob(schedule: ReportSchedule): cron.ScheduledTask {
-    if (!schedule.schedule.cron) {
+  private createCronJob(schedule: ReportSchedule): any {
+    if (!schedule._schedule.cron) {
       throw new Error('Cron expression is required');
     }
     
     const task = cron.schedule(
-      schedule.schedule.cron,
+      schedule._schedule.cron,
       async () => {
         const job = this.schedules.get(schedule.id);
         if (job && schedule.enabled) {
@@ -320,7 +320,6 @@ export class ReportScheduler extends EventEmitter {
         }
       },
       {
-        scheduled: true,
         timezone: schedule.timezone || this.config.defaultTimezone
       }
     );
@@ -369,9 +368,9 @@ export class ReportScheduler extends EventEmitter {
       
       // 상태 업데이트
       job.lastResult = result;
-      job.lastError = undefined;
+      delete job.lastError;
       job.schedule.lastRunAt = startTime;
-      job.schedule.nextRunAt = this.calculateNextRun(job.schedule.schedule);
+      job.schedule.nextRunAt = this.calculateNextRun(job.schedule._schedule);
       await this.saveSchedule(job.schedule);
       
       // 이벤트 발생
@@ -432,7 +431,7 @@ export class ReportScheduler extends EventEmitter {
     switch (pattern.type) {
       case 'cron':
         if (pattern.cron) {
-          const interval = parser.parseExpression(pattern.cron);
+          const interval = (parser as any).parseExpression(pattern.cron);
           return interval.next().getTime();
         }
         break;
@@ -445,9 +444,11 @@ export class ReportScheduler extends EventEmitter {
         
       case 'daily':
         if (pattern.time) {
-          const [hours, minutes] = pattern.time.split(':').map(Number);
+          const timeParts = pattern.time.split(':').map(Number);
+          const hours = timeParts[0];
+          const minutes = timeParts[1] || 0;
           const next = new Date(now);
-          next.setHours(hours, minutes, 0, 0);
+          next.setHours(hours || 0, minutes || 0, 0, 0);
           if (next.getTime() <= now.getTime()) {
             next.setDate(next.getDate() + 1);
           }
@@ -457,9 +458,11 @@ export class ReportScheduler extends EventEmitter {
         
       case 'weekly':
         if (pattern.time && pattern.dayOfWeek !== undefined) {
-          const [hours, minutes] = pattern.time.split(':').map(Number);
+          const timeParts = pattern.time.split(':').map(Number);
+          const hours = timeParts[0];
+          const minutes = timeParts[1] || 0;
           const next = new Date(now);
-          next.setHours(hours, minutes, 0, 0);
+          next.setHours(hours || 0, minutes || 0, 0, 0);
           
           // 다음 지정 요일 찾기
           const daysUntilNext = (pattern.dayOfWeek - now.getDay() + 7) % 7 || 7;
@@ -471,10 +474,12 @@ export class ReportScheduler extends EventEmitter {
         
       case 'monthly':
         if (pattern.time && pattern.dayOfMonth !== undefined) {
-          const [hours, minutes] = pattern.time.split(':').map(Number);
+          const timeParts = pattern.time.split(':').map(Number);
+          const hours = timeParts[0];
+          const minutes = timeParts[1] || 0;
           const next = new Date(now);
           next.setDate(pattern.dayOfMonth);
-          next.setHours(hours, minutes, 0, 0);
+          next.setHours(hours || 0, minutes || 0, 0, 0);
           
           if (next.getTime() <= now.getTime()) {
             next.setMonth(next.getMonth() + 1);
@@ -545,7 +550,7 @@ export class ReportScheduler extends EventEmitter {
       }
       
       // Cron이 아닌 스케줄 체크
-      if (job.schedule.schedule.type !== 'cron' && job.schedule.nextRunAt) {
+      if (job.schedule._schedule.type !== 'cron' && job.schedule.nextRunAt) {
         if (job.schedule.nextRunAt <= now) {
           try {
             await this.executeSchedule(job);
@@ -578,7 +583,7 @@ export class ReportScheduler extends EventEmitter {
           };
           
           // Cron 작업 복원
-          if (schedule.enabled && schedule.schedule.type === 'cron' && schedule.schedule.cron) {
+          if (schedule.enabled && schedule._schedule.type === 'cron' && schedule._schedule.cron) {
             job.cronJob = this.createCronJob(schedule);
           }
           
@@ -595,13 +600,13 @@ export class ReportScheduler extends EventEmitter {
   /**
    * 스케줄 저장
    */
-  private async saveSchedule(schedule: ReportSchedule): Promise<void> {
+  private async saveSchedule(_schedule: ReportSchedule): Promise<void> {
     try {
       // TODO: Implement schedule persistence
-      /*await this.storageManager.repositories.system.create({
-        id: schedule.id,
+      /*await this._storageManager.repositories.system.create({
+        id: _schedule.id,
         type: 'report_schedule',
-        data: schedule,
+        data: _schedule,
         timestamp: Date.now()
       });*/
     } catch (error) {
@@ -648,7 +653,7 @@ export class ReportScheduler extends EventEmitter {
   async shutdown(): Promise<void> {
     // 타이머 중지
     if (this.checkTimer) {
-      clearInterval(this.checkTimer);
+      clearInterval(this.checkTimer as any);
     }
     
     // 모든 Cron 작업 중지

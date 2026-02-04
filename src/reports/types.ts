@@ -395,7 +395,7 @@ export interface ReportSchedule {
   reportConfig: ReportConfig;
   
   /** 스케줄 패턴 */
-  schedule: SchedulePattern;
+  _schedule: SchedulePattern;
   
   /** 다음 실행 시간 */
   nextRunAt?: number;

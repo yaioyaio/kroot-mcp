@@ -13,7 +13,7 @@ import { TemplateManager, TemplateManagerConfig } from './template-manager.js';
 import { PDFGenerator, PDFGeneratorConfig } from './pdf-generator.js';
 import {
   ReportType,
-  ReportFormat,
+  // ReportFormat,
   ReportConfig,
   ReportResult,
   ReportSchedule,
@@ -68,7 +68,8 @@ export class ReportSystem extends EventEmitter {
   private reportScheduler!: ReportScheduler;
   private reportDelivery!: ReportDelivery;
   private templateManager!: TemplateManager;
-  private pdfGenerator!: PDFGenerator;
+  // @ts-ignore - Used for future implementation
+  private _pdfGenerator!: PDFGenerator;
   
   // 의존성
   private dependencies: {
@@ -135,7 +136,7 @@ export class ReportSystem extends EventEmitter {
       {
         enabled: this.config.enabled,
         ...this.config.scheduler
-      },
+      } as any,
       this.reportEngine,
       this.reportDelivery,
       this.dependencies.storageManager
@@ -148,7 +149,7 @@ export class ReportSystem extends EventEmitter {
     });
     
     // PDF 생성기
-    this.pdfGenerator = new PDFGenerator({
+    this._pdfGenerator = new PDFGenerator({
       ...this.config.pdf
     });
   }

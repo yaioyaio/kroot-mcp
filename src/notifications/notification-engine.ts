@@ -31,7 +31,7 @@ export interface NotificationEngineOptions {
 }
 
 interface NotificationQueueItem {
-  message: NotificationMessage;
+  _message: NotificationMessage;
   attempts: number;
   nextRetry?: Date;
 }
@@ -45,7 +45,7 @@ export class NotificationEngine extends EventEmitter {
   private processTimer?: NodeJS.Timeout | undefined;
   private eventSubscriptionId?: string | undefined;
   private throttleMap = new Map<string, number[]>();
-  private stats: NotificationStats = {
+  private _stats: NotificationStats = {
     total: 0,
     sent: 0,
     failed: 0,
@@ -92,7 +92,7 @@ export class NotificationEngine extends EventEmitter {
       this.processQueue();
     }, 5000); // 5초마다
 
-    console.log('🔔 NotificationEngine started');
+    // console.log('🔔 NotificationEngine started');
   }
 
   /**
@@ -115,7 +115,7 @@ export class NotificationEngine extends EventEmitter {
       this.processTimer = undefined;
     }
 
-    console.log('🔔 NotificationEngine stopped');
+    // console.log('🔔 NotificationEngine stopped');
   }
 
   /**
@@ -193,7 +193,7 @@ export class NotificationEngine extends EventEmitter {
       ruleId?: string;
     } = {}
   ): Promise<NotificationMessage> {
-    const message: NotificationMessage = {
+    const _message: NotificationMessage = {
       id: uuidv4(),
       ...(options.ruleId && { ruleId: options.ruleId }),
       title,
@@ -201,29 +201,29 @@ export class NotificationEngine extends EventEmitter {
       severity: options.severity || EventSeverity.INFO,
       priority: options.priority || this.options.defaultPriority || NotificationPriority.MEDIUM,
       channels: options.channels || this.getEnabledChannels(),
-      ...(options.data && { data: options.data }),
+      ...(options.data && { _data: options.data }),
       createdAt: new Date(),
     };
 
     // 통계 업데이트
-    this.stats.total++;
-    this.stats.pending++;
-    this.updatePriorityStats(message.priority);
-    this.updateSeverityStats(message.severity);
+    this._stats.total++;
+    this._stats.pending++;
+    this.updatePriorityStats(_message.priority);
+    this.updateSeverityStats(_message.severity);
 
     // 큐에 추가
     this.queue.push({
-      message,
+      _message,
       attempts: 0,
     });
 
     // 우선순위가 높으면 즉시 처리
-    if (message.priority === NotificationPriority.URGENT) {
+    if (_message.priority === NotificationPriority.URGENT) {
       setImmediate(() => this.processQueue());
     }
 
-    this.emit('notification-queued', message);
-    return message;
+    this.emit('notification-queued', _message);
+    return _message;
   }
 
   /**
@@ -327,7 +327,7 @@ export class NotificationEngine extends EventEmitter {
   /**
    * 규칙 조건 확인
    */
-  private checkRuleConditions(rule: NotificationRule, context: any): boolean {
+  private checkRuleConditions(rule: NotificationRule, _context: any): boolean {
     let result = true;
     let combineWith: 'AND' | 'OR' = 'AND';
 
@@ -335,7 +335,7 @@ export class NotificationEngine extends EventEmitter {
       const condition = rule.conditions[i];
       if (!condition) continue;
       
-      const conditionResult = this.evaluateCondition(condition, context);
+      const conditionResult = this.evaluateCondition(condition, _context);
 
       if (i === 0) {
         result = conditionResult;
@@ -356,8 +356,8 @@ export class NotificationEngine extends EventEmitter {
   /**
    * 조건 평가
    */
-  private evaluateCondition(condition: RuleCondition, context: any): boolean {
-    const value = this.getValueFromContext(condition.field, context);
+  private evaluateCondition(condition: RuleCondition, _context: any): boolean {
+    const value = this.getValueFromContext(condition.field, _context);
     const targetValue = condition.value;
 
     switch (condition.operator) {
@@ -385,15 +385,15 @@ export class NotificationEngine extends EventEmitter {
   /**
    * 컨텍스트에서 값 추출
    */
-  private getValueFromContext(field: string, context: any): any {
+  private getValueFromContext(field: string, _context: any): any {
     // 직접 필드 접근 시도
-    if (context[field] !== undefined) {
-      return context[field];
+    if (_context[field] !== undefined) {
+      return _context[field];
     }
 
     // 점 표기법으로 중첩된 경로 접근
     const parts = field.split('.');
-    let value = context;
+    let value = _context;
 
     for (const part of parts) {
       value = value?.[part];
@@ -448,7 +448,7 @@ export class NotificationEngine extends EventEmitter {
         [NotificationPriority.MEDIUM]: 2,
         [NotificationPriority.LOW]: 3,
       };
-      return priorityOrder[a.message.priority] - priorityOrder[b.message.priority];
+      return priorityOrder[a._message.priority as keyof typeof priorityOrder] - priorityOrder[b._message.priority as keyof typeof priorityOrder];
     });
 
     // 배치 처리
@@ -462,10 +462,10 @@ export class NotificationEngine extends EventEmitter {
       }
 
       try {
-        await this.deliverNotification(item.message);
-        this.stats.sent++;
-        this.stats.pending--;
-        this.emit('notification-sent', item.message);
+        await this.deliverNotification(item._message);
+        this._stats.sent++;
+        this._stats.pending--;
+        this.emit('notification-sent', item._message);
       } catch (error) {
         item.attempts++;
         
@@ -475,12 +475,12 @@ export class NotificationEngine extends EventEmitter {
             Date.now() + (this.options.retryDelay || 60000) * item.attempts
           );
           this.queue.push(item);
-          this.emit('notification-retry', item.message, error);
+          this.emit('notification-retry', item._message, error);
         } else {
           // 최종 실패
-          this.stats.failed++;
-          this.stats.pending--;
-          this.emit('notification-failed', item.message, error);
+          this._stats.failed++;
+          this._stats.pending--;
+          this.emit('notification-failed', item._message, error);
         }
       }
     }
@@ -489,10 +489,10 @@ export class NotificationEngine extends EventEmitter {
   /**
    * 알림 전달
    */
-  private async deliverNotification(message: NotificationMessage): Promise<void> {
+  private async deliverNotification(_message: NotificationMessage): Promise<void> {
     const results: NotificationResult[] = [];
 
-    for (const channel of message.channels) {
+    for (const channel of _message.channels) {
       const channelConfig = this.channels.get(channel);
       if (!channelConfig?.enabled) continue;
 
@@ -503,9 +503,9 @@ export class NotificationEngine extends EventEmitter {
       }
 
       try {
-        const result = await notifier.send(message, channelConfig.config);
+        const result = await notifier.send(_message, channelConfig.config);
         results.push({
-          messageId: message.id,
+          messageId: _message.id,
           channel,
           status: NotificationStatus.SENT,
           sentAt: new Date(),
@@ -514,7 +514,7 @@ export class NotificationEngine extends EventEmitter {
         this.updateChannelStats(channel);
       } catch (error) {
         results.push({
-          messageId: message.id,
+          messageId: _message.id,
           channel,
           status: NotificationStatus.FAILED,
           error: error instanceof Error ? error.message : String(error),
@@ -524,7 +524,7 @@ export class NotificationEngine extends EventEmitter {
     }
 
     // 결과 저장 (추후 구현)
-    this.emit('notification-results', message, results);
+    this.emit('notification-results', _message, results);
   }
 
   /**
@@ -628,9 +628,9 @@ export class NotificationEngine extends EventEmitter {
   /**
    * 템플릿 보간
    */
-  private interpolateTemplate(template: string, context: any): string {
+  private interpolateTemplate(template: string, _context: any): string {
     return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-      const value = this.getValueFromContext(path.trim(), context);
+      const value = this.getValueFromContext(path.trim(), _context);
       return value !== undefined ? String(value) : match;
     });
   }
@@ -658,15 +658,15 @@ export class NotificationEngine extends EventEmitter {
    * 통계 업데이트
    */
   private updatePriorityStats(priority: NotificationPriority): void {
-    this.stats.byPriority[priority] = (this.stats.byPriority[priority] || 0) + 1;
+    this._stats.byPriority[priority] = (this._stats.byPriority[priority] || 0) + 1;
   }
 
   private updateSeverityStats(severity: EventSeverity): void {
-    this.stats.bySeverity[severity] = (this.stats.bySeverity[severity] || 0) + 1;
+    this._stats.bySeverity[severity] = (this._stats.bySeverity[severity] || 0) + 1;
   }
 
   private updateChannelStats(channel: NotificationChannel): void {
-    this.stats.byChannel[channel] = (this.stats.byChannel[channel] || 0) + 1;
+    this._stats.byChannel[channel] = (this._stats.byChannel[channel] || 0) + 1;
   }
 
   /**
@@ -682,10 +682,10 @@ export class NotificationEngine extends EventEmitter {
   getStats(): NotificationStats {
     // 시간 기반 통계 계산
     // 실제 구현에서는 타임스탬프 기반으로 계산
-    this.stats.lastHour = Math.floor(this.stats.total * 0.1);
-    this.stats.last24Hours = Math.floor(this.stats.total * 0.5);
+    this._stats.lastHour = Math.floor(this._stats.total * 0.1);
+    this._stats.last24Hours = Math.floor(this._stats.total * 0.5);
 
-    return { ...this.stats };
+    return { ...this._stats };
   }
 
   /**

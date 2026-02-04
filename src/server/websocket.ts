@@ -63,7 +63,7 @@ export class DevFlowWebSocketServer {
 
         this.wss.on('listening', () => {
           this.port = port;
-          console.log(`[WebSocket] Server listening on port ${port}`);
+          // console.log(`[WebSocket] Server listening on port ${port}`);
           this.startHeartbeat();
           resolve();
         });
@@ -100,7 +100,7 @@ export class DevFlowWebSocketServer {
       if (this.wss) {
         this.wss.close(() => {
           this.port = 0;
-          console.log('[WebSocket] Server stopped');
+          // console.log('[WebSocket] Server stopped');
           resolve();
         });
       } else {
@@ -123,7 +123,7 @@ export class DevFlowWebSocketServer {
     };
 
     this.clients.set(clientId, client);
-    console.log(`[WebSocket] Client connected: ${clientId} (Total: ${this.clients.size})`);
+    // console.log(`[WebSocket] Client connected: ${clientId} (Total: ${this.clients.size})`);
 
     // 연결 확인 메시지 전송
     this.sendMessage(client, {
@@ -131,7 +131,7 @@ export class DevFlowWebSocketServer {
       payload: {
         clientId,
         timestamp: new Date().toISOString(),
-        message: 'Connected to DevFlow Monitor WebSocket Server',
+        _message: 'Connected to DevFlow Monitor WebSocket Server',
       },
     });
 
@@ -147,7 +147,7 @@ export class DevFlowWebSocketServer {
    */
   private handleDisconnection(client: ClientConnection): void {
     this.clients.delete(client.id);
-    console.log(`[WebSocket] Client disconnected: ${client.id} (Total: ${this.clients.size})`);
+    // console.log(`[WebSocket] Client disconnected: ${client.id} (Total: ${this.clients.size})`);
   }
 
   /**
@@ -160,34 +160,34 @@ export class DevFlowWebSocketServer {
   /**
    * 클라이언트 메시지 처리
    */
-  private handleMessage(client: ClientConnection, data: RawData): void {
+  private handleMessage(client: ClientConnection, _data: RawData): void {
     try {
-      const messageText = Array.isArray(data) ? 
-        Buffer.concat(data).toString() : 
-        data.toString();
-      const message: WSMessage = JSON.parse(messageText);
+      const messageText = Array.isArray(_data) ? 
+        Buffer.concat(_data).toString() : 
+        _data.toString();
+      const _message: WSMessage = JSON.parse(messageText);
       
-      switch (message.type) {
+      switch (_message.type) {
         case 'filter':
-          this.handleFilterUpdate(client, message.payload);
+          this.handleFilterUpdate(client, _message.payload);
           break;
         case 'ping':
           this.handlePing(client);
           break;
         case 'subscribe':
-          this.handleSubscribe(client, message.payload);
+          this.handleSubscribe(client, _message.payload);
           break;
         case 'unsubscribe':
-          this.handleUnsubscribe(client, message.payload);
+          this.handleUnsubscribe(client, _message.payload);
           break;
         default:
-          console.warn(`[WebSocket] Unknown message type: ${message.type}`);
+          console.warn(`[WebSocket] Unknown _message type: ${_message.type}`);
       }
     } catch (error) {
       console.error(`[WebSocket] Failed to parse message from ${client.id}:`, error);
       this.sendMessage(client, {
         type: 'error',
-        payload: { message: 'Invalid message format' },
+        payload: { _message: 'Invalid message format' },
       });
     }
   }
@@ -202,7 +202,7 @@ export class DevFlowWebSocketServer {
       sources: filters.sources || [],
     };
 
-    console.log(`[WebSocket] Updated filters for ${client.id}:`, client.filters);
+    // console.log(`[WebSocket] Updated filters for ${client.id}:`, client.filters);
     
     this.sendMessage(client, {
       type: 'filter_updated',
@@ -319,10 +319,10 @@ export class DevFlowWebSocketServer {
   /**
    * 클라이언트에게 메시지 전송
    */
-  private sendMessage(client: ClientConnection, message: any): void {
+  private sendMessage(client: ClientConnection, _message: any): void {
     if (client.ws.readyState === WebSocket.OPEN) {
       try {
-        client.ws.send(JSON.stringify(message));
+        client.ws.send(JSON.stringify(_message));
       } catch (error) {
         console.error(`[WebSocket] Failed to send message to ${client.id}:`, error);
       }
@@ -332,9 +332,9 @@ export class DevFlowWebSocketServer {
   /**
    * 모든 클라이언트에게 메시지 브로드캐스트
    */
-  private broadcast(message: any): void {
+  private broadcast(_message: any): void {
     this.clients.forEach((client) => {
-      this.sendMessage(client, message);
+      this.sendMessage(client, _message);
     });
   }
 
@@ -345,7 +345,7 @@ export class DevFlowWebSocketServer {
     this.heartbeatInterval = setInterval(() => {
       this.clients.forEach((client, clientId) => {
         if (!client.isAlive) {
-          console.log(`[WebSocket] Terminating dead client: ${clientId}`);
+          // console.log(`[WebSocket] Terminating dead client: ${clientId}`);
           client.ws.terminate();
           this.clients.delete(clientId);
           return;
@@ -399,10 +399,10 @@ export class DevFlowWebSocketServer {
   /**
    * 특정 클라이언트에게 커스텀 메시지 전송
    */
-  sendCustomMessage(clientId: string, message: any): boolean {
+  sendCustomMessage(clientId: string, _message: any): boolean {
     const client = this.clients.get(clientId);
     if (client) {
-      this.sendMessage(client, message);
+      this.sendMessage(client, _message);
       return true;
     }
     return false;
@@ -412,7 +412,7 @@ export class DevFlowWebSocketServer {
    * 시스템 알림 브로드캐스트
    */
   broadcastSystemNotification(notification: {
-    message: string;
+    _message: string;
     severity: 'info' | 'warning' | 'error';
     data?: any;
   }): void {

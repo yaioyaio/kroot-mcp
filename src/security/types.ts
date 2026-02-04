@@ -100,7 +100,7 @@ export interface LoginResponse {
   success: boolean;
   token?: AuthToken;
   user?: Omit<User, 'passwordHash'>;
-  message: string;
+  _message: string;
 }
 
 export interface SecurityEvent {
@@ -113,7 +113,7 @@ export interface SecurityEvent {
   resource?: string;
   action?: string;
   success: boolean;
-  message: string;
+  _message: string;
   metadata?: Record<string, any>;
   timestamp: Date;
 }
@@ -160,7 +160,7 @@ export type SecurityEventType =
 export interface RateLimitConfig {
   windowMs: number;
   maxAttempts: number;
-  message: string;
+  _message: string;
   standardHeaders: boolean;
   legacyHeaders: boolean;
 }

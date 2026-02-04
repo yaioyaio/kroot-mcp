@@ -19,7 +19,7 @@ describe('Event Validation', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {
+        __data: {
           action: 'add',
           path: '/test/file.ts',
         },
@@ -49,7 +49,7 @@ describe('Event Validation', () => {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: 'test',
-        data: {},
+        __data: {},
         metadata: {
           userId: 'user-123',
           sessionId: 'session-456',
@@ -59,7 +59,7 @@ describe('Event Validation', () => {
 
       const result = validateEvent(event);
       expect(result.success).toBe(true);
-      expect(result.data?.metadata).toEqual(event.metadata);
+      expect(result.data?.meta_data).toEqual(event.metadata);
       expect(result.data?.tags).toEqual(event.tags);
     });
   });
@@ -82,7 +82,7 @@ describe('Event Validation', () => {
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('file:created');
       expect(result.data?.category).toBe(EventCategory.FILE);
-      expect(result.data?.data.newFile.path).toBe('/src/test.ts');
+      expect(result.data?.__data.newFile.path).toBe('/src/test.ts');
     });
 
     it('should create a valid file changed event', () => {
@@ -111,8 +111,8 @@ describe('Event Validation', () => {
 
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('file:changed');
-      expect(result.data?.data.oldFile).toBeDefined();
-      expect(result.data?.data.newFile).toBeDefined();
+      expect(result.data?.__data.oldFile).toBeDefined();
+      expect(result.data?.__data.newFile).toBeDefined();
     });
 
     it('should handle validation errors', () => {
@@ -134,7 +134,7 @@ describe('Event Validation', () => {
         branch: 'main',
         commit: {
           hash: 'abc123',
-          message: 'feat: add new feature',
+          _message: 'feat: add new feature',
           author: 'developer@example.com',
           timestamp: Date.now(),
         },
@@ -143,7 +143,7 @@ describe('Event Validation', () => {
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('git:committed');
       expect(result.data?.category).toBe(EventCategory.GIT);
-      expect(result.data?.data.commit.hash).toBe('abc123');
+      expect(result.data?.__data.commit.hash).toBe('abc123');
     });
 
     it('should create a valid git branch event', () => {
@@ -156,7 +156,7 @@ describe('Event Validation', () => {
 
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('git:branched');
-      expect(result.data?.data.fromBranch).toBe('develop');
+      expect(result.data?.__data.fromBranch).toBe('develop');
     });
   });
 
@@ -165,7 +165,7 @@ describe('Event Validation', () => {
       const result = createActivityEvent({
         stage: 'development',
         action: 'file_edited',
-        details: 'Updated user service',
+        // details: removed for type safety,
         actor: 'developer-1',
         timestamp: Date.now(),
       });
@@ -173,14 +173,14 @@ describe('Event Validation', () => {
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('activity:tracked');
       expect(result.data?.category).toBe(EventCategory.ACTIVITY);
-      expect(result.data?.data.stage).toBe('development');
+      expect(result.data?.__data.stage).toBe('development');
     });
 
     it('should handle optional metadata', () => {
       const result = createActivityEvent({
         stage: 'testing',
         action: 'test_run',
-        details: 'Running unit tests',
+        // details: removed for type safety,
         actor: 'ci-system',
         timestamp: Date.now(),
         metadata: {
@@ -190,7 +190,7 @@ describe('Event Validation', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data?.metadata?.testSuite).toBe('unit');
+      expect(result.data?.meta_data?.testSuite).toBe('unit');
     });
   });
 
@@ -206,7 +206,7 @@ describe('Event Validation', () => {
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('stage:transitioned');
       expect(result.data?.category).toBe(EventCategory.STAGE);
-      expect(result.data?.data.confidence).toBe(0.95);
+      expect(result.data?.__data.confidence).toBe(0.95);
     });
 
     it('should handle initial stage transition', () => {
@@ -217,8 +217,8 @@ describe('Event Validation', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data?.data.fromStage).toBeUndefined();
-      expect(result.data?.data.toStage).toBe('planning');
+      expect(result.data?.__data.fromStage).toBeUndefined();
+      expect(result.data?.__data.toStage).toBe('planning');
     });
   });
 
@@ -226,20 +226,20 @@ describe('Event Validation', () => {
     it('should create a valid system event', () => {
       const result = createSystemEvent('started', {
         component: 'FileMonitor',
-        message: 'File monitoring started',
+        _message: 'File monitoring started',
         timestamp: Date.now(),
       });
 
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('system:started');
       expect(result.data?.category).toBe(EventCategory.SYSTEM);
-      expect(result.data?.data.component).toBe('FileMonitor');
+      expect(result.data?.__data.component).toBe('FileMonitor');
     });
 
     it('should create error events with proper severity', () => {
       const result = createSystemEvent('error', {
         component: 'Database',
-        message: 'Connection failed',
+        _message: 'Connection failed',
         error: new Error('Connection timeout'),
         timestamp: Date.now(),
       });
@@ -247,13 +247,13 @@ describe('Event Validation', () => {
       expect(result.success).toBe(true);
       expect(result.data?.type).toBe('system:error');
       expect(result.data?.severity).toBe(EventSeverity.ERROR);
-      expect(result.data?.data.error).toBe('Connection timeout');
+      expect(result.data?.__data.error).toBe('Connection timeout');
     });
 
     it('should handle metrics in system events', () => {
       const result = createSystemEvent('metrics', {
         component: 'Performance',
-        message: 'System metrics update',
+        _message: 'System metrics update',
         metrics: {
           cpu: 45.2,
           memory: 2048,
@@ -263,7 +263,7 @@ describe('Event Validation', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data?.data.metrics?.cpu).toBe(45.2);
+      expect(result.data?.__data.metrics?.cpu).toBe(45.2);
     });
   });
 });

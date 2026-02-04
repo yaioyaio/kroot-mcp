@@ -85,20 +85,20 @@ export class FileMonitorCacheRepository extends BaseRepository<FileMonitorCacheR
   /**
    * Upsert cache entry
    */
-  async upsert(data: FileMonitorCacheRecord): Promise<FileMonitorCacheRecord> {
-    const existing = await this.findByPath(data.file_path);
+  async upsert(_data: FileMonitorCacheRecord): Promise<FileMonitorCacheRecord> {
+    const existing = await this.findByPath(_data.file_path);
 
     if (existing) {
       const updateData: Partial<FileMonitorCacheRecord> = {
-        file_hash: data.file_hash,
-        last_modified: data.last_modified,
-        file_size: data.file_size,
-        ...(data.metadata !== undefined && { metadata: data.metadata }),
+        file_hash: _data.file_hash,
+        last_modified: _data.last_modified,
+        file_size: _data.file_size,
+        ...(_data.metadata !== undefined && { metadata: _data.metadata }),
       };
 
       return (await this.update(existing.id!, updateData)) as FileMonitorCacheRecord;
     } else {
-      return await this.create(data);
+      return await this.create(_data);
     }
   }
 

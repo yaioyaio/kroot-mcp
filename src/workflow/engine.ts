@@ -16,7 +16,7 @@ import {
   StageAction,
   ActionType
 } from './types';
-import { StorageManager } from '../storage/index.js';
+// import { StorageManager } from '../storage/index.js';
 import { EventEngine } from '../events/engine';
 import { NotificationEngine } from '../notifications/notification-engine';
 
@@ -26,7 +26,6 @@ export class WorkflowEngine extends EventEmitter {
   private executionInterval: NodeJS.Timeout | null = null;
 
   constructor(
-    private _storageManager: StorageManager,
     private eventEngine: EventEngine,
     private notificationEngine: NotificationEngine
   ) {
@@ -45,7 +44,7 @@ export class WorkflowEngine extends EventEmitter {
       this.handleTriggerEvent(event);
     });
 
-    console.log('🔄 Workflow engine started');
+    // console.log('🔄 Workflow engine started');
   }
 
   stop() {
@@ -53,7 +52,7 @@ export class WorkflowEngine extends EventEmitter {
       clearInterval(this.executionInterval);
       this.executionInterval = null;
     }
-    console.log('🛑 Workflow engine stopped');
+    // console.log('🛑 Workflow engine stopped');
   }
 
   /**
@@ -64,13 +63,13 @@ export class WorkflowEngine extends EventEmitter {
     await this.saveWorkflows();
     
     this.emit('workflow-registered', workflow);
-    console.log(`📋 Workflow registered: ${workflow.name}`);
+    // console.log(`📋 Workflow registered: ${workflow.name}`);
   }
 
   /**
    * Start workflow execution
    */
-  async startExecution(workflowId: string, context: Partial<ExecutionContext> = {}): Promise<string> {
+  async startExecution(workflowId: string, _context: Partial<ExecutionContext> = {}): Promise<string> {
     const workflow = this.workflows.get(workflowId);
     if (!workflow) {
       throw new Error(`Workflow not found: ${workflowId}`);
@@ -89,10 +88,10 @@ export class WorkflowEngine extends EventEmitter {
       status: ExecutionStatus.PENDING,
       currentStage: startStage,
       startTime: new Date(),
-      context: {
-        variables: context.variables || {},
-        metrics: context.metrics || {},
-        errors: context.errors || []
+      _context: {
+        variables: _context.variables || {},
+        metrics: _context.metrics || {},
+        errors: _context.errors || []
       },
       history: []
     };
@@ -100,7 +99,7 @@ export class WorkflowEngine extends EventEmitter {
     this.executions.set(executionId, execution);
     this.emit('execution-started', execution);
     
-    console.log(`▶️ Started execution ${executionId} for workflow ${workflow.name}`);
+    // console.log(`▶️ Started execution ${executionId} for workflow ${workflow.name}`);
     return executionId;
   }
 
@@ -157,7 +156,7 @@ export class WorkflowEngine extends EventEmitter {
     
     if (nextStage) {
       execution.currentStage = nextStage;
-      console.log(`🔄 Execution ${execution.id} moved to stage: ${nextStage}`);
+      // console.log(`🔄 Execution ${execution.id} moved to stage: ${nextStage}`);
     } else {
       // No next stage, execution complete
       await this.completeExecution(execution);
@@ -198,7 +197,7 @@ export class WorkflowEngine extends EventEmitter {
         break;
 
       case 'metric':
-        actualValue = execution.context.metrics[condition.field];
+        actualValue = execution._context.metrics[condition.field];
         break;
 
       case 'time':
@@ -206,7 +205,7 @@ export class WorkflowEngine extends EventEmitter {
         break;
 
       case 'custom':
-        actualValue = execution.context.variables[condition.field];
+        actualValue = execution._context.variables[condition.field];
         break;
 
       default:
@@ -248,7 +247,7 @@ export class WorkflowEngine extends EventEmitter {
         results.push(result);
       } catch (error) {
         console.error(`Action failed in stage ${stage.id}:`, error);
-        execution.context.errors.push({
+        execution._context.errors.push({
           stage: stage.id,
           error: (error as Error).message,
           timestamp: new Date(),
@@ -306,8 +305,7 @@ export class WorkflowEngine extends EventEmitter {
           throw new Error(`Unknown action type: ${action.type}`);
       }
 
-      const duration = Date.now() - startTime;
-      console.log(`✅ Action ${action.type} completed in ${duration}ms`);
+      // console.log(`✅ Action ${action.type} completed in ${Date.now() - startTime}ms`);
 
       return result;
 
@@ -326,7 +324,7 @@ export class WorkflowEngine extends EventEmitter {
     
     await this.notificationEngine.sendNotification(
       'Workflow Notification',
-      this.interpolateVariables(message, execution.context.variables),
+      this.interpolateVariables(message, execution._context.variables),
       {
         priority: priority || 'medium',
         channels: [channel || 'dashboard']
@@ -341,11 +339,11 @@ export class WorkflowEngine extends EventEmitter {
    */
   private async executeLogAction(action: StageAction, execution: WorkflowExecution): Promise<any> {
     const { level, message } = action.parameters;
-    const interpolatedMessage = this.interpolateVariables(message, execution.context.variables);
+    const interpolatedMessage = this.interpolateVariables(message, execution._context.variables);
     
-    console.log(`[${level?.toUpperCase() || 'INFO'}] ${interpolatedMessage}`);
+    // console.log(`[${level?.toUpperCase() || 'INFO'}] ${interpolatedMessage}`);
     
-    return { logged: true, level, message: interpolatedMessage };
+    return { logged: true, level, _message: interpolatedMessage };
   }
 
   /**
@@ -356,17 +354,17 @@ export class WorkflowEngine extends EventEmitter {
     
     switch (operation) {
       case 'set':
-        execution.context.metrics[name] = value;
+        execution._context.metrics[name] = value;
         break;
       case 'increment':
-        execution.context.metrics[name] = (execution.context.metrics[name] || 0) + (value || 1);
+        execution._context.metrics[name] = (execution._context.metrics[name] || 0) + (value || 1);
         break;
       case 'decrement':
-        execution.context.metrics[name] = (execution.context.metrics[name] || 0) - (value || 1);
+        execution._context.metrics[name] = (execution._context.metrics[name] || 0) - (value || 1);
         break;
     }
 
-    return { metric: name, value: execution.context.metrics[name], operation };
+    return { _metric: name, value: execution._context.metrics[name], operation };
   }
 
   /**
@@ -401,14 +399,14 @@ export class WorkflowEngine extends EventEmitter {
     
     if (language === 'javascript') {
       // Safely execute JavaScript in limited context
-      const context = {
-        variables: execution.context.variables,
-        metrics: execution.context.metrics,
-        console: { log: console.log }
+      const _context = {
+        variables: execution._context.variables,
+        metrics: execution._context.metrics,
+        console: { log: () => {} }
       };
       
       const func = new Function('context', script);
-      return func(context);
+      return func(_context);
     }
 
     throw new Error(`Unsupported script language: ${language}`);
@@ -418,10 +416,10 @@ export class WorkflowEngine extends EventEmitter {
    * Execute tool action
    */
   private async executeToolAction(action: StageAction, _execution: WorkflowExecution): Promise<any> {
-    const { tool, parameters } = action.parameters;
+    const { tool } = action.parameters;
     
     // This would integrate with the MCP tool system
-    console.log(`Executing tool: ${tool}`, parameters);
+    // console.log(`Executing tool: ${tool}`, parameters);
     return { tool, executed: true };
   }
 
@@ -432,7 +430,7 @@ export class WorkflowEngine extends EventEmitter {
     // Custom actions can be extended by plugins
     const { handler, parameters } = action.parameters;
     
-    console.log(`Executing custom action: ${handler}`, parameters);
+    // console.log(`Executing custom action: ${handler}`, parameters);
     return { custom: true, handler, parameters };
   }
 
@@ -462,14 +460,14 @@ export class WorkflowEngine extends EventEmitter {
     // Sort transitions by priority
     const sortedTransitions = [...currentStage.transitions].sort((a, b) => b.priority - a.priority);
 
-    for (const transition of sortedTransitions) {
-      if (!transition.condition) {
-        return transition.to; // Unconditional transition
+    for (const _transition of sortedTransitions) {
+      if (!_transition.condition) {
+        return _transition.to; // Unconditional _transition
       }
 
-      const conditionMet = await this.evaluateCondition(transition.condition, execution);
+      const conditionMet = await this.evaluateCondition(_transition.condition, execution);
       if (conditionMet) {
-        return transition.to;
+        return _transition.to;
       }
     }
 
@@ -484,7 +482,7 @@ export class WorkflowEngine extends EventEmitter {
     execution.endTime = new Date();
     
     this.emit('execution-completed', execution);
-    console.log(`✅ Execution ${execution.id} completed`);
+    // console.log(`✅ Execution ${execution.id} completed`);
   }
 
   /**
@@ -493,7 +491,7 @@ export class WorkflowEngine extends EventEmitter {
   private async failExecution(execution: WorkflowExecution, error: Error) {
     execution.status = ExecutionStatus.FAILED;
     execution.endTime = new Date();
-    execution.context.errors.push({
+    execution._context.errors.push({
       stage: execution.currentStage,
       error: error.message,
       timestamp: new Date(),

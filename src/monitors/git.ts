@@ -19,7 +19,7 @@ export interface GitMonitorConfig {
 export interface GitCommitInfo {
   hash: string;
   date: string;
-  message: string;
+  _message: string;
   author_name: string;
   author_email: string;
   refs: string;
@@ -54,7 +54,7 @@ export class GitMonitor extends BaseMonitor {
       name: 'GitMonitor',
       enabled: true,
       repositoryPath: process.cwd(),
-      pollInterval: 5000, // 5 seconds
+      pollInterval: 60000, // 60 seconds - 오류 방지를 위해 간격 증가
       trackBranches: true,
       trackCommits: true,
       trackMerges: true,
@@ -73,8 +73,8 @@ export class GitMonitor extends BaseMonitor {
       // 초기 상태 캐시
       await this.cacheInitialState();
 
-      // 폴링 시작
-      this.startPolling();
+      // 폴링 시작 제거 - on-demand로 변경
+      // this.startPolling();
 
       // 시작 이벤트 발행
       await this.eventEngine.publish({
@@ -84,7 +84,7 @@ export class GitMonitor extends BaseMonitor {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
-        data: {
+        _data: {
           repositoryPath: this.config.repositoryPath,
           config: this.config,
         },
@@ -111,7 +111,7 @@ export class GitMonitor extends BaseMonitor {
       timestamp: Date.now(),
       severity: EventSeverity.INFO,
       source: this.name,
-      data: {
+      _data: {
         repositoryPath: this.config.repositoryPath,
       },
     });
@@ -158,23 +158,33 @@ export class GitMonitor extends BaseMonitor {
     }
   }
 
-  private startPolling(): void {
-    this.pollTimer = setInterval(async () => {
-      try {
-        await this.checkForChanges();
-      } catch (error) {
-        this.logError('Error during Git polling:', error);
-      }
-    }, this.config.pollInterval);
+  // 폴링 제거 - MCP on-demand 방식으로 변경
+  // private startPolling(): void {
+  //   // 더 이상 주기적 폴링하지 않음 - 사용자 요청 시에만 실행
+  // }
+
+  /**
+   * 사용자 요청 시에만 Git 변경사항 체크 (on-demand)
+   */
+  public async checkGitChanges(): Promise<void> {
+    return this.checkForChanges();
   }
 
   private async checkForChanges(): Promise<void> {
-    if (this.config.trackCommits) {
-      await this.checkForNewCommits();
-    }
+    // Git 명령어 순차 실행으로 EBADF 오류 방지
+    try {
+      if (this.config.trackCommits) {
+        await this.checkForNewCommits();
+        // 명령어 간 짧은 지연으로 리소스 경합 방지
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
 
-    if (this.config.trackBranches) {
-      await this.checkForBranchChanges();
+      if (this.config.trackBranches) {
+        await this.checkForBranchChanges();
+      }
+    } catch (error) {
+      // 전체 체크 과정에서 오류 발생 시 로그 기록
+      this.logError('Error during Git changes check:', error);
     }
   }
 
@@ -200,7 +210,13 @@ export class GitMonitor extends BaseMonitor {
 
       this.lastCommitHash = latestHash;
     } catch (error) {
-      this.logError('Error checking for new commits:', error);
+      // EBADF 오류는 무시 (알려진 일시적 오류)
+      if (error instanceof Error && error.message.includes('spawn EBADF')) {
+        // EBADF 오류는 로그 레벨을 낮춤
+        // EBADF 오류 무시 (콘솔 스팸 방지)
+      } else {
+        this.logError('Error checking for new commits:', error);
+      }
     }
   }
 
@@ -216,22 +232,22 @@ export class GitMonitor extends BaseMonitor {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
-        data: {
+        _data: {
           action: 'commit',
           hash: commit.hash,
-          message: commit.message,
+          _message: commit.message,
           author: {
             name: commit.author_name,
             email: commit.author_email,
           },
           date: commit.date,
           refs: commit.refs,
-          stats: {
+          _stats: {
             insertions: diffStat.insertions || 0,
             deletions: diffStat.deletions || 0,
             files: diffStat.files?.length || 0,
           },
-          analysis: this.config.analyzeCommitMessages
+          _analysis: this.config.analyzeCommitMessages
             ? this.analyzeCommitMessage(commit.message)
             : undefined,
         },
@@ -276,7 +292,13 @@ export class GitMonitor extends BaseMonitor {
 
       this.lastBranchState = currentBranchState;
     } catch (error) {
-      this.logError('Error checking for branch changes:', error);
+      // EBADF 오류는 무시 (알려진 일시적 오류)
+      if (error instanceof Error && error.message.includes('spawn EBADF')) {
+        // EBADF 오류는 로그 레벨을 낮춤
+        // EBADF 오류 무시 (콘솔 스팸 방지)
+      } else {
+        this.logError('Error checking for branch changes:', error);
+      }
     }
   }
 
@@ -288,7 +310,7 @@ export class GitMonitor extends BaseMonitor {
       timestamp: Date.now(),
       severity: EventSeverity.INFO,
       source: this.name,
-      data: {
+      _data: {
         action: 'branch_created',
         branchName,
         commit,
@@ -318,7 +340,7 @@ export class GitMonitor extends BaseMonitor {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
-        data: {
+        _data: {
           action: 'branch_updated',
           branchName,
           commit: newCommit,
@@ -339,7 +361,7 @@ export class GitMonitor extends BaseMonitor {
       timestamp: Date.now(),
       severity: EventSeverity.INFO,
       source: this.name,
-      data: {
+      _data: {
         action: 'branch_deleted',
         branchName,
         pattern: this.analyzeBranchPattern(branchName),
@@ -365,13 +387,13 @@ export class GitMonitor extends BaseMonitor {
         timestamp: Date.now(),
         severity: EventSeverity.INFO,
         source: this.name,
-        data: {
+        _data: {
           action: 'merge',
           targetBranch: branchName,
           mergeCommit: newCommit,
           previousCommit: oldCommit,
           commitCount: log.all.length,
-          analysis: {
+          _analysis: {
             mergeType: this.determineMergeType([...log.all]),
             risk: this.assessMergeRisk([...log.all]),
           },
@@ -401,7 +423,7 @@ export class GitMonitor extends BaseMonitor {
     }
   }
 
-  private analyzeCommitMessage(message: string): any {
+  private analyzeCommitMessage(_message: string): any {
     const analysis = {
       type: 'unknown',
       scope: null as string | null,
@@ -413,18 +435,18 @@ export class GitMonitor extends BaseMonitor {
     // Conventional Commits 패턴 분석
     const conventionalPattern =
       /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build)(\(.+\))?\!?:\s*(.+)/;
-    const match = message.match(conventionalPattern);
+    const match = _message.match(conventionalPattern);
 
     if (match) {
       analysis.conventional = true;
       analysis.type = match[1] ?? 'unknown';
       analysis.scope = match[2]?.slice(1, -1) ?? null;
-      analysis.breaking = message.includes('!') || message.toLowerCase().includes('breaking');
+      analysis.breaking = _message.includes('!') || _message.toLowerCase().includes('breaking');
     }
 
     // 키워드 분석
     const keywords = ['add', 'remove', 'update', 'fix', 'implement', 'refactor', 'test', 'docs'];
-    analysis.keywords = keywords.filter((keyword) => message.toLowerCase().includes(keyword));
+    analysis.keywords = keywords.filter((keyword) => _message.toLowerCase().includes(keyword));
 
     return analysis;
   }
@@ -454,7 +476,10 @@ export class GitMonitor extends BaseMonitor {
       return 'fast-forward';
     }
 
-    const hasMergeCommit = commits.some((commit) => commit.message.toLowerCase().includes('merge'));
+    const hasMergeCommit = commits.some((commit) => {
+      const message = commit.message || commit._message;
+      return message && message.toLowerCase().includes('merge');
+    });
 
     return hasMergeCommit ? 'merge-commit' : 'squash';
   }

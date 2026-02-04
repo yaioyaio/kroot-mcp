@@ -65,7 +65,7 @@ export class PluginLoader extends EventEmitter {
         this.startWatching();
       }
 
-      console.log(`[PluginLoader] Initialized with ${this.plugins.size} plugins discovered`);
+    // console.log(`[PluginLoader] Initialized with ${this.plugins.size} plugins discovered`);
     } catch (error) {
       console.error('[PluginLoader] Failed to initialize:', error);
       throw error;
@@ -172,15 +172,15 @@ export class PluginLoader extends EventEmitter {
   /**
    * 플러그인 로드
    */
-  async loadPlugin(pluginId: string): Promise<boolean> {
+  async loadPlugin(_pluginId: string): Promise<boolean> {
     try {
-      const descriptor = this.plugins.get(pluginId);
+      const descriptor = this.plugins.get(_pluginId);
       if (!descriptor) {
-        throw new Error(`Plugin not found: ${pluginId}`);
+        throw new Error(`Plugin not found: ${_pluginId}`);
       }
 
       if (descriptor.loaded) {
-        console.warn(`[PluginLoader] Plugin already loaded: ${pluginId}`);
+        console.warn(`[PluginLoader] Plugin already loaded: ${_pluginId}`);
         return true;
       }
 
@@ -189,13 +189,13 @@ export class PluginLoader extends EventEmitter {
         throw new Error(`Maximum number of plugins (${this.config.maxPlugins}) reached`);
       }
 
-      console.log(`[PluginLoader] Loading plugin: ${pluginId}`);
+    // console.log(`[PluginLoader] Loading plugin: ${_pluginId}`);
 
       // 플러그인 모듈 로드
       const pluginModule = await this.loadPluginModule(descriptor);
       
       // API 컨텍스트 생성
-      const context = await this.createAPIContext(descriptor);
+      const _context = await this.createAPIContext(descriptor);
       
       // 샌드박스 환경 설정
       let sandboxInfo: PluginSandboxInfo | undefined;
@@ -207,7 +207,7 @@ export class PluginLoader extends EventEmitter {
       const runtime: PluginRuntime = {
         instance: pluginModule,
         status: PluginStatus.LOADED,
-        context,
+        _context,
         loadedAt: new Date(),
         metrics: {
           cpuUsage: 0,
@@ -224,16 +224,16 @@ export class PluginLoader extends EventEmitter {
       // 플러그인 초기화
       await this.initializePlugin(runtime);
 
-      this.runtimes.set(pluginId, runtime);
+      this.runtimes.set(_pluginId, runtime);
       descriptor.loaded = true;
 
-      this.emit('plugin.loaded', { pluginId, metadata: descriptor.manifest });
-      console.log(`[PluginLoader] Plugin loaded successfully: ${pluginId}`);
+      this.emit('plugin.loaded', { _pluginId, metadata: descriptor.manifest });
+    // console.log(`[PluginLoader] Plugin loaded successfully: ${_pluginId}`);
 
       return true;
     } catch (error) {
-      console.error(`[PluginLoader] Failed to load plugin ${pluginId}:`, error);
-      this.emit('plugin.error', { pluginId, error: error as Error });
+      console.error(`[PluginLoader] Failed to load plugin ${_pluginId}:`, error);
+      this.emit('plugin.error', { _pluginId, error: error as Error });
       return false;
     }
   }
@@ -313,13 +313,13 @@ export class PluginLoader extends EventEmitter {
       
       const timeout = this.config.timeouts.initialize;
       await this.withTimeout(
-        runtime.instance.initialize(runtime.context),
+        runtime.instance.initialize(runtime._context),
         timeout,
         `Plugin initialization timeout (${timeout}ms)`
       );
 
       runtime.status = PluginStatus.LOADED;
-      console.log(`[PluginLoader] Plugin initialized: ${runtime.instance.metadata.id}`);
+    // console.log(`[PluginLoader] Plugin initialized: ${runtime.instance.metadata.id}`);
     } catch (error) {
       runtime.status = PluginStatus.ERROR;
       runtime.lastError = error as Error;
@@ -330,19 +330,19 @@ export class PluginLoader extends EventEmitter {
   /**
    * 플러그인 활성화
    */
-  async activatePlugin(pluginId: string): Promise<boolean> {
+  async activatePlugin(_pluginId: string): Promise<boolean> {
     try {
-      const runtime = this.runtimes.get(pluginId);
+      const runtime = this.runtimes.get(_pluginId);
       if (!runtime) {
-        throw new Error(`Plugin not loaded: ${pluginId}`);
+        throw new Error(`Plugin not loaded: ${_pluginId}`);
       }
 
       if (runtime.status === PluginStatus.RUNNING) {
-        console.warn(`[PluginLoader] Plugin already active: ${pluginId}`);
+        console.warn(`[PluginLoader] Plugin already active: ${_pluginId}`);
         return true;
       }
 
-      console.log(`[PluginLoader] Activating plugin: ${pluginId}`);
+    // console.log(`[PluginLoader] Activating plugin: ${_pluginId}`);
 
       runtime.status = PluginStatus.LOADING;
       
@@ -356,24 +356,24 @@ export class PluginLoader extends EventEmitter {
       runtime.status = PluginStatus.RUNNING;
       runtime.activatedAt = new Date();
 
-      const descriptor = this.plugins.get(pluginId);
+      const descriptor = this.plugins.get(_pluginId);
       if (descriptor) {
         descriptor.active = true;
       }
 
-      this.emit('plugin.activated', { pluginId });
-      console.log(`[PluginLoader] Plugin activated: ${pluginId}`);
+      this.emit('plugin.activated', { _pluginId });
+    // console.log(`[PluginLoader] Plugin activated: ${_pluginId}`);
 
       return true;
     } catch (error) {
-      const runtime = this.runtimes.get(pluginId);
+      const runtime = this.runtimes.get(_pluginId);
       if (runtime) {
         runtime.status = PluginStatus.ERROR;
         runtime.lastError = error as Error;
       }
       
-      console.error(`[PluginLoader] Failed to activate plugin ${pluginId}:`, error);
-      this.emit('plugin.error', { pluginId, error: error as Error });
+      console.error(`[PluginLoader] Failed to activate plugin ${_pluginId}:`, error);
+      this.emit('plugin.error', { _pluginId, error: error as Error });
       return false;
     }
   }
@@ -381,19 +381,19 @@ export class PluginLoader extends EventEmitter {
   /**
    * 플러그인 비활성화
    */
-  async deactivatePlugin(pluginId: string): Promise<boolean> {
+  async deactivatePlugin(_pluginId: string): Promise<boolean> {
     try {
-      const runtime = this.runtimes.get(pluginId);
+      const runtime = this.runtimes.get(_pluginId);
       if (!runtime) {
-        throw new Error(`Plugin not loaded: ${pluginId}`);
+        throw new Error(`Plugin not loaded: ${_pluginId}`);
       }
 
       if (runtime.status !== PluginStatus.RUNNING) {
-        console.warn(`[PluginLoader] Plugin not active: ${pluginId}`);
+        console.warn(`[PluginLoader] Plugin not active: ${_pluginId}`);
         return true;
       }
 
-      console.log(`[PluginLoader] Deactivating plugin: ${pluginId}`);
+    // console.log(`[PluginLoader] Deactivating plugin: ${_pluginId}`);
 
       const timeout = this.config.timeouts.deactivate;
       await this.withTimeout(
@@ -405,24 +405,24 @@ export class PluginLoader extends EventEmitter {
       runtime.status = PluginStatus.LOADED;
       runtime.activatedAt = undefined;
 
-      const descriptor = this.plugins.get(pluginId);
+      const descriptor = this.plugins.get(_pluginId);
       if (descriptor) {
         descriptor.active = false;
       }
 
-      this.emit('plugin.deactivated', { pluginId });
-      console.log(`[PluginLoader] Plugin deactivated: ${pluginId}`);
+      this.emit('plugin.deactivated', { _pluginId });
+    // console.log(`[PluginLoader] Plugin deactivated: ${_pluginId}`);
 
       return true;
     } catch (error) {
-      const runtime = this.runtimes.get(pluginId);
+      const runtime = this.runtimes.get(_pluginId);
       if (runtime) {
         runtime.status = PluginStatus.ERROR;
         runtime.lastError = error as Error;
       }
       
-      console.error(`[PluginLoader] Failed to deactivate plugin ${pluginId}:`, error);
-      this.emit('plugin.error', { pluginId, error: error as Error });
+      console.error(`[PluginLoader] Failed to deactivate plugin ${_pluginId}:`, error);
+      this.emit('plugin.error', { _pluginId, error: error as Error });
       return false;
     }
   }
@@ -430,21 +430,21 @@ export class PluginLoader extends EventEmitter {
   /**
    * 플러그인 언로드
    */
-  async unloadPlugin(pluginId: string): Promise<boolean> {
+  async unloadPlugin(_pluginId: string): Promise<boolean> {
     try {
-      const runtime = this.runtimes.get(pluginId);
-      const descriptor = this.plugins.get(pluginId);
+      const runtime = this.runtimes.get(_pluginId);
+      const descriptor = this.plugins.get(_pluginId);
       
       if (!runtime || !descriptor) {
-        console.warn(`[PluginLoader] Plugin not found: ${pluginId}`);
+        console.warn(`[PluginLoader] Plugin not found: ${_pluginId}`);
         return true;
       }
 
-      console.log(`[PluginLoader] Unloading plugin: ${pluginId}`);
+    // console.log(`[PluginLoader] Unloading plugin: ${_pluginId}`);
 
       // 먼저 비활성화
       if (runtime.status === PluginStatus.RUNNING) {
-        await this.deactivatePlugin(pluginId);
+        await this.deactivatePlugin(_pluginId);
       }
 
       // 플러그인 해제
@@ -456,24 +456,24 @@ export class PluginLoader extends EventEmitter {
 
       // 샌드박스 정리
       if (runtime.sandbox && this.sandbox) {
-        await this.sandbox.destroyEnvironment(pluginId);
+        await this.sandbox.destroyEnvironment(_pluginId);
       }
 
       // API 컨텍스트 정리
-      await this.apiProvider.destroyContext(pluginId);
+      await this.apiProvider.destroyContext(_pluginId);
 
       // 런타임 제거
-      this.runtimes.delete(pluginId);
+      this.runtimes.delete(_pluginId);
       descriptor.loaded = false;
       descriptor.active = false;
 
-      this.emit('plugin.unloaded', { pluginId });
-      console.log(`[PluginLoader] Plugin unloaded: ${pluginId}`);
+      this.emit('plugin.unloaded', { _pluginId });
+    // console.log(`[PluginLoader] Plugin unloaded: ${_pluginId}`);
 
       return true;
     } catch (error) {
-      console.error(`[PluginLoader] Failed to unload plugin ${pluginId}:`, error);
-      this.emit('plugin.error', { pluginId, error: error as Error });
+      console.error(`[PluginLoader] Failed to unload plugin ${_pluginId}:`, error);
+      this.emit('plugin.error', { _pluginId, error: error as Error });
       return false;
     }
   }
@@ -482,10 +482,10 @@ export class PluginLoader extends EventEmitter {
    * 모든 플러그인 로드
    */
   async loadAllPlugins(): Promise<void> {
-    const pluginIds = Array.from(this.plugins.keys());
+    const _pluginIds = Array.from(this.plugins.keys());
     
-    for (const pluginId of pluginIds) {
-      await this.loadPlugin(pluginId);
+    for (const _pluginId of _pluginIds) {
+      await this.loadPlugin(_pluginId);
     }
   }
 
@@ -493,18 +493,18 @@ export class PluginLoader extends EventEmitter {
    * 모든 플러그인 언로드
    */
   async unloadAllPlugins(): Promise<void> {
-    const pluginIds = Array.from(this.runtimes.keys());
+    const _pluginIds = Array.from(this.runtimes.keys());
     
-    for (const pluginId of pluginIds) {
-      await this.unloadPlugin(pluginId);
+    for (const _pluginId of _pluginIds) {
+      await this.unloadPlugin(_pluginId);
     }
   }
 
   /**
    * 플러그인 상태 조회
    */
-  getPluginStatus(pluginId: string): PluginStatus | null {
-    const runtime = this.runtimes.get(pluginId);
+  getPluginStatus(_pluginId: string): PluginStatus | null {
+    const runtime = this.runtimes.get(_pluginId);
     return runtime ? runtime.status : null;
   }
 
@@ -525,8 +525,8 @@ export class PluginLoader extends EventEmitter {
   /**
    * 플러그인 헬스 체크
    */
-  async checkPluginHealth(pluginId: string): Promise<PluginHealthStatus | null> {
-    const runtime = this.runtimes.get(pluginId);
+  async checkPluginHealth(_pluginId: string): Promise<PluginHealthStatus | null> {
+    const runtime = this.runtimes.get(_pluginId);
     if (!runtime || runtime.status !== PluginStatus.RUNNING) {
       return null;
     }
@@ -534,7 +534,7 @@ export class PluginLoader extends EventEmitter {
     try {
       if (runtime.instance.healthCheck) {
         const status = await runtime.instance.healthCheck();
-        this.emit('plugin.health.checked', { pluginId, status });
+        this.emit('plugin.health.checked', { _pluginId, status });
         return status;
       }
       
@@ -550,7 +550,7 @@ export class PluginLoader extends EventEmitter {
         lastCheck: new Date()
       };
       
-      this.emit('plugin.health.checked', { pluginId, status });
+      this.emit('plugin.health.checked', { _pluginId, status });
       return status;
     }
   }
@@ -568,7 +568,7 @@ export class PluginLoader extends EventEmitter {
         });
         
         this.watchers.set(pluginDir, watcher);
-        console.log(`[PluginLoader] Started watching ${pluginDir}`);
+    // console.log(`[PluginLoader] Started watching ${pluginDir}`);
       } catch (error) {
         console.error(`[PluginLoader] Failed to watch ${pluginDir}:`, error);
       }
@@ -590,14 +590,14 @@ export class PluginLoader extends EventEmitter {
       const existingDescriptor = this.plugins.get(descriptor.id);
       
       if (existingDescriptor && existingDescriptor.checksum !== descriptor.checksum) {
-        console.log(`[PluginLoader] Plugin changed, reloading: ${descriptor.id}`);
+    // console.log(`[PluginLoader] Plugin changed, reloading: ${descriptor.id}`);
         
         // 기존 플러그인 언로드 후 새로 로드
         await this.unloadPlugin(descriptor.id);
         this.plugins.set(descriptor.id, descriptor);
         await this.loadPlugin(descriptor.id);
       } else if (!existingDescriptor) {
-        console.log(`[PluginLoader] New plugin discovered: ${descriptor.id}`);
+    // console.log(`[PluginLoader] New plugin discovered: ${descriptor.id}`);
         this.plugins.set(descriptor.id, descriptor);
         
         if (this.config.autoLoad) {
@@ -630,7 +630,7 @@ export class PluginLoader extends EventEmitter {
       await this.sandbox.dispose();
     }
 
-    console.log('[PluginLoader] Disposed');
+    // console.log('[PluginLoader] Disposed');
   }
 
   /**

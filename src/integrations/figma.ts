@@ -40,7 +40,7 @@ export interface FigmaComment {
   };
   created_at: string;
   resolved_at?: string;
-  message: string;
+  _message: string;
   client_meta: {
     x: number;
     y: number;
@@ -96,7 +96,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:health_check_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -114,7 +114,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:connection_validated',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           user: response.data.handle,
           userId: response.data.id,
           email: response.data.email,
@@ -129,7 +129,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:connection_validation_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -153,7 +153,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:teams_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           teamCount: teams.length,
         },
         timestamp: Date.now(),
@@ -166,7 +166,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:teams_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -190,7 +190,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:team_projects_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           teamId,
           projectCount: projects.length,
         },
@@ -204,7 +204,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:team_projects_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           teamId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -234,7 +234,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:project_files_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           projectId,
           fileCount: files.length,
         },
@@ -248,7 +248,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:project_files_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           projectId,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -267,7 +267,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:file_fetched',
         category: EventCategory.API,
         severity: EventSeverity.DEBUG,
-        data: {
+        _data: {
           fileKey,
           name: response.data.name,
           lastModified: response.data.lastModified,
@@ -283,7 +283,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:file_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           fileKey,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -315,7 +315,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:file_versions_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           fileKey,
           versionCount: versions.length,
         },
@@ -329,7 +329,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:file_versions_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           fileKey,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -355,7 +355,7 @@ export class FigmaClient extends BaseAPIClient {
         },
         created_at: comment.created_at,
         resolved_at: comment.resolved_at,
-        message: comment.message,
+        _message: comment.message,
         client_meta: comment.client_meta,
         order_id: comment.order_id,
       }));
@@ -364,7 +364,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:file_comments_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           fileKey,
           commentCount: comments.length,
           unresolvedCount: comments.filter((c: FigmaComment) => !c.resolved_at).length,
@@ -379,7 +379,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:file_comments_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           fileKey,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -392,12 +392,12 @@ export class FigmaClient extends BaseAPIClient {
 
   async postComment(
     fileKey: string,
-    message: string,
+    _message: string,
     clientMeta: { x: number; y: number; node_id?: string },
   ): Promise<FigmaComment> {
     try {
       const response = await this.post(`/files/${fileKey}/comments`, {
-        message,
+        message: _message,
         client_meta: clientMeta,
       });
 
@@ -405,10 +405,10 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:comment_posted',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           fileKey,
           commentId: response.data.id,
-          message: message.substring(0, 100),
+          _message: _message.substring(0, 100),
         },
         timestamp: Date.now(),
         source: this.getName(),
@@ -420,9 +420,9 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:comment_post_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           fileKey,
-          message: message.substring(0, 100),
+          _message: _message.substring(0, 100),
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -468,7 +468,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:recent_activity_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           days,
           activityCount: activities.length,
           teamCount: teams.length,
@@ -483,7 +483,7 @@ export class FigmaClient extends BaseAPIClient {
         type: 'figma:recent_activity_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           days,
           error: error instanceof Error ? error.message : 'Unknown error',
         },

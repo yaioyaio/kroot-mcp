@@ -136,7 +136,7 @@ export interface Plugin {
   readonly metadata: PluginMetadata;
   
   /** 플러그인 초기화 */
-  initialize(context: PluginAPIContext): Promise<void>;
+  initialize(_context: PluginAPIContext): Promise<void>;
   
   /** 플러그인 활성화 */
   activate(): Promise<void>;
@@ -205,7 +205,7 @@ export interface PluginRuntime {
   /** 현재 상태 */
   status: PluginStatus;
   /** API 컨텍스트 */
-  context: PluginAPIContext;
+  _context: PluginAPIContext;
   /** 로드 시간 */
   loadedAt: Date;
   /** 활성화 시간 */
@@ -260,10 +260,10 @@ export interface PluginSandboxInfo {
  * 플러그인 로거 인터페이스
  */
 export interface PluginLogger {
-  debug(message: string, meta?: any): void;
-  info(message: string, meta?: any): void;
-  warn(message: string, meta?: any): void;
-  error(message: string, error?: Error, meta?: any): void;
+  debug(_message: string, meta?: any): void;
+  info(_message: string, meta?: any): void;
+  warn(_message: string, meta?: any): void;
+  error(_message: string, error?: Error, meta?: any): void;
 }
 
 /**
@@ -283,8 +283,8 @@ export interface PluginFileSystem {
  */
 export interface PluginHTTPClient {
   get(url: string, options?: any): Promise<any>;
-  post(url: string, data: any, options?: any): Promise<any>;
-  put(url: string, data: any, options?: any): Promise<any>;
+  post(url: string, _data: any, options?: any): Promise<any>;
+  put(url: string, _data: any, options?: any): Promise<any>;
   delete(url: string, options?: any): Promise<any>;
 }
 
@@ -293,8 +293,8 @@ export interface PluginHTTPClient {
  */
 export interface PluginDatabase {
   query(sql: string, params?: any[]): Promise<any[]>;
-  insert(table: string, data: Record<string, any>): Promise<number>;
-  update(table: string, data: Record<string, any>, where: Record<string, any>): Promise<number>;
+  insert(table: string, _data: Record<string, any>): Promise<number>;
+  update(table: string, _data: Record<string, any>, where: Record<string, any>): Promise<number>;
   delete(table: string, where: Record<string, any>): Promise<number>;
 }
 
@@ -311,17 +311,17 @@ export interface PluginMCPTools {
  * 플러그인 알림 인터페이스
  */
 export interface PluginNotifications {
-  send(message: string, level: 'info' | 'warning' | 'error', options?: any): Promise<void>;
+  send(_message: string, _level: 'info' | 'warning' | 'error', options?: any): Promise<void>;
   createRule(rule: any): Promise<string>;
-  removeRule(ruleId: string): Promise<void>;
+  removeRule(_ruleId: string): Promise<void>;
 }
 
 /**
  * 플러그인 간 통신 인터페이스
  */
 export interface PluginCommunication {
-  sendMessage(targetPlugin: string, message: any): Promise<void>;
-  broadcast(event: string, data: any): void;
+  sendMessage(targetPlugin: string, _message: any): Promise<void>;
+  broadcast(event: string, _data: any): void;
   subscribe(event: string, handler: Function): void;
   unsubscribe(event: string, handler: Function): void;
 }
@@ -341,13 +341,13 @@ export interface PluginStorage {
  * 플러그인 이벤트 타입들
  */
 export interface PluginEvents {
-  'plugin.loaded': { pluginId: string; metadata: PluginMetadata };
-  'plugin.activated': { pluginId: string };
-  'plugin.deactivated': { pluginId: string };
-  'plugin.error': { pluginId: string; error: Error };
-  'plugin.unloaded': { pluginId: string };
-  'plugin.config.updated': { pluginId: string; config: Record<string, any> };
-  'plugin.health.checked': { pluginId: string; status: PluginHealthStatus };
+  'plugin.loaded': { _pluginId: string; metadata: PluginMetadata };
+  'plugin.activated': { _pluginId: string };
+  'plugin.deactivated': { _pluginId: string };
+  'plugin.error': { _pluginId: string; error: Error };
+  'plugin.unloaded': { _pluginId: string };
+  'plugin.config.updated': { _pluginId: string; config: Record<string, any> };
+  'plugin.health.checked': { _pluginId: string; status: PluginHealthStatus };
 }
 
 /**

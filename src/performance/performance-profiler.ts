@@ -69,13 +69,13 @@ export class PerformanceProfiler extends EventEmitter {
   startMetric(name: string, metadata?: Record<string, any>): string {
     const metricId = `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    const metric: PerformanceMetric = {
+    const _metric: PerformanceMetric = {
       name,
       startTime: performance.now(),
       metadata
     };
 
-    this.metrics.set(metricId, metric);
+    this.metrics.set(metricId, _metric);
     return metricId;
   }
 
@@ -513,7 +513,7 @@ export class PerformanceProfiler extends EventEmitter {
       if (warning.name === 'MaxListenersExceededWarning') {
         this.emit('performanceWarning', {
           type: 'memory',
-          message: 'EventEmitter 리스너 수 초과',
+          _message: 'EventEmitter 리스너 수 초과',
           severity: 'medium'
         });
       }

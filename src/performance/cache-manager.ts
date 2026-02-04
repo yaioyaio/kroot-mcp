@@ -19,7 +19,7 @@ export interface CacheConfig {
 
 export interface CacheEntry {
   key: string;
-  data: any;
+  _data: any;
   timestamp: number;
   accessCount: number;
   lastAccessed: number;
@@ -130,7 +130,7 @@ export class CacheManager extends EventEmitter {
    */
   async set(
     key: string, 
-    data: any, 
+    _data: any, 
     options?: {
       ttl?: number;
       tags?: string[];
@@ -143,7 +143,7 @@ export class CacheManager extends EventEmitter {
     
     try {
       const now = Date.now();
-      const serializedData = JSON.stringify(data);
+      const serializedData = JSON.stringify(_data);
       const originalSize = Buffer.byteLength(serializedData, 'utf8');
       
       let processedData = serializedData;
@@ -166,7 +166,7 @@ export class CacheManager extends EventEmitter {
 
       const entry: CacheEntry = {
         key,
-        data: processedData,
+        _data: processedData,
         timestamp: now,
         accessCount: 0,
         lastAccessed: now,
@@ -289,7 +289,7 @@ export class CacheManager extends EventEmitter {
 
       stmt.run(
         key,
-        entry.data,
+        entry._data,
         entry.timestamp,
         entry.accessCount,
         entry.lastAccessed,
@@ -372,7 +372,7 @@ export class CacheManager extends EventEmitter {
    * 엔트리 데이터 처리 (압축 해제, 복호화)
    */
   private async processEntryData<T>(entry: CacheEntry): Promise<T> {
-    let data = entry.data;
+    let data = entry._data;
 
     // 복호화
     if (entry.encrypted) {
@@ -408,7 +408,7 @@ export class CacheManager extends EventEmitter {
 
       return {
         key: row.key,
-        data: row.data,
+        _data: row.data,
         timestamp: row.timestamp,
         accessCount: row.access_count,
         lastAccessed: row.last_accessed,
@@ -452,29 +452,29 @@ export class CacheManager extends EventEmitter {
   /**
    * 데이터 압축
    */
-  private async compress(data: string): Promise<string> {
-    return Buffer.from(data).toString('base64');
+  private async compress(_data: string): Promise<string> {
+    return Buffer.from(_data).toString('base64');
   }
 
   /**
    * 데이터 압축 해제
    */
-  private async decompress(data: string): Promise<string> {
-    return Buffer.from(data, 'base64').toString('utf8');
+  private async decompress(_data: string): Promise<string> {
+    return Buffer.from(_data, 'base64').toString('utf8');
   }
 
   /**
    * 데이터 암호화
    */
-  private async encrypt(data: string): Promise<string> {
-    return Buffer.from(data).toString('hex');
+  private async encrypt(_data: string): Promise<string> {
+    return Buffer.from(_data).toString('hex');
   }
 
   /**
    * 데이터 복호화
    */
-  private async decrypt(data: string): Promise<string> {
-    return Buffer.from(data, 'hex').toString('utf8');
+  private async decrypt(_data: string): Promise<string> {
+    return Buffer.from(_data, 'hex').toString('utf8');
   }
 
   /**

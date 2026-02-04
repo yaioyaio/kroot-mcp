@@ -279,7 +279,7 @@ export interface FilterSettings {
   events: EventFilter;
   
   /** 분석 필터 */
-  analysis: AnalysisFilter;
+  _analysis: AnalysisFilter;
 }
 
 export interface FileFilter {
@@ -569,7 +569,7 @@ export interface AnalysisResult {
   confidence: number;
   
   /** 세부 데이터 */
-  data: Record<string, any>;
+  _data: Record<string, any>;
   
   /** 설명 */
   description: string;
@@ -592,7 +592,7 @@ export interface Insight {
   category: string;
   
   /** 관련 데이터 */
-  data: Record<string, any>;
+  _data: Record<string, any>;
 }
 
 export interface Recommendation {

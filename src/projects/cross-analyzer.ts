@@ -131,7 +131,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
     }
 
     const analysisId = uuidv4();
-    const context: AnalysisContext = {
+    const _context: AnalysisContext = {
       id: analysisId,
       projects,
       metrics,
@@ -140,7 +140,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
       config: this.config
     };
 
-    this.runningAnalysis.set(analysisId, context);
+    this.runningAnalysis.set(analysisId, _context);
 
     try {
       this.logger.info('크로스 프로젝트 분석 시작', {
@@ -149,7 +149,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
         projectCount: projects.length
       });
 
-      const analysis: CrossProjectAnalysis = {
+      const _analysis: CrossProjectAnalysis = {
         id: analysisId,
         timestamp: Date.now(),
         projects: projects.map(p => p.id),
@@ -162,46 +162,46 @@ export class CrossProjectAnalyzer extends EventEmitter {
       // 분석 타입에 따른 분석 실행
       switch (type) {
         case AnalysisType.SIMILARITY:
-          analysis.results = await this.analyzeSimilarity(context);
+          _analysis.results = await this.analyzeSimilarity(_context);
           break;
         case AnalysisType.DEPENDENCY:
-          analysis.results = await this.analyzeDependencies(context);
+          _analysis.results = await this.analyzeDependencies(_context);
           break;
         case AnalysisType.PERFORMANCE:
-          analysis.results = await this.analyzePerformance(context);
+          _analysis.results = await this.analyzePerformance(_context);
           break;
         case AnalysisType.QUALITY:
-          analysis.results = await this.analyzeQuality(context);
+          _analysis.results = await this.analyzeQuality(_context);
           break;
         case AnalysisType.TREND:
-          analysis.results = await this.analyzeTrends(context);
+          _analysis.results = await this.analyzeTrends(_context);
           break;
         case AnalysisType.BOTTLENECK:
-          analysis.results = await this.analyzeBottlenecks(context);
+          _analysis.results = await this.analyzeBottlenecks(_context);
           break;
         case AnalysisType.COLLABORATION:
-          analysis.results = await this.analyzeCollaboration(context);
+          _analysis.results = await this.analyzeCollaboration(_context);
           break;
         default:
           throw new Error(`지원되지 않는 분석 타입: ${type}`);
       }
 
       // 인사이트 생성
-      analysis.insights = this.generateInsights(analysis.results, context);
+      _analysis.insights = this.generateInsights(_analysis.results, _context);
 
       // 권장사항 생성
-      analysis.recommendations = this.generateRecommendations(analysis.results, analysis.insights, context);
+      _analysis.recommendations = this.generateRecommendations(_analysis.results, _analysis.insights, _context);
 
       this.logger.info('크로스 프로젝트 분석 완료', {
         id: analysisId,
         type,
-        resultsCount: analysis.results.length,
-        insightsCount: analysis.insights.length,
-        recommendationsCount: analysis.recommendations.length,
-        duration: Date.now() - context.startTime
+        resultsCount: _analysis.results.length,
+        insightsCount: _analysis.insights.length,
+        recommendationsCount: _analysis.recommendations.length,
+        duration: Date.now() - _context.startTime
       });
 
-      return analysis;
+      return _analysis;
 
     } catch (error) {
       this.logger.error('크로스 프로젝트 분석 실패:', { id: analysisId, error });
@@ -214,9 +214,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 유사성 분석
    */
-  private async analyzeSimilarity(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzeSimilarity(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects } = context;
+    const { projects } = _context;
 
     // 프로젝트 쌍별 유사성 분석
     for (let i = 0; i < projects.length; i++) {
@@ -225,14 +225,14 @@ export class CrossProjectAnalyzer extends EventEmitter {
         const project2 = projects[j];
 
         if (project1 && project2) {
-          const similarity = await this.calculateProjectSimilarity(project1, project2, context);
+          const similarity = await this.calculateProjectSimilarity(project1, project2, _context);
           
           if (similarity.score >= this.config.minConfidence) {
             results.push({
               type: 'similarity',
               score: similarity.score,
               confidence: similarity.confidence,
-              data: {
+              _data: {
                 project1Id: project1.id,
                 project1Name: project1.name,
                 project2Id: project2.id,
@@ -255,7 +255,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
   private async calculateProjectSimilarity(
     project1: ProjectMetadata,
     project2: ProjectMetadata,
-    context: AnalysisContext
+    _context: AnalysisContext
   ): Promise<{ score: number; confidence: number; details: any }> {
     
     const weights = this.config.similarityWeights;
@@ -492,9 +492,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 의존성 분석
    */
-  private async analyzeDependencies(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzeDependencies(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects } = context;
+    const { projects } = _context;
 
     // 프로젝트 간 의존성 관계 분석
     for (let i = 0; i < projects.length; i++) {
@@ -513,7 +513,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
             type: 'dependency',
             score: dep.strength,
             confidence: 0.8,
-            data: {
+            _data: {
               sourceId: source?.id || '',
               sourceName: source?.name || '',
               targetId: target?.id || '',
@@ -582,9 +582,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 성능 분석
    */
-  private async analyzePerformance(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzePerformance(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects, metrics } = context;
+    const { projects, metrics } = _context;
 
     for (const project of projects) {
       const projectMetrics = metrics.get(project.id) || [];
@@ -601,10 +601,10 @@ export class CrossProjectAnalyzer extends EventEmitter {
           type: 'performance_issue',
           score: Math.min(performance.buildTime / this.config.performanceThresholds.buildTime, 2.0),
           confidence: 0.9,
-          data: {
+          _data: {
             projectId: project.id,
             projectName: project.name,
-            metric: 'buildTime',
+            _metric: 'buildTime',
             value: performance.buildTime,
             threshold: this.config.performanceThresholds.buildTime
           },
@@ -618,10 +618,10 @@ export class CrossProjectAnalyzer extends EventEmitter {
           type: 'performance_issue',
           score: Math.min(performance.testTime / this.config.performanceThresholds.testTime, 2.0),
           confidence: 0.9,
-          data: {
+          _data: {
             projectId: project.id,
             projectName: project.name,
-            metric: 'testTime',
+            _metric: 'testTime',
             value: performance.testTime,
             threshold: this.config.performanceThresholds.testTime
           },
@@ -636,9 +636,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 품질 분석
    */
-  private async analyzeQuality(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzeQuality(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects, metrics } = context;
+    const { projects, metrics } = _context;
 
     for (const project of projects) {
       const projectMetrics = metrics.get(project.id) || [];
@@ -655,10 +655,10 @@ export class CrossProjectAnalyzer extends EventEmitter {
           type: 'quality_issue',
           score: (this.config.performanceThresholds.codeQuality - quality.codeQuality) / 100,
           confidence: 0.8,
-          data: {
+          _data: {
             projectId: project.id,
             projectName: project.name,
-            metric: 'codeQuality',
+            _metric: 'codeQuality',
             value: quality.codeQuality,
             threshold: this.config.performanceThresholds.codeQuality
           },
@@ -672,10 +672,10 @@ export class CrossProjectAnalyzer extends EventEmitter {
           type: 'quality_issue',
           score: (this.config.performanceThresholds.testCoverage - quality.testCoverage) / 100,
           confidence: 0.9,
-          data: {
+          _data: {
             projectId: project.id,
             projectName: project.name,
-            metric: 'testCoverage',
+            _metric: 'testCoverage',
             value: quality.testCoverage,
             threshold: this.config.performanceThresholds.testCoverage
           },
@@ -690,9 +690,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 트렌드 분석
    */
-  private async analyzeTrends(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzeTrends(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects, metrics } = context;
+    const { projects, metrics } = _context;
 
     for (const project of projects) {
       const projectMetrics = metrics.get(project.id) || [];
@@ -705,7 +705,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
         type: 'trend',
         score: Math.abs(trend.slope),
         confidence: trend.confidence,
-        data: {
+        _data: {
           projectId: project.id,
           projectName: project.name,
           trend: trend.direction,
@@ -747,7 +747,8 @@ export class CrossProjectAnalyzer extends EventEmitter {
       return {
         direction: 'stable' as const,
         confidence: 0,
-        details: {}
+        slope: 0,
+        keyMetrics: {}
       };
     }
 
@@ -782,9 +783,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 병목 현상 분석
    */
-  private async analyzeBottlenecks(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzeBottlenecks(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects, metrics } = context;
+    const { projects, metrics } = _context;
 
     // 전체 프로젝트 대비 성능 비교
     const allMetrics = Array.from(metrics.values()).flat();
@@ -812,7 +813,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           type: 'bottleneck',
           score: performance.buildTime / avgBuildTime,
           confidence: 0.8,
-          data: {
+          _data: {
             projectId: project.id,
             projectName: project.name,
             bottleneckType: 'build',
@@ -829,7 +830,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           type: 'bottleneck',
           score: performance.testTime / avgTestTime,
           confidence: 0.8,
-          data: {
+          _data: {
             projectId: project.id,
             projectName: project.name,
             bottleneckType: 'test',
@@ -847,9 +848,9 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 협업 분석
    */
-  private async analyzeCollaboration(context: AnalysisContext): Promise<AnalysisResult[]> {
+  private async analyzeCollaboration(_context: AnalysisContext): Promise<AnalysisResult[]> {
     const results: AnalysisResult[] = [];
-    const { projects, metrics } = context;
+    const { projects, metrics } = _context;
 
     for (const project of projects) {
       const projectMetrics = metrics.get(project.id) || [];
@@ -857,21 +858,21 @@ export class CrossProjectAnalyzer extends EventEmitter {
       if (projectMetrics.length === 0) continue;
 
       const latestMetrics = projectMetrics[projectMetrics.length - 1];
-      const team = latestMetrics.team;
+      const team = latestMetrics?.team;
 
       // 협업 점수 분석
       results.push({
         type: 'collaboration',
-        score: team.collaborationScore,
+        score: team?.collaborationScore || 0,
         confidence: 0.7,
-        data: {
+        _data: {
           projectId: project.id,
           projectName: project.name,
-          activeDevelopers: team.activeDevelopers,
-          codeReviewRate: team.codeReviewRate,
-          avgCommitSize: team.avgCommitSize
+          activeDevelopers: team?.activeDevelopers || 0,
+          codeReviewRate: team?.codeReviewRate || 0,
+          avgCommitSize: team?.avgCommitSize || 0
         },
-        description: `${project.name}의 협업 점수: ${Math.round(team.collaborationScore * 100)}/100`
+        description: `${project.name}의 협업 점수: ${Math.round((team?.collaborationScore || 0) * 100)}/100`
       });
     }
 
@@ -881,7 +882,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
   /**
    * 인사이트 생성
    */
-  private generateInsights(results: AnalysisResult[], context: AnalysisContext): Insight[] {
+  private generateInsights(results: AnalysisResult[], _context: AnalysisContext): Insight[] {
     const insights: Insight[] = [];
 
     // 결과를 타입별로 그룹화
@@ -896,7 +897,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
 
     // 각 타입별 인사이트 생성
     groupedResults.forEach((typeResults, type) => {
-      const insight = this.generateInsightForType(type, typeResults, context);
+      const insight = this.generateInsightForType(type, typeResults, _context);
       if (insight) {
         insights.push(insight);
       }
@@ -911,7 +912,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
   private generateInsightForType(
     type: string,
     results: AnalysisResult[],
-    context: AnalysisContext
+    _context: AnalysisContext
   ): Insight | null {
     
     if (results.length === 0) return null;
@@ -926,7 +927,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           description: `${results.length}개의 프로젝트 간 유사성이 발견되었습니다. 평균 유사도: ${Math.round(avgScore * 100)}%`,
           importance: avgScore > 0.8 ? 'high' : avgScore > 0.6 ? 'medium' : 'low',
           category: 'architecture',
-          data: { type, resultCount: results.length, avgScore }
+          _data: { type, resultCount: results.length, avgScore }
         };
 
       case 'performance_issue':
@@ -936,7 +937,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           description: `${results.length}개 프로젝트에서 성능 문제가 감지되었습니다.`,
           importance: results.length > 2 ? 'critical' : results.length > 1 ? 'high' : 'medium',
           category: 'performance',
-          data: { type, resultCount: results.length, avgScore }
+          _data: { type, resultCount: results.length, avgScore }
         };
 
       case 'quality_issue':
@@ -946,7 +947,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           description: `${results.length}개 프로젝트에서 품질 기준 미달이 확인되었습니다.`,
           importance: results.length > 2 ? 'high' : 'medium',
           category: 'quality',
-          data: { type, resultCount: results.length, avgScore }
+          _data: { type, resultCount: results.length, avgScore }
         };
 
       case 'bottleneck':
@@ -956,7 +957,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           description: `${results.length}개 프로젝트에서 병목 현상이 발견되었습니다.`,
           importance: 'high',
           category: 'performance',
-          data: { type, resultCount: results.length, avgScore }
+          _data: { type, resultCount: results.length, avgScore }
         };
 
       default:
@@ -966,7 +967,7 @@ export class CrossProjectAnalyzer extends EventEmitter {
           description: `${results.length}개의 ${type} 관련 결과가 발견되었습니다.`,
           importance: 'medium',
           category: 'general',
-          data: { type, resultCount: results.length, avgScore }
+          _data: { type, resultCount: results.length, avgScore }
         };
     }
   }
@@ -977,14 +978,14 @@ export class CrossProjectAnalyzer extends EventEmitter {
   private generateRecommendations(
     results: AnalysisResult[],
     insights: Insight[],
-    context: AnalysisContext
+    _context: AnalysisContext
   ): Recommendation[] {
     
     const recommendations: Recommendation[] = [];
 
     // 인사이트 기반 권장사항 생성
     insights.forEach(insight => {
-      const recommendation = this.generateRecommendationForInsight(insight, results, context);
+      const recommendation = this.generateRecommendationForInsight(insight, results, _context);
       if (recommendation) {
         recommendations.push(recommendation);
       }
@@ -999,11 +1000,11 @@ export class CrossProjectAnalyzer extends EventEmitter {
   private generateRecommendationForInsight(
     insight: Insight,
     results: AnalysisResult[],
-    context: AnalysisContext
+    _context: AnalysisContext
   ): Recommendation | null {
     
-    const relatedResults = results.filter(r => r.type === insight.data.type);
-    const affectedProjects = [...new Set(relatedResults.map(r => r.data.projectId))];
+    const relatedResults = results.filter(r => r.type === insight._data.type);
+    const affectedProjects = [...new Set(relatedResults.map(r => r._data.projectId))];
     
     switch (insight.category) {
       case 'performance':

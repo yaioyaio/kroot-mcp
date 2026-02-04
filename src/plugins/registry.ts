@@ -51,7 +51,7 @@ export class PluginRegistry {
       // 로컬 플러그인 디렉토리 생성
       await this.ensureDirectory(this.localDir);
       
-      console.log('[PluginRegistry] Initialized');
+    // console.log('[PluginRegistry] Initialized');
     } catch (error) {
       console.error('[PluginRegistry] Failed to initialize:', error);
       throw error;
@@ -119,7 +119,7 @@ export class PluginRegistry {
    */
   async installPlugin(name: string, version?: string, forceUpdate = false): Promise<boolean> {
     try {
-      console.log(`[PluginRegistry] Installing ${name}${version ? `@${version}` : ''}`);
+    // console.log(`[PluginRegistry] Installing ${name}${version ? `@${version}` : ''}`);
 
       // 플러그인 정보 조회
       const pluginInfo = await this.getPluginInfo(name);
@@ -132,7 +132,7 @@ export class PluginRegistry {
 
       // 이미 설치된 경우 체크
       if (!forceUpdate && await this.isPluginInstalled(name, targetVersion)) {
-        console.log(`[PluginRegistry] Plugin already installed: ${name}@${targetVersion}`);
+    // console.log(`[PluginRegistry] Plugin already installed: ${name}@${targetVersion}`);
         return true;
       }
 
@@ -153,7 +153,7 @@ export class PluginRegistry {
         await this.installDependencies(pluginDir);
       }
 
-      console.log(`[PluginRegistry] Plugin installed successfully: ${name}@${targetVersion}`);
+    // console.log(`[PluginRegistry] Plugin installed successfully: ${name}@${targetVersion}`);
       return true;
 
     } catch (error) {
@@ -167,7 +167,7 @@ export class PluginRegistry {
    */
   async uninstallPlugin(name: string): Promise<boolean> {
     try {
-      console.log(`[PluginRegistry] Uninstalling ${name}`);
+    // console.log(`[PluginRegistry] Uninstalling ${name}`);
 
       const pluginDir = join(this.localDir, name);
       
@@ -177,7 +177,7 @@ export class PluginRegistry {
         await fs.rm(pluginDir, { recursive: true, force: true });
       }
 
-      console.log(`[PluginRegistry] Plugin uninstalled: ${name}`);
+    // console.log(`[PluginRegistry] Plugin uninstalled: ${name}`);
       return true;
 
     } catch (error) {
@@ -285,12 +285,12 @@ export class PluginRegistry {
         });
 
         let output = '';
-        npm.stdout.on('data', (data: Buffer) => {
-          output += data.toString();
+        npm.stdout.on('data', (_data: Buffer) => {
+          output += _data.toString();
         });
 
-        npm.stderr.on('data', (data: Buffer) => {
-          output += data.toString();
+        npm.stderr.on('data', (_data: Buffer) => {
+          output += _data.toString();
         });
 
         npm.on('close', (code: number) => {
@@ -383,6 +383,6 @@ export class PluginRegistry {
   async dispose(): Promise<void> {
     this.cache.clear();
     this.cacheExpiry.clear();
-    console.log('[PluginRegistry] Disposed');
+    // console.log('[PluginRegistry] Disposed');
   }
 }

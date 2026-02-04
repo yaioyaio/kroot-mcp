@@ -43,7 +43,7 @@ export class APIIntegrationManager {
           type: 'integration:client_initialized',
           category: EventCategory.API,
           severity: EventSeverity.INFO,
-          data: {
+          _data: {
             clientName: 'jira',
             domain: this.config.jira.domain,
           },
@@ -55,7 +55,7 @@ export class APIIntegrationManager {
           type: 'integration:client_initialization_failed',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             clientName: 'jira',
             error: error instanceof Error ? error.message : 'Unknown error',
           },
@@ -74,7 +74,7 @@ export class APIIntegrationManager {
           type: 'integration:client_initialized',
           category: EventCategory.API,
           severity: EventSeverity.INFO,
-          data: {
+          _data: {
             clientName: 'notion',
           },
           timestamp: Date.now(),
@@ -85,7 +85,7 @@ export class APIIntegrationManager {
           type: 'integration:client_initialization_failed',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             clientName: 'notion',
             error: error instanceof Error ? error.message : 'Unknown error',
           },
@@ -104,7 +104,7 @@ export class APIIntegrationManager {
           type: 'integration:client_initialized',
           category: EventCategory.API,
           severity: EventSeverity.INFO,
-          data: {
+          _data: {
             clientName: 'figma',
           },
           timestamp: Date.now(),
@@ -115,7 +115,7 @@ export class APIIntegrationManager {
           type: 'integration:client_initialization_failed',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             clientName: 'figma',
             error: error instanceof Error ? error.message : 'Unknown error',
           },
@@ -129,7 +129,7 @@ export class APIIntegrationManager {
       type: 'integration:manager_initialized',
       category: EventCategory.API,
       severity: EventSeverity.INFO,
-      data: {
+      _data: {
         totalClients: this.clients.size,
         enabledClients: Array.from(this.clients.keys()),
       },
@@ -146,7 +146,7 @@ export class APIIntegrationManager {
       type: 'integration:manager_started',
       category: EventCategory.API,
       severity: EventSeverity.INFO,
-      data: {
+      _data: {
         clientCount: this.clients.size,
         healthCheckInterval: this.healthCheckIntervalMs,
       },
@@ -162,7 +162,7 @@ export class APIIntegrationManager {
       type: 'integration:manager_stopped',
       category: EventCategory.API,
       severity: EventSeverity.INFO,
-      data: {
+      _data: {
         clientCount: this.clients.size,
       },
       timestamp: Date.now(),
@@ -200,7 +200,7 @@ export class APIIntegrationManager {
             type: 'integration:health_check_failed',
             category: EventCategory.API,
             severity: EventSeverity.WARNING,
-            data: {
+            _data: {
               clientName: name,
             },
             timestamp: Date.now(),
@@ -213,7 +213,7 @@ export class APIIntegrationManager {
           type: 'integration:health_check_error',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             clientName: name,
             error: error instanceof Error ? error.message : 'Unknown error',
           },
@@ -227,7 +227,7 @@ export class APIIntegrationManager {
       type: 'integration:health_check_completed',
       category: EventCategory.API,
       severity: EventSeverity.DEBUG,
-      data: {
+      _data: {
         results,
         healthyCount: Object.values(results).filter(Boolean).length,
         totalCount: Object.keys(results).length,
@@ -250,7 +250,7 @@ export class APIIntegrationManager {
             type: 'integration:connection_validated',
             category: EventCategory.API,
             severity: EventSeverity.INFO,
-            data: {
+            _data: {
               clientName: name,
             },
             timestamp: Date.now(),
@@ -261,7 +261,7 @@ export class APIIntegrationManager {
             type: 'integration:connection_validation_failed',
             category: EventCategory.API,
             severity: EventSeverity.ERROR,
-            data: {
+            _data: {
               clientName: name,
             },
             timestamp: Date.now(),
@@ -274,7 +274,7 @@ export class APIIntegrationManager {
           type: 'integration:connection_validation_error',
           category: EventCategory.API,
           severity: EventSeverity.ERROR,
-          data: {
+          _data: {
             clientName: name,
             error: error instanceof Error ? error.message : 'Unknown error',
           },
@@ -288,7 +288,7 @@ export class APIIntegrationManager {
       type: 'integration:connections_validated',
       category: EventCategory.API,
       severity: EventSeverity.INFO,
-      data: {
+      _data: {
         results,
         validCount: Object.values(results).filter(Boolean).length,
         totalCount: Object.keys(results).length,
@@ -346,7 +346,7 @@ export class APIIntegrationManager {
       type: 'integration:status_retrieved',
       category: EventCategory.API,
       severity: EventSeverity.DEBUG,
-      data: {
+      _data: {
         statusCount: statuses.length,
         healthyCount: statuses.filter((s) => s.healthy).length,
         connectedCount: statuses.filter((s) => s.connected).length,
@@ -363,7 +363,7 @@ export class APIIntegrationManager {
       type: 'integration:sync_started',
       category: EventCategory.API,
       severity: EventSeverity.INFO,
-      data: {
+      _data: {
         clientCount: this.clients.size,
       },
       timestamp: Date.now(),
@@ -391,7 +391,7 @@ export class APIIntegrationManager {
         type: 'integration:sync_completed',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           clientCount: this.clients.size,
         },
         timestamp: Date.now(),
@@ -402,7 +402,7 @@ export class APIIntegrationManager {
         type: 'integration:sync_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -422,7 +422,7 @@ export class APIIntegrationManager {
         type: 'integration:jira_sync_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -442,7 +442,7 @@ export class APIIntegrationManager {
         type: 'integration:notion_sync_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),
@@ -462,7 +462,7 @@ export class APIIntegrationManager {
         type: 'integration:figma_sync_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           error: error instanceof Error ? error.message : 'Unknown error',
         },
         timestamp: Date.now(),

@@ -71,7 +71,6 @@ import {
   createMultiProjectSystem, 
   createDefaultConfig,
   type MultiProjectSystem,
-  type SyncStatus
 } from '../projects/index.js';
 import {
   ReportSystem
@@ -2539,7 +2538,7 @@ class DevFlowMonitorServer {
       timeRange,
       metricType,
       timestamp: new Date().toISOString(),
-      data: metrics,
+      _data: metrics,
       summary: `Metrics for ${timeRange} (${metricType})`,
       content: [
         {
@@ -2585,7 +2584,7 @@ class DevFlowMonitorServer {
       source: event.source,
       severity: event.severity,
       summary: this.generateEventSummary(event),
-      data: event.data,
+      _data: event._data,
     }));
 
     // Group activities by category
@@ -2936,19 +2935,19 @@ class DevFlowMonitorServer {
   private generateEventSummary(event: BaseEvent): string {
     switch (event.category) {
       case EventCategory.FILE:
-        const fileData = event.data as any;
+        const fileData = event._data as any;
         return `File ${fileData.action}: ${fileData.newFile?.path || fileData.oldFile?.path || 'unknown'}`;
       
       case EventCategory.GIT:
-        const gitData = event.data as any;
+        const gitData = event._data as any;
         return `Git ${gitData.action}: ${gitData.message || gitData.branch || 'unknown'}`;
       
       case EventCategory.TEST:
-        const testData = event.data as any;
+        const testData = event._data as any;
         return `Test ${testData.status}: ${testData.name || 'unknown'} (${testData.duration}ms)`;
       
       case EventCategory.BUILD:
-        const buildData = event.data as any;
+        const buildData = event._data as any;
         return `Build ${buildData.status}: ${buildData.target || 'unknown'}`;
       
       default:
@@ -2979,7 +2978,7 @@ class DevFlowMonitorServer {
     const extensions: Record<string, number> = {};
     
     events.forEach(event => {
-      const filePath = event.data?.newFile?.path || event.data?.oldFile?.path;
+      const filePath = event._data?.newFile?.path || event._data?.oldFile?.path;
       if (filePath) {
         const ext = filePath.split('.').pop() || 'no-ext';
         extensions[ext] = (extensions[ext] || 0) + 1;
@@ -2997,7 +2996,7 @@ class DevFlowMonitorServer {
     const conventionalCommitPattern = /^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?:/;
     
     commits.forEach(event => {
-      const message = event.data?.message || '';
+      const message = event._data?.message || '';
       const match = message.match(conventionalCommitPattern);
       const type = match ? match[1] : 'other';
       types[type] = (types[type] || 0) + 1;
@@ -3011,10 +3010,10 @@ class DevFlowMonitorServer {
    */
   private getLatestCoverage(testEvents: BaseEvent[]): number {
     const coverageEvents = testEvents
-      .filter(e => e.data?.coverage !== undefined)
+      .filter(e => e._data?.coverage !== undefined)
       .sort((a, b) => b.timestamp - a.timestamp);
     
-    return coverageEvents.length > 0 ? coverageEvents[0]?.data?.coverage || 0 : 0;
+    return coverageEvents.length > 0 ? coverageEvents[0]?._data?.coverage || 0 : 0;
   }
 
   /**
@@ -3022,8 +3021,8 @@ class DevFlowMonitorServer {
    */
   private calculateAverageDuration(events: BaseEvent[]): number {
     const durations = events
-      .filter(e => e.data?.duration !== undefined)
-      .map(e => e.data?.duration || 0);
+      .filter(e => e._data?.duration !== undefined)
+      .map(e => e._data?.duration || 0);
     
     if (durations.length === 0) return 0;
     
@@ -3193,7 +3192,7 @@ class DevFlowMonitorServer {
         this.activityLog = this.activityLog.slice(-1000);
       }
 
-      this.logDebug(`File event: ${event.type}`, event.data);
+      this.logDebug(`File event: ${event.type}`, event._data);
     });
 
     // Subscribe to EventEngine for all file events
@@ -3202,14 +3201,14 @@ class DevFlowMonitorServer {
       (event: BaseEvent) => {
         // Only process file events
         if (event.category === EventCategory.FILE) {
-          this.logDebug(`EventEngine file event: ${event.type}`, event.data);
+          this.logDebug(`EventEngine file event: ${event.type}`, event._data);
 
           // Convert to MonitorEvent format for backward compatibility
           const monitorEvent: MonitorEvent = {
             type: event.type,
             timestamp: event.timestamp,
             source: event.source,
-            data: event.data,
+            _data: event._data,
             ...(event.metadata && { metadata: event.metadata }),
           };
 
@@ -3263,7 +3262,7 @@ class DevFlowMonitorServer {
             this.activityLog.push({
               type: event.type,
               timestamp: event.timestamp,
-              data: event.data,
+              _data: event._data,
               source: event.source,
             });
 
@@ -3272,7 +3271,7 @@ class DevFlowMonitorServer {
               this.activityLog = this.activityLog.slice(-1000);
             }
 
-            this.logDebug(`Git event: ${event.type}`, event.data);
+            this.logDebug(`Git event: ${event.type}`, event._data);
           }
         },
         { priority: 1 },
@@ -3530,7 +3529,7 @@ class DevFlowMonitorServer {
     };
     
     wsServer.broadcastSystemNotification({
-      message,
+      _message: message,
       severity,
       data
     });
@@ -4778,13 +4777,13 @@ class DevFlowMonitorServer {
             totalUnread: unreadCount,
             notifications: notifications.map(n => ({
               id: n.id,
-              title: n.message.title,
-              content: n.message.content,
-              severity: n.message.severity,
-              priority: n.message.priority,
+              title: n._message.title,
+              content: n._message.content,
+              severity: n._message.severity,
+              priority: n._message.priority,
               read: n.read,
               readAt: n.readAt,
-              createdAt: n.message.createdAt,
+              createdAt: n._message.createdAt,
             })),
           }, null, 2),
         }],
@@ -5437,7 +5436,7 @@ class DevFlowMonitorServer {
       } else {
         // Get metrics for all plugins
         const plugins = this.pluginManager.getPlugins();
-        metrics = {};
+        metrics = {} as Record<string, any>;
         for (const plugin of plugins) {
           const pluginMetrics = this.pluginManager.getPluginMetrics(plugin.id);
           if (pluginMetrics) {
@@ -5501,7 +5500,7 @@ class DevFlowMonitorServer {
           type: 'text',
           text: JSON.stringify({
             updates: updates.map(update => ({
-              pluginId: update.pluginId,
+              pluginId: update.__pluginId,
               currentVersion: update.currentVersion,
               latestVersion: update.latestVersion,
               updateAvailable: update.currentVersion !== update.latestVersion
@@ -6462,7 +6461,7 @@ class DevFlowMonitorServer {
               name: s.name,
               type: s.reportConfig.type,
               enabled: s.enabled,
-              schedule: s.schedule,
+              schedule: s._schedule,
               lastRunAt: s.lastRunAt ? new Date(s.lastRunAt).toISOString() : null,
               nextRunAt: s.nextRunAt ? new Date(s.nextRunAt).toISOString() : null,
               createdBy: s.createdBy,

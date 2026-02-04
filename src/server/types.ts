@@ -105,7 +105,7 @@ export interface MetricsResponse extends McpResponse {
   timeRange: string;
   metricType: string;
   timestamp: string;
-  data: {
+  _data: {
     events?: {
       total: number;
       byCategory: Record<string, number>;

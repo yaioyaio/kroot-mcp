@@ -11,7 +11,7 @@ import {
   RuleAction
 } from './types';
 import { BaseEvent as DevelopmentEvent } from '../events/types/base.js';
-import { StorageManager } from '../storage/index.js';
+// import { StorageManager } from '../storage/index.js';
 
 export interface RuleContext {
   event?: DevelopmentEvent;
@@ -22,7 +22,7 @@ export interface RuleContext {
 }
 
 export interface RuleExecutionResult {
-  ruleId: string;
+  _ruleId: string;
   executed: boolean;
   actions: ActionResult[];
   duration: number;
@@ -71,23 +71,21 @@ export class RuleEngine extends EventEmitter {
   private ruleProcessor: NodeJS.Timeout | null = null;
   private scheduledRules: Map<string, NodeJS.Timeout> = new Map();
 
-  constructor(
-    private _storageManager: StorageManager
-  ) {
+  constructor() {
     super();
     this.loadRules();
   }
 
   async start() {
-    // Process rules every 30 seconds
-    this.ruleProcessor = setInterval(() => {
-      this.processScheduledRules();
-    }, 30000);
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.ruleProcessor = setInterval(() => {
+    //   this.processScheduledRules();
+    // }, 30000);
 
-    // Setup scheduled rules
-    this.setupScheduledRules();
+    // 스케줄된 룰 설정 제거 - 사용자 요청 시에만 실행
+    // this.setupScheduledRules();
 
-    console.log('⚙️ Rule engine started');
+    // console.log('⚙️ Rule engine initialized for on-demand rule processing');
   }
 
   stop() {
@@ -102,7 +100,7 @@ export class RuleEngine extends EventEmitter {
     }
     this.scheduledRules.clear();
 
-    console.log('🛑 Rule engine stopped');
+    // console.log('🛑 Rule engine stopped');
   }
 
   /**
@@ -122,7 +120,7 @@ export class RuleEngine extends EventEmitter {
     await this.saveRules();
     this.emit('rule-registered', rule);
     
-    console.log(`📜 Rule registered: ${rule.name}`);
+    // console.log(`📜 Rule registered: ${rule.name}`);
   }
 
   /**
@@ -138,7 +136,7 @@ export class RuleEngine extends EventEmitter {
 
     for (const rule of eventRules) {
       try {
-        const context: RuleContext = {
+        const _context: RuleContext = {
           event,
           metrics: {},
           variables: {},
@@ -146,7 +144,7 @@ export class RuleEngine extends EventEmitter {
           executionId: `exec_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`
         };
 
-        const result = await this.executeRule(rule, context);
+        const result = await this.executeRule(rule, _context);
         results.push(result);
 
         if (result.executed) {
@@ -156,7 +154,7 @@ export class RuleEngine extends EventEmitter {
       } catch (error) {
         console.error(`Error processing rule ${rule.id}:`, error);
         results.push({
-          ruleId: rule.id,
+          _ruleId: rule.id,
           executed: false,
           actions: [],
           duration: 0,
@@ -171,14 +169,14 @@ export class RuleEngine extends EventEmitter {
   /**
    * Execute a specific rule
    */
-  private async executeRule(rule: AdvancedRule, context: RuleContext): Promise<RuleExecutionResult> {
+  private async executeRule(rule: AdvancedRule, _context: RuleContext): Promise<RuleExecutionResult> {
     const startTime = Date.now();
 
     try {
       // Check rate limiting
       if (rule.rateLimiting && !this.checkRateLimit(rule)) {
         return {
-          ruleId: rule.id,
+          _ruleId: rule.id,
           executed: false,
           actions: [],
           duration: Date.now() - startTime,
@@ -187,9 +185,9 @@ export class RuleEngine extends EventEmitter {
       }
 
       // Check context filters
-      if (rule.contextFilters && !this.checkContextFilters(rule.contextFilters, context)) {
+      if (rule.contextFilters && !this.checkContextFilters(rule.contextFilters, _context)) {
         return {
-          ruleId: rule.id,
+          _ruleId: rule.id,
           executed: false,
           actions: [],
           duration: Date.now() - startTime,
@@ -198,10 +196,10 @@ export class RuleEngine extends EventEmitter {
       }
 
       // Evaluate conditions
-      const conditionsMet = await this.evaluateConditions(rule.conditions, context);
+      const conditionsMet = await this.evaluateConditions(rule.conditions, _context);
       if (!conditionsMet) {
         return {
-          ruleId: rule.id,
+          _ruleId: rule.id,
           executed: false,
           actions: [],
           duration: Date.now() - startTime
@@ -209,23 +207,23 @@ export class RuleEngine extends EventEmitter {
       }
 
       // Execute actions
-      const actionResults = await this.executeActions(rule.actions, context);
+      const actionResults = await this.executeActions(rule.actions, _context);
 
       const result: RuleExecutionResult = {
-        ruleId: rule.id,
+        _ruleId: rule.id,
         executed: true,
         actions: actionResults,
         duration: Date.now() - startTime
       };
 
       this.emit('rule-executed', result);
-      console.log(`✅ Rule executed: ${rule.name} (${result.duration}ms)`);
+      // console.log(`✅ Rule executed: ${rule.name} (${result.duration}ms)`);
 
       return result;
 
     } catch (error) {
       return {
-        ruleId: rule.id,
+        _ruleId: rule.id,
         executed: false,
         actions: [],
         duration: Date.now() - startTime,
@@ -237,7 +235,7 @@ export class RuleEngine extends EventEmitter {
   /**
    * Evaluate rule conditions
    */
-  private async evaluateConditions(conditions: RuleCondition[], context: RuleContext): Promise<boolean> {
+  private async evaluateConditions(conditions: RuleCondition[], _context: RuleContext): Promise<boolean> {
     if (!conditions || conditions.length === 0) {
       return true;
     }
@@ -246,7 +244,7 @@ export class RuleEngine extends EventEmitter {
     let lastCombinator = 'AND';
 
     for (const condition of conditions) {
-      const conditionResult = await this.evaluateCondition(condition, context);
+      const conditionResult = await this.evaluateCondition(condition, _context);
       
       if (lastCombinator === 'AND') {
         result = result && conditionResult;
@@ -263,21 +261,21 @@ export class RuleEngine extends EventEmitter {
   /**
    * Evaluate single condition
    */
-  private async evaluateCondition(condition: RuleCondition, context: RuleContext): Promise<boolean> {
+  private async evaluateCondition(condition: RuleCondition, _context: RuleContext): Promise<boolean> {
     let actualValue: any;
 
     // Extract value from context
     if (condition.field.startsWith('event.')) {
       const field = condition.field.substring(6);
-      actualValue = this.getNestedValue(context.event, field);
+      actualValue = this.getNestedValue(_context.event, field);
     } else if (condition.field.startsWith('metrics.')) {
       const field = condition.field.substring(8);
-      actualValue = context.metrics[field];
+      actualValue = _context.metrics[field];
     } else if (condition.field.startsWith('variables.')) {
       const field = condition.field.substring(10);
-      actualValue = context.variables[field];
+      actualValue = _context.variables[field];
     } else {
-      actualValue = this.getNestedValue(context, condition.field);
+      actualValue = this.getNestedValue(_context, condition.field);
     }
 
     // Apply operator
@@ -360,14 +358,14 @@ export class RuleEngine extends EventEmitter {
   /**
    * Execute rule actions
    */
-  private async executeActions(actions: RuleAction[], context: RuleContext): Promise<ActionResult[]> {
+  private async executeActions(actions: RuleAction[], _context: RuleContext): Promise<ActionResult[]> {
     const results: ActionResult[] = [];
 
     // Sort actions by order
     const sortedActions = [...actions].sort((a, b) => a.order - b.order);
 
     for (const action of sortedActions) {
-      const actionResult = await this.executeAction(action, context);
+      const actionResult = await this.executeAction(action, _context);
       results.push(actionResult);
 
       // Stop on first failure if specified
@@ -382,7 +380,7 @@ export class RuleEngine extends EventEmitter {
   /**
    * Execute single action
    */
-  private async executeAction(action: RuleAction, context: RuleContext): Promise<ActionResult> {
+  private async executeAction(action: RuleAction, _context: RuleContext): Promise<ActionResult> {
     const startTime = Date.now();
 
     try {
@@ -390,35 +388,35 @@ export class RuleEngine extends EventEmitter {
 
       switch (action.type) {
         case 'log':
-          result = await this.executeLogAction(action, context);
+          result = await this.executeLogAction(action, _context);
           break;
 
         case 'notify':
-          result = await this.executeNotifyAction(action, context);
+          result = await this.executeNotifyAction(action, _context);
           break;
 
         case 'set_variable':
-          result = await this.executeSetVariableAction(action, context);
+          result = await this.executeSetVariableAction(action, _context);
           break;
 
         case 'increment_metric':
-          result = await this.executeIncrementMetricAction(action, context);
+          result = await this.executeIncrementMetricAction(action, _context);
           break;
 
         case 'http_request':
-          result = await this.executeHttpRequestAction(action, context);
+          result = await this.executeHttpRequestAction(action, _context);
           break;
 
         case 'delay':
-          result = await this.executeDelayAction(action, context);
+          result = await this.executeDelayAction(action, _context);
           break;
 
         case 'script':
-          result = await this.executeScriptAction(action, context);
+          result = await this.executeScriptAction(action, _context);
           break;
 
         case 'workflow':
-          result = await this.executeWorkflowAction(action, context);
+          result = await this.executeWorkflowAction(action, _context);
           break;
 
         default:
@@ -445,25 +443,25 @@ export class RuleEngine extends EventEmitter {
   /**
    * Action executors
    */
-  private async executeLogAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeLogAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { level = 'info', message } = action.config;
-    const interpolatedMessage = this.interpolateTemplate(message, context);
+    const interpolatedMessage = this.interpolateTemplate(message, _context);
     
-    const logMethod = console[level as keyof typeof console];
+    const logMethod = console[level as keyof typeof console] as any;
     if (typeof logMethod === 'function') {
       logMethod(interpolatedMessage);
     } else {
       console.log(interpolatedMessage);
     }
-    return { logged: true, level, message: interpolatedMessage };
+    return { logged: true, level, _message: interpolatedMessage };
   }
 
-  private async executeNotifyAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeNotifyAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { title, message, priority = 'medium', channels = ['dashboard'] } = action.config;
     
     this.emit('notification-required', {
-      title: this.interpolateTemplate(title, context),
-      message: this.interpolateTemplate(message, context),
+      title: this.interpolateTemplate(title, _context),
+      _message: this.interpolateTemplate(message, _context),
       priority,
       channels: Array.isArray(channels) ? channels : [channels]
     });
@@ -471,12 +469,12 @@ export class RuleEngine extends EventEmitter {
     return { sent: true };
   }
 
-  private async executeSetVariableAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeSetVariableAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { name, value, scope = 'local' } = action.config;
-    const interpolatedValue = this.interpolateTemplate(value, context);
+    const interpolatedValue = this.interpolateTemplate(value, _context);
     
     if (scope === 'local') {
-      context.variables[name] = interpolatedValue;
+      _context.variables[name] = interpolatedValue;
     } else {
       // Global variable storage would go here
     }
@@ -484,27 +482,27 @@ export class RuleEngine extends EventEmitter {
     return { variable: name, value: interpolatedValue, scope };
   }
 
-  private async executeIncrementMetricAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeIncrementMetricAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { name, amount = 1 } = action.config;
     
-    context.metrics[name] = (context.metrics[name] || 0) + amount;
+    _context.metrics[name] = (_context.metrics[name] || 0) + amount;
     
-    return { metric: name, value: context.metrics[name] };
+    return { _metric: name, value: _context.metrics[name] };
   }
 
-  private async executeHttpRequestAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeHttpRequestAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { url, method = 'GET', headers = {}, body } = action.config;
     
     const fetchOptions: RequestInit = {
       method,
-      headers: this.interpolateObject(headers, context)
+      headers: this.interpolateObject(headers, _context)
     };
     
     if (body) {
-      fetchOptions.body = JSON.stringify(this.interpolateObject(body, context));
+      fetchOptions.body = JSON.stringify(this.interpolateObject(body, _context));
     }
     
-    const response = await fetch(this.interpolateTemplate(url, context), fetchOptions);
+    const response = await fetch(this.interpolateTemplate(url, _context), fetchOptions);
 
     const data = await response.json();
     return { status: response.status, data };
@@ -518,23 +516,23 @@ export class RuleEngine extends EventEmitter {
     return { delayed: true, duration };
   }
 
-  private async executeScriptAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeScriptAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { script, language = 'javascript' } = action.config;
     
     if (language === 'javascript') {
       const func = new Function('context', script);
-      return func(context);
+      return func(_context);
     }
 
     throw new Error(`Unsupported script language: ${language}`);
   }
 
-  private async executeWorkflowAction(action: RuleAction, context: RuleContext): Promise<any> {
+  private async executeWorkflowAction(action: RuleAction, _context: RuleContext): Promise<any> {
     const { workflowId, variables = {} } = action.config;
     
     this.emit('workflow-trigger', {
       workflowId,
-      variables: this.interpolateObject(variables, context)
+      variables: this.interpolateObject(variables, _context)
     });
 
     return { triggered: true, workflowId };
@@ -547,28 +545,28 @@ export class RuleEngine extends EventEmitter {
     return path.split('.').reduce((current, key) => current?.[key], obj);
   }
 
-  private interpolateTemplate(template: string, context: RuleContext): string {
+  private interpolateTemplate(template: string, _context: RuleContext): string {
     if (!template || typeof template !== 'string') return template;
 
     return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-      const value = this.getNestedValue(context, path.trim());
+      const value = this.getNestedValue(_context, path.trim());
       return value !== undefined ? String(value) : match;
     });
   }
 
-  private interpolateObject(obj: any, context: RuleContext): any {
+  private interpolateObject(obj: any, _context: RuleContext): any {
     if (typeof obj === 'string') {
-      return this.interpolateTemplate(obj, context);
+      return this.interpolateTemplate(obj, _context);
     }
     
     if (Array.isArray(obj)) {
-      return obj.map(item => this.interpolateObject(item, context));
+      return obj.map(item => this.interpolateObject(item, _context));
     }
     
     if (obj && typeof obj === 'object') {
       const result: any = {};
       for (const [key, value] of Object.entries(obj)) {
-        result[key] = this.interpolateObject(value, context);
+        result[key] = this.interpolateObject(value, _context);
       }
       return result;
     }
@@ -589,9 +587,9 @@ export class RuleEngine extends EventEmitter {
     return recentExecutions.length < rule.rateLimiting.maxExecutions;
   }
 
-  private checkContextFilters(filters: ContextFilter[], context: RuleContext): boolean {
+  private checkContextFilters(filters: ContextFilter[], _context: RuleContext): boolean {
     for (const filter of filters) {
-      const value = this.getNestedValue(context, filter.field);
+      const value = this.getNestedValue(_context, filter.field);
       const result = this.applyOperator(value, filter.operator, filter.value);
       
       if (filter.negate ? result : !result) {
@@ -602,15 +600,15 @@ export class RuleEngine extends EventEmitter {
     return true;
   }
 
-  private recordExecution(ruleId: string): void {
-    const executions = this.executionHistory.get(ruleId) || [];
+  private recordExecution(_ruleId: string): void {
+    const executions = this.executionHistory.get(_ruleId) || [];
     executions.push(new Date());
     
     // Keep only recent executions (last 24 hours)
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const recentExecutions = executions.filter(time => time.getTime() > dayAgo);
     
-    this.executionHistory.set(ruleId, recentExecutions);
+    this.executionHistory.set(_ruleId, recentExecutions);
   }
 
   private validateRule(rule: AdvancedRule): void {
@@ -627,7 +625,8 @@ export class RuleEngine extends EventEmitter {
     }
   }
 
-  private setupScheduledRules(): void {
+  // @ts-ignore - Reserved for future scheduled rules implementation
+  private _setupScheduledRules(): void {
     const scheduledRules = Array.from(this.rules.values())
       .filter(rule => rule.enabled && rule.trigger.type === 'schedule' && rule.schedule);
 
@@ -644,7 +643,7 @@ export class RuleEngine extends EventEmitter {
     
     if (interval > 0) {
       const timer = setInterval(async () => {
-        const context: RuleContext = {
+        const _context: RuleContext = {
           metrics: {},
           variables: {},
           timestamp: new Date(),
@@ -652,7 +651,7 @@ export class RuleEngine extends EventEmitter {
         };
 
         try {
-          await this.executeRule(rule, context);
+          await this.executeRule(rule, _context);
         } catch (error) {
           console.error(`Error executing scheduled rule ${rule.id}:`, error);
         }
@@ -671,7 +670,8 @@ export class RuleEngine extends EventEmitter {
     return 0; // Invalid expression
   }
 
-  private processScheduledRules(): void {
+  // @ts-ignore - 사용되지 않는 메서드
+  private _processScheduledRules(): void {
     // Scheduled rules are processed by their individual timers
     // This method could be used for additional scheduled rule logic
   }
@@ -761,7 +761,7 @@ export class RuleEngine extends EventEmitter {
     }
   }
 
-  getExecutionHistory(ruleId: string): Date[] {
-    return this.executionHistory.get(ruleId) || [];
+  getExecutionHistory(_ruleId: string): Date[] {
+    return this.executionHistory.get(_ruleId) || [];
   }
 }

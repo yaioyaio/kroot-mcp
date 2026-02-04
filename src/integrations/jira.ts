@@ -106,7 +106,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:health_check_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -125,7 +125,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:connection_validated',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           domain: this.domain,
           user: response.data.displayName,
           accountId: response.data.accountId,
@@ -140,7 +140,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:connection_validation_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -176,7 +176,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:projects_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           domain: this.domain,
           projectCount: projects.length,
         },
@@ -190,7 +190,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:projects_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           error: error instanceof Error ? error.message : 'Unknown error',
         },
@@ -273,7 +273,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issues_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           domain: this.domain,
           project: targetProject,
           issueCount: issues.length,
@@ -289,7 +289,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issues_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           project: targetProject,
           jql: searchJql,
@@ -364,7 +364,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issue_fetched',
         category: EventCategory.API,
         severity: EventSeverity.DEBUG,
-        data: {
+        _data: {
           domain: this.domain,
           issueKey,
           status: mappedIssue.status.name,
@@ -380,7 +380,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issue_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           issueKey,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -428,7 +428,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issue_created',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           domain: this.domain,
           project: targetProject,
           issueKey: response.data.key,
@@ -445,7 +445,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issue_creation_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           project: targetProject,
           summary: issueData.summary,
@@ -461,14 +461,14 @@ export class JiraClient extends BaseAPIClient {
   async updateIssueStatus(issueKey: string, transitionId: string): Promise<void> {
     try {
       await this.post(`/issue/${issueKey}/transitions`, {
-        transition: { id: transitionId },
+        _transition: { id: transitionId },
       });
 
       this.emitEvent({
         type: 'jira:issue_status_updated',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           domain: this.domain,
           issueKey,
           transitionId,
@@ -481,7 +481,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:issue_status_update_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           issueKey,
           transitionId,
@@ -507,7 +507,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:activity_fetched',
         category: EventCategory.API,
         severity: EventSeverity.INFO,
-        data: {
+        _data: {
           domain: this.domain,
           project: targetProject,
           days,
@@ -523,7 +523,7 @@ export class JiraClient extends BaseAPIClient {
         type: 'jira:activity_fetch_failed',
         category: EventCategory.API,
         severity: EventSeverity.ERROR,
-        data: {
+        _data: {
           domain: this.domain,
           project: targetProject,
           days,

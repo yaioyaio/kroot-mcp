@@ -20,11 +20,11 @@ export enum FileEventType {
   DIR_RENAMED = 'dir:renamed',
 
   // 컨텍스트 이벤트
-  CONTEXT_TEST = 'context:test',
-  CONTEXT_CONFIG = 'context:config',
-  CONTEXT_DOCUMENTATION = 'context:documentation',
-  CONTEXT_SOURCE = 'context:source',
-  CONTEXT_BUILD = 'context:build',
+  CONTEXT_TEST = '_context:test',
+  CONTEXT_CONFIG = '_context:config',
+  CONTEXT_DOCUMENTATION = '_context:documentation',
+  CONTEXT_SOURCE = '_context:source',
+  CONTEXT_BUILD = '_context:build',
 }
 
 /**
@@ -149,7 +149,7 @@ export interface FileEventData extends FileChangeInfo {
 export interface FileEvent extends BaseEvent {
   type: FileEventType;
   category: EventCategory.FILE;
-  data: FileEventData;
+  _data: FileEventData;
 }
 
 /**
@@ -190,7 +190,7 @@ export interface FileBatchEventData {
 export interface FileBatchEvent extends BaseEvent {
   type: 'file:batch';
   category: EventCategory.FILE;
-  data: FileBatchEventData;
+  _data: FileBatchEventData;
 }
 
 /**
@@ -199,7 +199,7 @@ export interface FileBatchEvent extends BaseEvent {
 export class FileEventBuilder {
   static createFileEvent(
     type: FileEventType,
-    data: FileEventData,
+    _data: FileEventData,
     options?: {
       severity?: EventSeverity;
       correlationId?: string;
@@ -213,14 +213,14 @@ export class FileEventBuilder {
       timestamp: Date.now(),
       severity: options?.severity || EventSeverity.INFO,
       source: 'FileMonitor',
-      data,
+      _data,
       ...(options?.correlationId && { correlationId: options.correlationId }),
       ...(options?.metadata && { metadata: options.metadata as EventMetadata }),
     };
   }
 
   static createBatchEvent(
-    data: FileBatchEventData,
+    _data: FileBatchEventData,
     options?: {
       severity?: EventSeverity;
       correlationId?: string;
@@ -234,7 +234,7 @@ export class FileEventBuilder {
       timestamp: Date.now(),
       severity: options?.severity || EventSeverity.INFO,
       source: 'FileMonitor',
-      data,
+      _data,
       ...(options?.correlationId && { correlationId: options.correlationId }),
       ...(options?.metadata && { metadata: options.metadata as EventMetadata }),
     };

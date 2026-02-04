@@ -125,7 +125,7 @@ export class ABTestManager extends EventEmitter {
     
     // 메트릭 정의 테이블
     this.db.prepare(`
-      CREATE TABLE IF NOT EXISTS ab_test_metrics (
+      CREATE TABLE IF NOT EXISTS ab_testmetrics (
         test_id TEXT NOT NULL,
         name TEXT NOT NULL,
         type TEXT NOT NULL,
@@ -807,7 +807,7 @@ export class ABTestManager extends EventEmitter {
       
       // 메트릭 저장
       const metricStmt = db.prepare(`
-        INSERT INTO ab_test_metrics (
+        INSERT INTO ab_testmetrics (
           test_id, name, type, goal, calculation
         ) VALUES (?, ?, ?, ?, ?)
       `);
@@ -849,7 +849,7 @@ export class ABTestManager extends EventEmitter {
     
     // 메트릭 조회
     const metricRows = this.db.prepare(`
-      SELECT * FROM ab_test_metrics WHERE test_id = ?
+      SELECT * FROM ab_testmetrics WHERE test_id = ?
     `).all(testId) as any[];
     
     return {

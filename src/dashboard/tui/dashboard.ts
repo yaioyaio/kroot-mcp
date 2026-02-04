@@ -375,7 +375,7 @@ export class TUIDashboard extends EventEmitter {
     // Render screen
     this.screen.render();
     
-    console.log('TUI Dashboard started. Press q or ESC to quit.');
+    // console.log('TUI Dashboard started. Press q or ESC to quit.');
   }
 
   /**

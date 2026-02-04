@@ -49,12 +49,12 @@ export class BottleneckDetector extends EventEmitter {
       this.handleEvent(event);
     });
 
-    // 주기적 병목 감지
-    this.detectionTimer = setInterval(() => {
-      this.detectBottlenecks();
-    }, this.options.checkInterval || 60000); // 1분
+    // 폴링 제거 - MCP on-demand 방식으로 변경
+    // this.detectionTimer = setInterval(() => {
+    //   this.detectBottlenecks();
+    // }, this.options.checkInterval || 60000); // 1분
 
-    console.log('🔍 BottleneckDetector started');
+    // console.log('🔍 BottleneckDetector started');
   }
 
   /**
@@ -77,7 +77,7 @@ export class BottleneckDetector extends EventEmitter {
       this.detectionTimer = undefined;
     }
 
-    console.log('🔍 BottleneckDetector stopped');
+    // console.log('🔍 BottleneckDetector stopped');
   }
 
   /**
@@ -102,32 +102,32 @@ export class BottleneckDetector extends EventEmitter {
    */
   private detectRealTimeBottlenecks(event: BaseEvent): void {
     // 빌드 실패 감지
-    if (event.category === EventCategory.BUILD && event.data.success === false) {
+    if (event.category === EventCategory.BUILD && event._data.success === false) {
       this.createBottleneck({
         type: BottleneckType.TECHNICAL,
         category: EventCategory.BUILD,
         severity: EventSeverity.ERROR,
         title: 'Build Failure',
-        description: `Build failed: ${event.data.error || 'Unknown error'}`,
+        description: `Build failed: ${event._data.error || 'Unknown error'}`,
         location: event.source,
         impact: 70,
         confidence: 85,
-        metadata: event.data,
+        metadata: event._data,
       });
     }
 
     // 테스트 실패 감지
-    if (event.category === EventCategory.TEST && event.data.passed === false) {
+    if (event.category === EventCategory.TEST && event._data.passed === false) {
       this.createBottleneck({
         type: BottleneckType.QUALITY,
         category: EventCategory.TEST,
         severity: EventSeverity.WARNING,
         title: 'Test Failure',
-        description: `Test failed: ${event.data.testName || 'Unknown test'}`,
+        description: `Test failed: ${event._data.testName || 'Unknown test'}`,
         location: event.source,
         impact: 50,
         confidence: 90,
-        metadata: event.data,
+        metadata: event._data,
       });
     }
   }
@@ -284,7 +284,7 @@ export class BottleneckDetector extends EventEmitter {
               'Check for dependency issues',
               'Optimize build scripts',
             ],
-            metadata: { metric: buildTime },
+            metadata: { _metric: buildTime },
           };
         }
         return null;
@@ -316,7 +316,7 @@ export class BottleneckDetector extends EventEmitter {
               'Review uncovered code paths',
               'Implement integration tests',
             ],
-            metadata: { metric: testCoverage },
+            metadata: { _metric: testCoverage },
           };
         }
         return null;
@@ -348,7 +348,7 @@ export class BottleneckDetector extends EventEmitter {
               'Check for infinite loops in file operations',
               'Optimize file processing',
             ],
-            metadata: { metric: fileChanges },
+            metadata: { _metric: fileChanges },
           };
         }
         return null;
@@ -504,7 +504,7 @@ export class BottleneckDetector extends EventEmitter {
       totalBottlenecks: this.bottlenecks.size,
       totalEvents: this.eventHistory.length,
       detectionRules: this.detectionRules.size,
-      stats: this.getBottleneckStats(),
+      _stats: this.getBottleneckStats(),
     };
   }
 }

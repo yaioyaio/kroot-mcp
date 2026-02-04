@@ -5,22 +5,22 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export class Logger {
-  private context: string;
-  private level: LogLevel = 'info';
+  private _context?: string;
+  private _level: LogLevel = 'info';
 
   constructor(context: string, level: LogLevel = 'info') {
-    this.context = context;
-    this.level = level;
+    this._context = context;
+    this._level = level;
   }
 
   private shouldLog(level: LogLevel): boolean {
     const levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
-    return levels.indexOf(level) >= levels.indexOf(this.level);
+    return levels.indexOf(level) >= levels.indexOf(this._level);
   }
 
   private formatMessage(level: LogLevel, message: string, ...args: any[]): string {
     const timestamp = new Date().toISOString();
-    const prefix = `[${timestamp}] [${level.toUpperCase()}] [${this.context}]`;
+    const prefix = `[${timestamp}] [${level.toUpperCase()}] [${this._context}]`;
     const formattedArgs = args.length > 0 ? ' ' + args.map(arg => 
       typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
     ).join(' ') : '';
@@ -52,6 +52,6 @@ export class Logger {
   }
 
   setLevel(level: LogLevel): void {
-    this.level = level;
+    this._level = level;
   }
 }

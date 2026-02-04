@@ -208,13 +208,13 @@ export class FeedbackCollector extends EventEmitter {
       }
       
       // 컨텍스트 수집
-      let context: FeedbackContext | undefined;
+      let _context: FeedbackContext | undefined;
       if (this.config.autoCollectContext) {
-        context = await this.collectContext(feedback.projectId);
+        _context = await this.collectContext(feedback.projectId);
       }
       
       // 데이터베이스에 저장
-      this.saveFeedback(feedback, context, options.usabilityMetrics);
+      this.saveFeedback(feedback, _context, options.usabilityMetrics);
       
       // 첨부 파일 저장
       if (feedback.attachments && feedback.attachments.length > 0) {
@@ -315,7 +315,7 @@ export class FeedbackCollector extends EventEmitter {
    * 컨텍스트 수집
    */
   private async collectContext(projectId?: string): Promise<FeedbackContext> {
-    const context: FeedbackContext = {
+    const _context: FeedbackContext = {
       system: {
         platform: process.platform,
         version: process.version,
@@ -335,7 +335,7 @@ export class FeedbackCollector extends EventEmitter {
         const projectStats = await this.config.projectManager.getProjectStats();
         
         if (project) {
-          context.project = {
+          _context.project = {
             id: project.id,
             name: project.name,
             stage: this.config.stageAnalyzer?.getCurrentStage() || DevelopmentStage.PLANNING,
@@ -356,7 +356,7 @@ export class FeedbackCollector extends EventEmitter {
         const cpuMetrics = allMetrics.cpu_usage?.values || [];
         const memoryMetrics = allMetrics.memory_usage?.values || [];
         
-        context.performance = {
+        _context.performance = {
           cpuUsage: cpuMetrics.length > 0 ? (cpuMetrics[cpuMetrics.length - 1]?.value ?? 0) : 0,
           memoryUsage: memoryMetrics.length > 0 ? (memoryMetrics[memoryMetrics.length - 1]?.value ?? 0) : 0,
           eventQueueSize: 0, // TODO: 실제 큐 크기 가져오기
@@ -367,7 +367,7 @@ export class FeedbackCollector extends EventEmitter {
       }
     }
     
-    return context;
+    return _context;
   }
   
   /**

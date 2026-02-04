@@ -7,6 +7,7 @@ pnpm-debug.log*
 
 # Build outputs
 dist/
+dist_backup/
 build/
 *.tsbuildinfo
 *.js.map
@@ -73,3 +74,7 @@ mcp-config.json
 # Generated files
 *.generated.ts
 generated/
+
+# Runtime data directories
+report-templates/
+data/
