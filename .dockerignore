@@ -61,3 +61,7 @@ data/
 Dockerfile
 docker-compose*.yml
 .dockerignore
+
+# 2026-11-11 빌드 디스크 위생: 빌드 산출물·캐시를 이미지 컨텍스트에서 제외(.gitignore·pre-commit 과 같은 기준)
+**/__pycache__
+**/*.pyc
